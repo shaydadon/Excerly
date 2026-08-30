@@ -1,236 +1,235 @@
 /* =============================================================
-   Excerly – ספריית אנימציות התרגילים (SVG)
-   דמות אנושית: ראש+שיער+פנים, גופייה, מכנסיים קצרים, זרועות/רגליים
-   בגוון עור וכפות רגליים – זכר/נקבה לפי הפרופיל, עם הדגשת האזור העובד.
+   Excerly – ספריית דמויות התרגילים (SVG, סגנון איור שטוח)
+   דמות אנושית מלאה: איברים "בשריים" ממולאים (לא קווים), גופייה,
+   מכנסיים קצרים, ראש+שיער+פנים וכפות רגליים – זכר/נקבה לפי הפרופיל,
+   עם הדגשת האזור העובד בכל תרגיל.
    ============================================================= */
 (function (global) {
   'use strict';
 
   let curGender = 'male';
+  const R = (n) => Math.round(n * 10) / 10;
 
-  function scene(id, inner, opts) {
-    opts = opts || {};
-    const floor = opts.floor ? '<line class="floor" x1="20" y1="182" x2="200" y2="182" />' : '';
-    const wall = opts.wall ? '<line class="floor" x1="188" y1="30" x2="188" y2="182" />' : '';
-    const hl = opts.hl
-      ? `<circle class="work-zone" cx="${opts.hl[0]}" cy="${opts.hl[1]}" r="${opts.hl[2] || 18}" />`
-      : '';
-    return `<svg class="ex-anim anim-${id} fig-${curGender}" viewBox="0 0 220 200" ` +
-      `role="img" aria-hidden="true" preserveAspectRatio="xMidYMid meet">` +
-      floor + wall + hl + inner + '</svg>';
+  /* איבר "בשרי" ממולא בין שתי מפרקים, עם רוחב מתחדד וקצוות מעוגלים */
+  function seg(x1, y1, r1, x2, y2, r2, cls) {
+    const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
+    const px = -dy / len, py = dx / len;
+    const a1x = R(x1 + px * r1), a1y = R(y1 + py * r1);
+    const a2x = R(x1 - px * r1), a2y = R(y1 - py * r1);
+    const b1x = R(x2 + px * r2), b1y = R(y2 + py * r2);
+    const b2x = R(x2 - px * r2), b2y = R(y2 - py * r2);
+    return `<path class="${cls}" d="M${a1x} ${a1y} L${b1x} ${b1y} L${b2x} ${b2y} L${a2x} ${a2y} Z"/>` +
+      `<circle class="${cls}" cx="${R(x1)}" cy="${R(y1)}" r="${r1}"/>` +
+      `<circle class="${cls}" cx="${R(x2)}" cy="${R(y2)}" r="${r2}"/>`;
   }
 
   const maleHair = (cx, cy, r) =>
     `M ${cx - r} ${cy - r * 0.15} Q ${cx} ${cy - r * 1.75} ${cx + r} ${cy - r * 0.15} ` +
-    `Q ${cx} ${cy - r * 0.5} ${cx - r} ${cy - r * 0.15} Z`;
+    `Q ${cx} ${cy - r * 0.55} ${cx - r} ${cy - r * 0.15} Z`;
 
   const femaleHair = (cx, cy, r) =>
-    `M ${cx - r} ${cy - r * 0.1} Q ${cx} ${cy - r * 1.9} ${cx + r} ${cy - r * 0.1} ` +
-    `L ${cx + r * 1.05} ${cy + r * 1.7} L ${cx + r * 0.52} ${cy + r * 1.7} ` +
-    `Q ${cx + r * 0.64} ${cy + r * 0.3} ${cx + r * 0.5} ${cy - r * 0.05} ` +
-    `Q ${cx} ${cy - r * 0.5} ${cx - r * 0.5} ${cy - r * 0.05} ` +
-    `Q ${cx - r * 0.64} ${cy + r * 0.3} ${cx - r * 0.52} ${cy + r * 1.7} ` +
-    `L ${cx - r * 1.05} ${cy + r * 1.7} Z`;
+    `M ${cx - r} ${cy - r * 0.1} Q ${cx} ${cy - r * 1.95} ${cx + r} ${cy - r * 0.1} ` +
+    `L ${cx + r * 1.08} ${cy + r * 1.75} L ${cx + r * 0.5} ${cy + r * 1.75} ` +
+    `Q ${cx + r * 0.66} ${cy + r * 0.3} ${cx + r * 0.5} ${cy - r * 0.05} ` +
+    `Q ${cx} ${cy - r * 0.55} ${cx - r * 0.5} ${cy - r * 0.05} ` +
+    `Q ${cx - r * 0.66} ${cy + r * 0.3} ${cx - r * 0.5} ${cy + r * 1.75} ` +
+    `L ${cx - r * 1.08} ${cy + r * 1.75} Z`;
 
   // סימני פנים לפי כיוון: 'front' (שתי עיניים) / 'left' / 'right' (עין + אף)
   function faceMarks(cx, cy, r, dir) {
-    const eye = (x, y) => `<circle class="fig-face" cx="${x}" cy="${y}" r="1.7" />`;
+    const eye = (x, y) => `<circle class="fig-face" cx="${R(x)}" cy="${R(y)}" r="1.8"/>`;
     if (dir === 'left')
-      return eye(cx - r * 0.32, cy - r * 0.05) + `<circle class="fig-skin nose" cx="${cx - r - 1}" cy="${cy + r * 0.15}" r="3" />`;
+      return eye(cx - r * 0.34, cy - r * 0.05) +
+        `<circle class="fig-sk nose" cx="${R(cx - r - 1)}" cy="${R(cy + r * 0.18)}" r="3"/>`;
     if (dir === 'right')
-      return eye(cx + r * 0.32, cy - r * 0.05) + `<circle class="fig-skin nose" cx="${cx + r + 1}" cy="${cy + r * 0.15}" r="3" />`;
-    return eye(cx - r * 0.32, cy - r * 0.05) + eye(cx + r * 0.32, cy - r * 0.05);
+      return eye(cx + r * 0.34, cy - r * 0.05) +
+        `<circle class="fig-sk nose" cx="${R(cx + r + 1)}" cy="${R(cy + r * 0.18)}" r="3"/>`;
+    return eye(cx - r * 0.34, cy - r * 0.05) + eye(cx + r * 0.34, cy - r * 0.05);
   }
 
-  // ראש: שיער (זכר/נקבה) + עור + פנים
+  // ראש מלא: שיער נקבה + עור + שיער זכר + פנים
   const head = (cx, cy, r, dir) =>
-    `<g class="fig-head-g">
-       <path class="hair hair-female" d="${femaleHair(cx, cy, r)}" />
-       <circle class="fig-skin" cx="${cx}" cy="${cy}" r="${r}" />
-       <path class="hair hair-male" d="${maleHair(cx, cy, r)}" />
+    `<g class="fig-head">
+       <path class="hair hair-female" d="${femaleHair(cx, cy, r)}"/>
+       <circle class="fig-sk" cx="${R(cx)}" cy="${R(cy)}" r="${r}"/>
+       <path class="hair hair-male" d="${maleHair(cx, cy, r)}"/>
        ${faceMarks(cx, cy, r, dir || 'front')}
      </g>`;
 
-  const limb = (x1, y1, x2, y2, cls) =>
-    `<line class="fig-limb ${cls || ''}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" />`;
-
-  // מכנסיים קצרים – קו עבה בצורת ∧ מעל האגן וראשי הירכיים
-  const shorts = (ax, ay, bx, by, cx, cy) =>
-    `<polyline class="fig-shorts" points="${ax},${ay} ${bx},${by} ${cx},${cy}" />`;
-
-  // כף רגל – אליפסה בגוון עור
   const foot = (x, y, rot) =>
-    `<ellipse class="fig-skin fig-foot" cx="${x}" cy="${y}" rx="9" ry="4.5" transform="rotate(${rot || 0} ${x} ${y})" />`;
+    `<ellipse class="fig-sk fig-foot" cx="${R(x)}" cy="${R(y)}" rx="9.5" ry="4.8" ` +
+    `transform="rotate(${rot || 0} ${R(x)} ${R(y)})"/>`;
 
-  /* ---------- הסצנות ---------- */
+  /* בונה דמות אנושית מלאה מתוך מפרט מפרקים */
+  function person(s) {
+    let out = '';
+    const legs = s.legs || [];
+    const arms = s.arms || [];
+
+    // 1) רגליים (מהאחורית לקדמית) + כפות רגליים
+    legs.forEach((lg) => {
+      const [hip, knee, ank, frot] = lg;
+      out += seg(hip[0], hip[1], 12, knee[0], knee[1], 9.5, 'fig-sk');
+      out += seg(knee[0], knee[1], 9.5, ank[0], ank[1], 6.8, 'fig-sk');
+      out += foot(ank[0], ank[1], frot || 0);
+    });
+
+    // 2) מכנסיים קצרים – חלק עליון של כל רגל + חגורת מותן
+    legs.forEach((lg) => {
+      const [hip, knee] = lg;
+      const mx = hip[0] + (knee[0] - hip[0]) * 0.5;
+      const my = hip[1] + (knee[1] - hip[1]) * 0.5;
+      out += seg(hip[0], hip[1], 14, mx, my, 12, 'fig-sr');
+    });
+    if (legs.length > 1) {
+      const h0 = legs[0][0], h1 = legs[legs.length - 1][0];
+      out += seg(h0[0], h0[1], 13.5, h1[0], h1[1], 13.5, 'fig-sr');
+    }
+
+    // 3) גו (גופייה) – מהאגן אל הכתפיים
+    const t = s.torso;
+    out += seg(t[0][0], t[0][1], 14, t[1][0], t[1][1], 16.5, 'fig-sh');
+
+    // 4) זרועות (מהאחורית לקדמית) + כפות ידיים
+    arms.forEach((ar) => {
+      const [sh, el, wr] = ar;
+      out += seg(sh[0], sh[1], 8, el[0], el[1], 6.6, 'fig-sk');
+      out += seg(el[0], el[1], 6.6, wr[0], wr[1], 5.2, 'fig-sk');
+      out += `<circle class="fig-sk" cx="${R(wr[0])}" cy="${R(wr[1])}" r="5"/>`;
+    });
+
+    // 5) צוואר + ראש
+    const hd = s.head, hr = s.hr || 16;
+    out += seg(t[1][0], t[1][1], 7, hd[0], hd[1] + hr * 0.75, 6, 'fig-sk');
+    out += head(hd[0], hd[1], hr, s.face);
+
+    // 6) הדגשת האזור העובד – מעל הדמות (חצי-שקוף)
+    if (s.hl) out += `<circle class="work-zone" cx="${s.hl[0]}" cy="${s.hl[1]}" r="${s.hl[2] || 18}"/>`;
+    return out;
+  }
+
+  function scene(id, spec, opts) {
+    opts = opts || {};
+    const floor = opts.floor ? '<line class="floor" x1="18" y1="181" x2="202" y2="181"/>' : '';
+    const wall = opts.wall ? '<line class="floor" x1="190" y1="34" x2="190" y2="181"/>' : '';
+    return `<svg class="ex-anim anim-${id} fig-${curGender}" viewBox="0 0 220 200" ` +
+      `role="img" aria-hidden="true" preserveAspectRatio="xMidYMid meet">` +
+      floor + wall + person(spec) + '</svg>';
+  }
+
+  /* ---------- הסצנות (14 תרגילים) ---------- */
   const SCENES = {
-    neck: () => scene('neck',
-      `${limb(110, 130, 92, 172, 'leg')}
-       ${limb(110, 130, 128, 172, 'leg')}
-       ${foot(90, 173, -8)}${foot(130, 173, 8)}
-       ${shorts(99, 150, 110, 131, 121, 150)}
-       ${limb(110, 78, 110, 130, 'torso')}
-       ${limb(110, 88, 78, 118, 'arm')}
-       ${limb(110, 88, 142, 118, 'arm')}
-       <g class="j-neck-head">${head(110, 55, 20, 'front')}${limb(110, 74, 110, 78, 'neck-stub')}</g>`,
-      { floor: true, hl: [110, 74, 15] }),
+    // מתיחת צוואר – עמידה, יד מובילה את הראש הצידה
+    neck: () => scene('neck', {
+      legs: [[[103, 121], [100, 150], [98, 177], -8], [[117, 121], [120, 150], [122, 177], 8]],
+      torso: [[110, 121], [110, 72]],
+      arms: [[[97, 78], [86, 104], [90, 122]], [[123, 78], [134, 92], [118, 56]]],
+      head: [116, 45], hr: 16, face: 'front', hl: [111, 62, 13]
+    }, { floor: true }),
 
-    shoulders: () => scene('shoulders',
-      `${limb(110, 128, 92, 172, 'leg')}
-       ${limb(110, 128, 128, 172, 'leg')}
-       ${foot(90, 173, -8)}${foot(130, 173, 8)}
-       ${shorts(99, 149, 110, 130, 121, 149)}
-       ${limb(110, 70, 110, 128, 'torso')}
-       <g class="j-shoulder-l">${limb(110, 82, 80, 112, 'arm')}</g>
-       <g class="j-shoulder-r">${limb(110, 82, 140, 112, 'arm')}</g>
-       ${head(110, 50, 18, 'front')}`,
-      { floor: true, hl: [110, 84, 22] }),
+    // מתיחת כתפיים – יד נמתחת לרוחב החזה
+    shoulders: () => scene('shoulders', {
+      legs: [[[103, 121], [100, 150], [98, 177], -8], [[117, 121], [120, 150], [122, 177], 8]],
+      torso: [[110, 121], [110, 72]],
+      arms: [[[97, 78], [96, 100], [110, 90]], [[123, 78], [98, 90], [80, 92]]],
+      head: [110, 46], hr: 16, face: 'front', hl: [120, 82, 16]
+    }, { floor: true }),
 
-    arms: () => scene('arms',
-      `${limb(110, 128, 92, 172, 'leg')}
-       ${limb(110, 128, 128, 172, 'leg')}
-       ${foot(90, 173, -8)}${foot(130, 173, 8)}
-       ${shorts(99, 149, 110, 130, 121, 149)}
-       ${limb(110, 72, 110, 128, 'torso')}
-       <g class="j-arm-l">${limb(110, 84, 62, 84, 'arm')}</g>
-       <g class="j-arm-r">${limb(110, 84, 158, 84, 'arm')}</g>
-       ${head(110, 52, 18, 'front')}`,
-      { floor: true, hl: [110, 84, 22] }),
+    // מתיחת זרועות – ידיים מעל הראש (ברכת השמש)
+    arms: () => scene('arms', {
+      legs: [[[103, 121], [100, 150], [98, 177], -8], [[117, 121], [120, 150], [122, 177], 8]],
+      torso: [[110, 122], [110, 74]],
+      arms: [[[98, 78], [90, 50], [100, 30]], [[122, 78], [130, 50], [120, 30]]],
+      head: [110, 50], hr: 15, face: 'front', hl: [110, 44, 16]
+    }, { floor: true }),
 
-    sidebend: () => scene('sidebend',
-      `${limb(110, 120, 94, 172, 'leg')}
-       ${limb(110, 120, 126, 172, 'leg')}
-       ${foot(93, 173, -8)}${foot(127, 173, 8)}
-       ${shorts(101, 146, 110, 130, 119, 146)}
-       <g class="j-upper">
-         ${limb(110, 67, 110, 120, 'torso')}
-         ${limb(110, 78, 110, 34, 'arm arm-up')}
-         ${limb(110, 78, 138, 108, 'arm')}
-         ${head(110, 50, 17, 'front')}
-       </g>`,
-      { floor: true, hl: [110, 104, 17] }),
+    // כפיפה צידית – הטיה עם יד מעל הראש
+    sidebend: () => scene('sidebend', {
+      legs: [[[104, 121], [102, 150], [100, 177], -8], [[118, 121], [120, 150], [122, 177], 8]],
+      torso: [[111, 121], [124, 74]],
+      arms: [[[122, 78], [128, 50], [122, 30]], [[126, 82], [138, 104], [142, 122]]],
+      head: [130, 52], hr: 15, face: 'front', hl: [120, 100, 15]
+    }, { floor: true }),
 
-    twist: () => scene('twist',
-      `${limb(110, 120, 94, 172, 'leg')}
-       ${limb(110, 120, 126, 172, 'leg')}
-       ${foot(93, 173, -8)}${foot(127, 173, 8)}
-       ${shorts(101, 146, 110, 130, 119, 146)}
-       <g class="j-twist">
-         ${limb(110, 70, 110, 120, 'torso')}
-         ${limb(110, 80, 74, 96, 'arm')}
-         ${limb(110, 80, 146, 96, 'arm')}
-         ${head(110, 52, 17, 'front')}
-       </g>`,
-      { floor: true, hl: [110, 100, 18] }),
+    // סיבוב גו – פיתול הפלג העליון עם ידיים חוצות
+    twist: () => scene('twist', {
+      legs: [[[104, 121], [102, 150], [100, 177], -8], [[118, 121], [120, 150], [122, 177], 8]],
+      torso: [[110, 121], [116, 74]],
+      arms: [[[104, 80], [86, 92], [70, 96]], [[122, 78], [140, 90], [150, 104]]],
+      head: [116, 52], hr: 15, face: 'front', hl: [113, 100, 17]
+    }, { floor: true }),
 
-    forwardfold: () => scene('forwardfold',
-      `${limb(118, 120, 112, 172, 'leg')}
-       ${limb(118, 122, 124, 172, 'leg leg-back')}
-       ${foot(112, 174, 0)}${foot(124, 174, 0)}
-       ${shorts(111, 138, 118, 122, 126, 138)}
-       <g class="j-fold">
-         ${limb(150, 76, 118, 120, 'torso')}
-         ${limb(140, 92, 150, 128, 'arm')}
-         ${head(150, 60, 16, 'left')}
-       </g>`,
-      { floor: true, hl: [116, 146, 16] }),
+    // כפיפה קדימה – מבט צד, ידיים יורדות לרגליים
+    forwardfold: () => scene('forwardfold', {
+      legs: [[[118, 120], [116, 150], [114, 177], -4], [[122, 121], [124, 150], [126, 177], -4]],
+      torso: [[120, 120], [150, 96]],
+      arms: [[[150, 100], [150, 128], [150, 156]]],
+      head: [157, 78], hr: 15, face: 'left', hl: [128, 150, 16]
+    }, { floor: true }),
 
-    hamstring: () => scene('hamstring',
-      `${limb(70, 168, 168, 168, 'leg leg-front')}
-       ${limb(70, 168, 108, 150, 'leg leg-bent')}
-       ${foot(168, 165, 78)}
-       ${shorts(78, 158, 74, 150, 84, 152)}
-       <g class="j-hamstring">
-         ${limb(74, 132, 70, 166, 'torso')}
-         ${limb(78, 140, 120, 162, 'arm')}
-         ${head(74, 118, 15, 'right')}
-       </g>`,
-      { floor: true, hl: [124, 168, 16] }),
+    // מתיחת שרירי ירך אחוריים – ישיבה עם רגל מושטת, גו נשען קדימה
+    hamstring: () => scene('hamstring', {
+      legs: [[[82, 160], [122, 160], [166, 161], 80]],
+      torso: [[80, 160], [86, 122]],
+      arms: [[[86, 128], [114, 146], [140, 156]]],
+      head: [90, 106], hr: 14, face: 'right', hl: [124, 165, 16]
+    }, { floor: true }),
 
-    butterfly: () => scene('butterfly',
-      `<g class="j-knee-l">${limb(110, 150, 70, 150, 'leg')}${limb(70, 150, 96, 150, 'leg')}</g>
-       <g class="j-knee-r">${limb(110, 150, 150, 150, 'leg')}${limb(150, 150, 124, 150, 'leg')}</g>
-       ${limb(96, 150, 124, 150, 'leg foot-join')}
-       ${shorts(101, 150, 110, 134, 119, 150)}
-       ${limb(110, 78, 110, 130, 'torso')}
-       ${limb(110, 92, 138, 122, 'arm')}
-       ${limb(110, 92, 82, 122, 'arm')}
-       ${head(110, 60, 17, 'front')}`,
-      { floor: true, hl: [110, 150, 22] }),
+    // פרפר – ישיבה, כפות רגליים צמודות, ברכיים לצדדים
+    butterfly: () => scene('butterfly', {
+      legs: [[[104, 150], [74, 150], [100, 150], 0], [[116, 150], [146, 150], [120, 150], 0]],
+      torso: [[110, 150], [110, 108]],
+      arms: [[[98, 112], [86, 138], [100, 150]], [[122, 112], [134, 138], [120, 150]]],
+      head: [110, 86], hr: 15, face: 'front', hl: [110, 150, 20]
+    }, { floor: true }),
 
-    quad: () => scene('quad',
-      `${limb(110, 120, 102, 172, 'leg')}
-       ${foot(102, 174, 0)}
-       ${shorts(104, 138, 110, 122, 116, 138)}
-       ${limb(110, 65, 110, 120, 'torso')}
-       ${limb(110, 78, 96, 108, 'arm')}
-       <g class="j-quad-thigh">
-         ${limb(110, 120, 118, 150, 'leg')}
-         <g class="j-quad-shin">${limb(118, 150, 138, 122, 'leg leg-lift')}</g>
-       </g>
-       ${head(110, 48, 17, 'left')}`,
-      { floor: true, hl: [115, 135, 15] }),
+    // מתיחת ארבע ראשי – עמידה, אחיזת כף הרגל מאחור
+    quad: () => scene('quad', {
+      legs: [[[110, 120], [108, 150], [106, 177], -6], [[112, 121], [122, 150], [140, 126], 60]],
+      torso: [[110, 120], [108, 74]],
+      arms: [[[96, 78], [88, 100], [92, 116]], [[120, 78], [128, 104], [140, 126]]],
+      head: [107, 50], hr: 15, face: 'left', hl: [123, 140, 15]
+    }, { floor: true }),
 
-    hipflexor: () => scene('hipflexor',
-      `<g class="j-hip">
-         ${limb(100, 120, 150, 150, 'leg')}
-         ${limb(150, 150, 150, 172, 'leg')}
-         ${limb(100, 120, 78, 150, 'leg')}
-         ${limb(78, 150, 118, 172, 'leg leg-back')}
-         ${foot(152, 174, 0)}${foot(120, 174, 8)}
-         ${shorts(94, 138, 100, 122, 108, 136)}
-         ${limb(96, 76, 100, 120, 'torso')}
-         ${head(96, 60, 16, 'right')}
-       </g>`,
-      { floor: true, hl: [102, 124, 16] }),
+    // מתיחת מכופפי ירך – פריקה נמוכה (lunge), מבט צד
+    hipflexor: () => scene('hipflexor', {
+      legs: [[[100, 122], [78, 150], [116, 174], 6], [[100, 120], [150, 148], [150, 177], 0]],
+      torso: [[100, 120], [96, 76]],
+      arms: [[[96, 82], [120, 104], [148, 120]]],
+      head: [96, 54], hr: 15, face: 'right', hl: [104, 128, 16]
+    }, { floor: true }),
 
-    calf: () => scene('calf',
-      `<g class="j-calf">
-         ${limb(118, 118, 60, 172, 'leg leg-back')}
-         ${limb(118, 118, 150, 148, 'leg')}
-         ${limb(150, 148, 150, 172, 'leg')}
-         ${foot(60, 173, -22)}${foot(152, 174, 0)}
-         ${shorts(112, 134, 118, 120, 126, 134)}
-         ${limb(96, 73, 118, 118, 'torso')}
-         ${limb(96, 80, 176, 96, 'arm')}
-         ${head(96, 58, 15, 'right')}
-       </g>`,
-      { floor: true, wall: true, hl: [86, 150, 15] }),
+    // מתיחת שוק – דחיפה מול קיר, רגל אחורית מושטת
+    calf: () => scene('calf', {
+      legs: [[[118, 118], [88, 150], [60, 176], -22], [[118, 118], [150, 146], [150, 176], 0]],
+      torso: [[118, 118], [122, 76]],
+      arms: [[[122, 82], [150, 88], [178, 92]]],
+      head: [127, 54], hr: 14, face: 'right', hl: [76, 160, 15]
+    }, { floor: true, wall: true }),
 
-    catcow: () => scene('catcow',
-      `${limb(70, 118, 70, 168, 'leg')}
-       ${limb(150, 118, 150, 168, 'leg')}
-       ${foot(70, 170, 0)}${foot(150, 170, 0)}
-       <g class="j-spine">
-         <path class="fig-spine" d="M70 118 Q110 108 150 118" />
-         ${shorts(64, 124, 70, 116, 78, 124)}
-       </g>
-       ${limb(150, 118, 168, 96, 'torso neck-line')}
-       ${head(174, 92, 13, 'right')}`,
-      { floor: true, hl: [110, 114, 18] }),
+    // חתול-פרה – שש-עשרה, גב מקושת
+    catcow: () => scene('catcow', {
+      legs: [[[70, 120], [70, 150], [58, 152], -20]],
+      torso: [[70, 118], [150, 118]],
+      arms: [[[150, 122], [150, 138], [150, 152]]],
+      head: [168, 116], hr: 13, face: 'right', hl: [110, 108, 18]
+    }, { floor: true }),
 
-    cobra: () => scene('cobra',
-      `${limb(60, 170, 168, 170, 'leg leg-lie')}
-       ${foot(60, 170, -84)}
-       ${shorts(142, 168, 150, 164, 158, 168)}
-       <g class="j-cobra">
-         ${limb(150, 170, 116, 132, 'torso')}
-         ${limb(150, 170, 130, 168, 'arm cobra-arm')}
-         ${head(112, 118, 15, 'left')}
-       </g>`,
-      { floor: true, hl: [138, 152, 16] }),
+    // קוברה – שכיבה על הבטן, פלג עליון מורם
+    cobra: () => scene('cobra', {
+      legs: [[[152, 168], [178, 170], [200, 171], 84]],
+      torso: [[152, 168], [122, 138]],
+      arms: [[[124, 142], [130, 162], [136, 174]]],
+      head: [114, 122], hr: 14, face: 'left', hl: [146, 158, 16]
+    }, { floor: true }),
 
-    child: () => scene('child',
-      `<g class="j-breath">
-         ${limb(150, 150, 150, 172, 'leg')}
-         ${limb(150, 172, 120, 172, 'leg leg-shin')}
-         ${foot(118, 172, 0)}
-         ${shorts(144, 158, 150, 150, 156, 158)}
-         ${limb(150, 150, 92, 168, 'torso')}
-         ${limb(92, 168, 44, 172, 'arm child-arm')}
-         ${head(84, 160, 14, 'left')}
-       </g>`,
-      { floor: true, hl: [122, 156, 18] })
+    // תנוחת הילד – כריעה, גו מקופל קדימה, ידיים מושטות
+    child: () => scene('child', {
+      legs: [[[150, 150], [150, 170], [122, 172], 0]],
+      torso: [[150, 150], [100, 166]],
+      arms: [[[100, 166], [72, 170], [46, 173]]],
+      head: [88, 162], hr: 13, face: 'left', hl: [140, 152, 18]
+    }, { floor: true })
   };
 
   function svgFor(key, gender) {
