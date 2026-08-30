@@ -632,17 +632,26 @@ textarea:focus { border-color: var(--accent); }
 /* =============================================================
    דמויות התרגילים – סגנון + אנימציות
    ============================================================= */
+/* צבעי הדמות (זהים בכל ערכת נושא) */
+.ex-anim { --skin: #ecb27f; --hair: #43342a; --shirt: #35d0a5; --pants: #4671b0; --work: #ff9a3d; }
 .fig-limb {
-  stroke: var(--fig);
-  stroke-width: 9;
+  stroke: var(--shirt);      /* חולצה: גו + זרועות */
+  stroke-width: 15;
   stroke-linecap: round;
   fill: none;
 }
-.fig-head { fill: var(--fig); }
-.fig-spine { stroke: var(--fig); stroke-width: 9; stroke-linecap: round; fill: none; }
+.fig-limb[class*="leg"] { stroke: var(--pants); }  /* מכנסיים: רגליים */
+.fig-spine { stroke: var(--shirt); stroke-width: 15; stroke-linecap: round; fill: none; }
+.fig-skin { fill: var(--skin); }
+.hair { fill: var(--hair); }
+.fig-male .hair-female { display: none; }
+.fig-female .hair-male { display: none; }
 .floor { stroke: var(--line); stroke-width: 4; stroke-linecap: round; }
-.arm, .arm-up { stroke: var(--fig-accent); }
-.leg-lift, .cobra-arm, .leg-front { stroke: var(--fig-accent); }
+
+/* הדגשת האזור שעליו עובד התרגיל */
+.work-zone { fill: var(--work); opacity: 0; animation: workPulse 2.4s ease-in-out infinite; }
+@keyframes workPulse { 0%, 100% { opacity: .16; } 50% { opacity: .5; } }
+@media (prefers-reduced-motion: reduce) { .work-zone { opacity: .32; } }
 
 .ex-anim g { transform-box: view-box; }
 

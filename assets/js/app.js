@@ -46,6 +46,9 @@
   let viewDate = new Date();        // חודש מוצג בלוח
   const today = new Date();
 
+  // מגדר הדמות באנימציות – לפי הפרופיל (ברירת מחדל: זכר)
+  const figGender = () => (load(STORE.profile, {}).gender === 'female' ? 'female' : 'male');
+
   const exSet = key => (exDoneMap[key] || (exDoneMap[key] = {}));
   const isExDone = (key, id) => !!(exDoneMap[key] && exDoneMap[key][id]);
   const doneCount = (prog, key) => prog.exercises.filter(id => isExDone(key, id)).length;
@@ -209,7 +212,7 @@
       const hold = L(ex.hold);
       return `<div class="ex-item ${ed ? 'done' : ''}">
         <button class="ex-open" data-ex="${id}">
-          <span class="ex-thumb">${A.svgFor(ex.animation)}</span>
+          <span class="ex-thumb">${A.svgFor(ex.animation, figGender())}</span>
           <span class="ex-info">
             <span class="ex-name">${L(ex.name)}</span>
             <span class="ex-area">${L(ex.area)}</span>
@@ -316,7 +319,7 @@
     const body = $('#sheet-body', sheet);
     body.innerHTML = `
       <button class="detail-back" id="detail-back">${t('back')}</button>
-      <div class="detail-stage">${A.svgFor(ex.animation)}</div>
+      <div class="detail-stage">${A.svgFor(ex.animation, figGender())}</div>
       <div class="detail-name">${L(ex.name)}</div>
       <div class="detail-badges">
         <span class="badge reps">${t('badgeReps', { r: L(ex.reps) })}</span>
@@ -927,6 +930,10 @@
     initReminders();
     checkMissedReminder();
     document.addEventListener('excerly:profile', renderHistory);
+    // שינוי מגדר בפרופיל → רענון הדמויות אם חלון האימון פתוח
+    document.addEventListener('excerly:profile', () => {
+      if (sheet.classList.contains('open') && sheetDate) renderWorkout(sheetDate);
+    });
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
