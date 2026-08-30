@@ -247,7 +247,8 @@
       <div class="sheet-body" id="sheet-body">
         <div class="ex-list">${items}</div>
         <div class="workout-actions">
-          <button class="btn btn-primary btn-block" id="toggle-done">
+          <button class="btn btn-primary btn-block" id="start-workout" style="margin-bottom:10px">${t('startWorkout')}</button>
+          <button class="btn btn-ghost btn-block" id="toggle-done">
             ${done ? t('dayUndoBtn') : t('dayDoneBtn')}
           </button>
         </div>
@@ -255,6 +256,7 @@
       </div>`;
 
     $('#sheet-close', sheet).addEventListener('click', closeSheet);
+    $('#start-workout', sheet).addEventListener('click', () => openPlayer(date));
     $('#toggle-done', sheet).addEventListener('click', () => toggleDone(key));
     sheet.querySelectorAll('.ex-open').forEach(btn => {
       btn.addEventListener('click', () => openExercise(btn.dataset.ex));
@@ -342,7 +344,121 @@
   }
 
   backdrop.addEventListener('click', closeSheet);
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (!P().hidden) closePlayer(); else closeSheet();
+  });
+
+  /* =========================================================
+     נגן אימון מודרך (טיימר + מעבר בין תרגילים)
+     ========================================================= */
+  const player = { idx: 0, remaining: 0, paused: false, timer: null, exs: [], key: null, date: null };
+  const P = () => $('#player');
+  const RING_R = 46, RING_C = 2 * Math.PI * RING_R;
+  const fmtTime = s => Math.floor(s / 60) + ':' + String(Math.max(0, s) % 60).padStart(2, '0');
+
+  function openPlayer(date) {
+    const prog = D.programForDate(date);
+    if (!prog.exercises.length) return;
+    player.exs = prog.exercises.slice();
+    player.date = date; player.key = dateKey(date); player.idx = 0;
+    P().hidden = false; document.body.style.overflow = 'hidden';
+    startExercise(0);
+  }
+  function closePlayer() {
+    stopTick(); P().hidden = true; document.body.style.overflow = '';
+    if (sheet.classList.contains('open') && sheetDate) renderWorkout(sheetDate);
+  }
+  function startExercise(i) {
+    stopTick();
+    player.idx = i; player.paused = false;
+    player.remaining = D.EXERCISES[player.exs[i]].duration;
+    renderPlayer();
+    startTick();
+  }
+  function startTick() {
+    stopTick();
+    player.timer = setInterval(() => {
+      if (player.paused) return;
+      player.remaining--;
+      if (player.remaining <= 0) { if (navigator.vibrate) try { navigator.vibrate(120); } catch (e) {} nextExercise(); return; }
+      updatePlayerTime();
+    }, 1000);
+  }
+  function stopTick() { if (player.timer) { clearInterval(player.timer); player.timer = null; } }
+  function nextExercise() { player.idx < player.exs.length - 1 ? startExercise(player.idx + 1) : finishPlayer(); }
+  function prevExercise() { startExercise(Math.max(0, player.idx - 1)); }
+  function togglePlay() {
+    player.paused = !player.paused;
+    const b = $('#p-play', P());
+    if (b) { b.textContent = player.paused ? '▶' : '⏸'; b.setAttribute('aria-label', player.paused ? t('ariaPlay') : t('ariaPause')); }
+  }
+
+  function updatePlayerTime() {
+    const te = $('#p-time', P());
+    if (te) te.textContent = fmtTime(player.remaining);
+    const pr = $('#p-prog', P());
+    if (pr) {
+      const dur = D.EXERCISES[player.exs[player.idx]].duration;
+      const frac = Math.max(0, player.remaining) / dur;
+      pr.style.strokeDasharray = RING_C;
+      pr.style.strokeDashoffset = (RING_C * (1 - frac)).toFixed(1);
+    }
+  }
+
+  function renderPlayer() {
+    const ex = D.EXERCISES[player.exs[player.idx]];
+    const hold = L(ex.hold);
+    P().innerHTML = `
+      <div class="player-top">
+        <button class="p-icon" id="p-close" aria-label="${t('ariaClose')}">✕</button>
+        <div class="player-count">${t('playerOf', { i: player.idx + 1, n: player.exs.length })}</div>
+        <span class="p-icon" style="visibility:hidden"></span>
+      </div>
+      <div class="player-stage">
+        <svg class="p-ring" viewBox="0 0 100 100" aria-hidden="true">
+          <circle class="p-track" cx="50" cy="50" r="${RING_R}" />
+          <circle class="p-prog" id="p-prog" cx="50" cy="50" r="${RING_R}" />
+        </svg>
+        <div class="player-anim">${A.svgFor(ex.animation, figGender())}</div>
+      </div>
+      <div class="player-name">${L(ex.name)}</div>
+      <div class="detail-badges" style="justify-content:center;margin-top:6px">
+        <span class="badge reps">${t('badgeReps', { r: L(ex.reps) })}</span>
+        ${hold !== '—' ? `<span class="badge hold">${t('badgeHold', { h: hold })}</span>` : ''}
+      </div>
+      <div class="player-time" id="p-time">${fmtTime(player.remaining)}</div>
+      <div class="player-controls">
+        <button class="p-ctrl" id="p-prev" aria-label="${t('ariaPrev')}">⏮</button>
+        <button class="p-ctrl p-main" id="p-play" aria-label="${t('ariaPause')}">⏸</button>
+        <button class="p-ctrl" id="p-next" aria-label="${t('ariaNext')}">⏭</button>
+      </div>`;
+    $('#p-close', P()).addEventListener('click', closePlayer);
+    $('#p-prev', P()).addEventListener('click', prevExercise);
+    $('#p-next', P()).addEventListener('click', nextExercise);
+    $('#p-play', P()).addEventListener('click', togglePlay);
+    updatePlayerTime();
+  }
+
+  function finishPlayer() {
+    stopTick();
+    const key = player.key, prog = D.programForDate(player.date);
+    const s = exSet(key); prog.exercises.forEach(id => { s[id] = true; }); doneMap[key] = true;
+    save(STORE.exdone, exDoneMap); save(STORE.done, doneMap);
+    renderCalendar(); updateStreak(); renderHistory();
+    P().innerHTML = `
+      <div class="player-top">
+        <button class="p-icon" id="p-close" aria-label="${t('ariaClose')}">✕</button>
+        <span class="p-icon"></span><span class="p-icon"></span>
+      </div>
+      <div class="player-done">
+        <div class="pd-emoji">🎉</div>
+        <div class="pd-text">${t('playerDone')}</div>
+        <button class="btn btn-primary" id="p-finish">${t('closeWord')}</button>
+      </div>`;
+    $('#p-close', P()).addEventListener('click', closePlayer);
+    $('#p-finish', P()).addEventListener('click', closePlayer);
+  }
 
   /* =========================================================
      רצף אימונים (streak)

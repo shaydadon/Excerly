@@ -635,13 +635,14 @@ textarea:focus { border-color: var(--accent); }
 /* צבעי הדמות (זהים בכל ערכת נושא) */
 .ex-anim { --skin: #ecb27f; --hair: #43342a; --shirt: #35d0a5; --pants: #4671b0; --work: #ff9a3d; }
 .fig-limb {
-  stroke: var(--shirt);      /* חולצה: גו + זרועות */
-  stroke-width: 15;
+  stroke: var(--skin);       /* זרועות ורגליים חשופות (גוון עור) */
+  stroke-width: 14;
   stroke-linecap: round;
   fill: none;
 }
-.fig-limb[class*="leg"] { stroke: var(--pants); }  /* מכנסיים: רגליים */
-.fig-spine { stroke: var(--shirt); stroke-width: 15; stroke-linecap: round; fill: none; }
+.fig-limb.torso { stroke: var(--shirt); stroke-width: 22; }   /* גופייה */
+.fig-limb.neck-stub { stroke: var(--skin); stroke-width: 12; } /* צוואר */
+.fig-spine { stroke: var(--shirt); stroke-width: 20; stroke-linecap: round; fill: none; }
 .fig-skin { fill: var(--skin); }
 .hair { fill: var(--hair); }
 .fig-male .hair-female { display: none; }
@@ -654,6 +655,47 @@ textarea:focus { border-color: var(--accent); }
 @media (prefers-reduced-motion: reduce) { .work-zone { opacity: .32; } }
 
 .ex-anim g { transform-box: view-box; }
+
+/* ---------- נגן אימון מודרך ---------- */
+.player[hidden] { display: none !important; }
+.player {
+  position: fixed; inset: 0; z-index: 60;
+  background: var(--bg);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 14px 18px calc(16px + env(safe-area-inset-bottom));
+  max-width: 620px; margin: 0 auto;
+}
+.player-top { width: 100%; display: flex; align-items: center; justify-content: space-between; }
+.player-count { font-weight: 800; font-size: 16px; }
+.p-icon {
+  width: 40px; height: 40px; border-radius: 12px; border: none;
+  background: var(--card-2); color: var(--text); font-size: 18px;
+  cursor: pointer; display: grid; place-items: center;
+}
+.player-stage { position: relative; width: min(78vw, 320px); aspect-ratio: 1; margin: 20px 0 6px; }
+.p-ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.p-track { fill: none; stroke: var(--line); stroke-width: 4; }
+.p-prog { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset .95s linear; }
+.player-anim {
+  position: absolute; inset: 7%; border-radius: 50%; overflow: hidden;
+  background: radial-gradient(circle at 50% 42%, #cfe3ef, #a9c7da);
+  display: grid; place-items: center;
+}
+.player-anim .ex-anim { width: 94%; height: 94%; }
+.player-name { font-size: 22px; font-weight: 800; margin-top: 12px; text-align: center; }
+.player-time { font-size: 44px; font-weight: 800; color: var(--muted); margin: 12px 0 4px; font-variant-numeric: tabular-nums; }
+.player-controls { display: flex; align-items: center; gap: 26px; margin-top: auto; padding-bottom: 8px; }
+.p-ctrl {
+  width: 60px; height: 60px; border-radius: 50%; border: 1px solid var(--line);
+  background: var(--card); color: var(--text); font-size: 22px; cursor: pointer;
+  display: grid; place-items: center; transition: transform .08s;
+}
+.p-ctrl:active { transform: scale(.92); }
+.p-main { width: 74px; height: 74px; border: none; font-size: 26px; color: #06231c;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+.player-done { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; }
+.pd-emoji { font-size: 64px; }
+.pd-text { font-size: 22px; font-weight: 800; }
 
 /* צוואר */
 .anim-neck .j-neck-head { transform-origin: 110px 76px; animation: neckTilt 3.4s ease-in-out infinite; }
