@@ -549,6 +549,70 @@
     renderHistory();
   }
 
+  // כיווץ תמונה בצד הלקוח לפני שליחה ל-AI (חוסך תעבורה וזמן)
+  function fileToResizedDataURL(file, maxDim, quality) {
+    maxDim = maxDim || 1024; quality = quality || 0.82;
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image load failed')); };
+      img.src = url;
+    });
+  }
+  function parseDataUrl(dataUrl) {
+    const m = dataUrl.match(/^data:(.+?);base64,(.*)$/);
+    return m ? { media_type: m[1], data: m[2] } : null;
+  }
+
+  async function calcFromImage(file) {
+    const target = renderNutriTarget();
+    if (!target) { toast('מלאו קודם את פרטי הפרופיל'); return; }
+    const prov = aiProvider();
+    if (prov.mode === 'local') {
+      toast('חישוב לפי תמונה דורש AI — הפעילו מצב AI בהגדרות ⚙️');
+      $('#ai-settings').open = true;
+      return;
+    }
+    const btn = $('#photo-btn');
+    let dataUrl;
+    try { dataUrl = await fileToResizedDataURL(file); }
+    catch (e) { toast('לא הצלחתי לקרוא את התמונה'); return; }
+    // תצוגה מקדימה
+    const prev = $('#photo-preview');
+    prev.hidden = false;
+    prev.innerHTML = `<img src="${dataUrl}" alt="תמונת הארוחה" />`;
+
+    const image = parseDataUrl(dataUrl);
+    btn.disabled = true; btn.textContent = 'Claude מנתח את התמונה…';
+    let res;
+    try {
+      res = prov.mode === 'proxy'
+        ? await N.estimateImageViaProxy(image, prov.url)
+        : await N.estimateImageAI(image, prov.key);
+    } catch (e) {
+      toast('שגיאה בניתוח התמונה — נסו שוב');
+      btn.disabled = false; btn.textContent = '📷 חשב לפי תמונה של הארוחה';
+      return;
+    }
+    btn.disabled = false; btn.textContent = '📷 חשב לפי תמונה של הארוחה';
+    renderFoodResult(res, target);
+    const v = N.verdict(res.total, target);
+    const log = load(STORE.foodlog, {});
+    log[dateKey(new Date())] = { text: $('#food-text').value.trim() || '📷 ארוחה מתמונה', total: res.total, target, verdict: { color: v.color, key: v.key } };
+    save(STORE.foodlog, log);
+    renderHistory();
+  }
+
   async function buildMenu() {
     const target = renderNutriTarget();
     if (!target) { toast('מלאו קודם את פרטי הפרופיל'); return; }
@@ -601,6 +665,12 @@
 
     $('#calc-food').addEventListener('click', calcFood);
     $('#build-menu').addEventListener('click', buildMenu);
+    $('#photo-btn').addEventListener('click', () => $('#food-photo').click());
+    $('#food-photo').addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) calcFromImage(file);
+      e.target.value = ''; // מאפשר לבחור שוב את אותה תמונה
+    });
     document.addEventListener('excerly:profile', renderNutriTarget);
   }
 

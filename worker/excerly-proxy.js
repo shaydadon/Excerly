@@ -51,7 +51,15 @@ const MENU_SYSTEM =
   'החזר JSON בלבד, ללא טקסט נוסף, במבנה: ' +
   '{"meals": [{"label": string, "name": string, "kcal": number}], "total": number, "note": string}.';
 
-async function callAnthropic(env, system, user, maxTokens) {
+const IMAGE_SYSTEM =
+  'אתה מנתח תזונה מדויק. קיבלת תמונה של ארוחה. זהה את הפריטים שבתמונה והערך את סך הקלוריות ' +
+  'בצורה מציאותית לפי מנות נפוצות (העדף אומדן ישראלי), תוך התחשבות בגודל המנה הנראה. ' +
+  'החזר JSON בלבד, ללא טקסט נוסף: ' +
+  '{"total": number, "items": [{"name": string, "kcal": number}], "note": string}. ' +
+  'name בעברית, note משפט קצר בעברית. אם התמונה אינה של אוכל או אינה ברורה, החזר total=0 וציין זאת ב-note.';
+
+// content יכול להיות מחרוזת (טקסט) או מערך בלוקים (למשל תמונה + טקסט)
+async function callAnthropic(env, system, content, maxTokens) {
   const model = env.MODEL || 'claude-opus-5';
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -65,7 +73,7 @@ async function callAnthropic(env, system, user, maxTokens) {
       max_tokens: maxTokens,
       output_config: { effort: 'low' },
       system,
-      messages: [{ role: 'user', content: user }]
+      messages: [{ role: 'user', content }]
     })
   });
   const raw = await res.text();
@@ -100,6 +108,14 @@ export default {
       const target = Math.max(800, Math.min(6000, parseInt(body.target, 10) || 2000));
       const user = 'יעד יומי: ' + target + ' קק"ל. בנה לי תפריט יומי מתאים.';
       out = await callAnthropic(env, MENU_SYSTEM, user, 1500);
+    } else if (body.action === 'estimate_image') {
+      const img = body.image;
+      if (!img || !img.data || !img.media_type) return json({ error: 'missing image' }, 400, origin);
+      const content = [
+        { type: 'image', source: { type: 'base64', media_type: img.media_type, data: img.data } },
+        { type: 'text', text: 'זו תמונה של הארוחה שלי. זהה את המנות והערך את סך הקלוריות.' }
+      ];
+      out = await callAnthropic(env, IMAGE_SYSTEM, content, 1024);
     } else {
       return json({ error: 'unknown action' }, 400, origin);
     }

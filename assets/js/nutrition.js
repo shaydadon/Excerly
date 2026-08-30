@@ -313,6 +313,27 @@
     return JSON.parse(match[0]);
   }
 
+  const IMAGE_SYSTEM =
+    'אתה מנתח תזונה מדויק. קיבלת תמונה של ארוחה. זהה את הפריטים שבתמונה והערך את סך הקלוריות ' +
+    'בצורה מציאותית לפי מנות נפוצות (העדף אומדן ישראלי). התחשב בגודל המנה הנראה בתמונה. ' +
+    'החזר JSON בלבד, ללא טקסט לפני או אחרי, במבנה: ' +
+    '{"total": number, "items": [{"name": string, "kcal": number}], "note": string}. ' +
+    'name בעברית, note משפט קצר בעברית. אם התמונה אינה של אוכל או אינה ברורה, החזר total=0 וציין זאת ב-note.';
+
+  const imageContent = (image) => ([
+    { type: 'image', source: { type: 'base64', media_type: image.media_type, data: image.data } },
+    { type: 'text', text: 'זו תמונה של הארוחה שלי. זהה את המנות והערך את סך הקלוריות.' }
+  ]);
+
+  // ניתוח תמונת ארוחה – דרך שרת proxy
+  async function estimateImageViaProxy(image, url) {
+    return normalizeEstimate(await callProxy(url, { action: 'estimate_image', image }));
+  }
+  // ניתוח תמונת ארוחה – ישיר (BYOK)
+  async function estimateImageAI(image, key) {
+    return normalizeEstimate(await callClaude(key, IMAGE_SYSTEM, imageContent(image), 1024));
+  }
+
   async function estimateAI(text, key) {
     const system = 'אתה עוזר תזונה. קבל תיאור חופשי בעברית של מה שאדם אכל, והערך את סך הקלוריות. ' +
       'החזר JSON בלבד, ללא טקסט נוסף, במבנה: ' +
@@ -349,8 +370,8 @@
 
   global.ExcerlyNutrition = {
     estimateLocal, generateMealPlan,
-    estimateAI, mealPlanAI,                 // BYOK ישיר
-    estimateViaProxy, mealPlanViaProxy,     // דרך שרת proxy
+    estimateAI, mealPlanAI, estimateImageAI,         // BYOK ישיר
+    estimateViaProxy, mealPlanViaProxy, estimateImageViaProxy, // דרך שרת proxy
     targetCalories, verdict, SLOT_LABEL
   };
 })(window);

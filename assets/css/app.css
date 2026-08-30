@@ -204,6 +204,12 @@ textarea:focus { border-color: var(--accent); }
   color: var(--accent-2); border-radius: var(--radius-sm);
   padding: 11px 14px; font-size: 13.5px; margin-bottom: 6px;
 }
+.photo-preview { margin-top: 12px; }
+.photo-preview img {
+  width: 100%; max-height: 240px; object-fit: cover;
+  border-radius: var(--radius-sm); border: 1px solid var(--line);
+  display: block;
+}
 .nutri-result, .menu-result { display: none; margin-top: 14px; }
 .nutri-result.show, .menu-result.show { display: block; }
 .nutri-summary { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
