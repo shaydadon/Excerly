@@ -1,0 +1,403 @@
+/* =============================================================
+   Excerly – לוגיקת האפליקציה
+   ============================================================= */
+(function () {
+  'use strict';
+
+  const D = window.ExcerlyData;
+  const A = window.ExcerlyAnim;
+
+  /* ---------- אחסון מקומי ---------- */
+  const STORE = {
+    profile: 'excerly.profile',
+    done: 'excerly.done',        // { 'YYYY-MM-DD': true }
+    reminder: 'excerly.reminder' // { enabled, time }
+  };
+  const load = (k, fb) => {
+    try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; }
+    catch (e) { return fb; }
+  };
+  const save = (k, v) => {
+    try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {}
+  };
+
+  const $ = (sel, root) => (root || document).querySelector(sel);
+  const el = (tag, cls, html) => {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (html != null) n.innerHTML = html;
+    return n;
+  };
+  const pad = n => String(n).padStart(2, '0');
+  const dateKey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const sameDay = (a, b) => dateKey(a) === dateKey(b);
+
+  let doneMap = load(STORE.done, {});
+  let viewDate = new Date();        // חודש מוצג בלוח
+  const today = new Date();
+
+  /* ---------- Toast ---------- */
+  let toastTimer;
+  function toast(msg) {
+    let t = $('.toast');
+    if (!t) { t = el('div', 'toast'); document.body.appendChild(t); }
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+  }
+
+  /* =========================================================
+     פרופיל + BMI + קלוריות
+     ========================================================= */
+  function initProfile() {
+    const p = load(STORE.profile, { age: '', weight: '', height: '', gender: 'male', activity: 'moderate' });
+    const form = $('#profile-form');
+    form.age.value = p.age;
+    form.weight.value = p.weight;
+    form.height.value = p.height;
+    form.gender.value = p.gender;
+    form.activity.value = p.activity;
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const data = {
+        age: +form.age.value,
+        weight: +form.weight.value,
+        height: +form.height.value,
+        gender: form.gender.value,
+        activity: form.activity.value
+      };
+      if (!data.age || !data.weight || !data.height) {
+        toast('נא למלא גיל, משקל וגובה');
+        return;
+      }
+      save(STORE.profile, data);
+      renderBMI(data);
+      toast('הנתונים נשמרו ✓');
+    });
+
+    if (p.age && p.weight && p.height) renderBMI(p);
+  }
+
+  function renderBMI(p) {
+    const box = $('#bmi-result');
+    const bmi = D.calcBMI(p.weight, p.height);
+    const cat = D.bmiCategory(bmi);
+    const bmr = D.calcBMR({ weightKg: p.weight, heightCm: p.height, age: p.age, gender: p.gender });
+    const act = D.ACTIVITY_FACTORS[p.activity];
+    const tdee = Math.round(bmr * act.factor);
+    const m = D.macros(tdee);
+    // מיקום המחוג: טווח 12–36 ממופה ל-0–100
+    const gaugeP = Math.max(0, Math.min(100, ((bmi - 12) / (36 - 12)) * 100));
+
+    box.innerHTML = `
+      <div class="bmi-top">
+        <div class="bmi-gauge" style="--gauge-color:${cat.color}">
+          <div style="text-align:center">
+            <div class="val">${bmi.toFixed(1)}</div>
+            <div class="cap">BMI</div>
+          </div>
+        </div>
+        <div class="bmi-cat">
+          <span class="bmi-badge" style="background:${cat.color}">${cat.label}</span>
+          <p class="bmi-advice">${cat.advice}</p>
+        </div>
+      </div>
+      <div class="calorie-box">
+        <div class="calorie-headline">
+          <span class="num">${tdee.toLocaleString('he-IL')}</span>
+          <span class="unit">קק"ל ליום (לשמירה על המשקל)</span>
+        </div>
+        <div class="calorie-sub">חילוף חומרים בסיסי: ${Math.round(bmr).toLocaleString('he-IL')} קק"ל · רמת פעילות: ${act.label}</div>
+        <div class="macros">
+          <div class="macro p"><div class="m-val">${m.protein} ג׳</div><div class="m-lbl">חלבון</div></div>
+          <div class="macro c"><div class="m-val">${m.carbs} ג׳</div><div class="m-lbl">פחמימות</div></div>
+          <div class="macro f"><div class="m-val">${m.fat} ג׳</div><div class="m-lbl">שומן</div></div>
+        </div>
+      </div>`;
+    // הנעת המחוג
+    requestAnimationFrame(() => {
+      const g = box.querySelector('.bmi-gauge');
+      if (g) g.style.setProperty('--p', gaugeP.toFixed(1));
+    });
+  }
+
+  /* =========================================================
+     לוח שנה
+     ========================================================= */
+  function renderCalendar() {
+    const y = viewDate.getFullYear();
+    const mo = viewDate.getMonth();
+    $('#cal-month').textContent = `${D.MONTH_NAMES[mo]} ${y}`;
+
+    const grid = $('#cal-grid');
+    grid.innerHTML = '';
+    D.DAY_NAMES.forEach(n => grid.appendChild(el('div', 'cal-dow', n.slice(0, 3))));
+
+    const first = new Date(y, mo, 1).getDay();
+    const days = new Date(y, mo + 1, 0).getDate();
+    for (let i = 0; i < first; i++) grid.appendChild(el('div', 'cal-cell empty'));
+
+    for (let d = 1; d <= days; d++) {
+      const date = new Date(y, mo, d);
+      const prog = D.programForDate(date);
+      const key = dateKey(date);
+      const cell = el('div', 'cal-cell');
+      if (prog.rest) cell.classList.add('rest');
+      if (sameDay(date, today)) cell.classList.add('today');
+
+      cell.appendChild(el('div', 'd-num', String(d)));
+      const dot = el('div', 'dot');
+      if (doneMap[key]) { dot.classList.add('done'); cell.appendChild(el('div', 'cell-check', '✓')); }
+      else if (prog.rest) dot.classList.add('rest');
+      cell.appendChild(dot);
+
+      cell.addEventListener('click', () => openSheet(date));
+      grid.appendChild(cell);
+    }
+  }
+
+  /* =========================================================
+     חלון יומי (bottom sheet) + מסך תרגיל
+     ========================================================= */
+  const backdrop = $('#sheet-backdrop');
+  const sheet = $('#sheet');
+  let sheetDate = null;
+
+  function openSheet(date) {
+    sheetDate = date;
+    renderWorkout(date);
+    backdrop.classList.add('open');
+    sheet.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeSheet() {
+    backdrop.classList.remove('open');
+    sheet.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function renderWorkout(date) {
+    const prog = D.programForDate(date);
+    const key = dateKey(date);
+    const done = !!doneMap[key];
+    const dayLabel = `יום ${D.DAY_NAMES[date.getDay()]}, ${date.getDate()} ב${D.MONTH_NAMES[date.getMonth()]}`;
+    const mins = D.estimatedMinutes(prog);
+
+    const items = prog.exercises.map(id => {
+      const ex = D.EXERCISES[id];
+      return `<button class="ex-item" data-ex="${id}">
+        <span class="ex-thumb">${A.svgFor(ex.animation)}</span>
+        <span class="ex-info">
+          <span class="ex-name">${ex.name}</span>
+          <span class="ex-area">${ex.area}</span>
+          <span class="ex-reps">${ex.reps}${ex.hold !== '—' ? ' · החזקה ' + ex.hold : ''}</span>
+        </span>
+        <span class="ex-arrow">‹</span>
+      </button>`;
+    }).join('');
+
+    sheet.innerHTML = `
+      <div class="sheet-grip"></div>
+      <div class="sheet-head">
+        <div class="row">
+          <div>
+            <div class="sheet-date">${dayLabel}</div>
+            <div class="sheet-title">${prog.title}</div>
+            <div class="sheet-focus">${prog.focus}</div>
+          </div>
+          <button class="sheet-close" id="sheet-close" aria-label="סגור">✕</button>
+        </div>
+        <div class="sheet-meta">
+          <span class="chip">🧘 ${prog.exercises.length} תרגילים</span>
+          <span class="chip">⏱ כ-${mins} דק׳</span>
+          ${prog.rest ? '<span class="chip rest">☕ יום מנוחה פעילה</span>' : ''}
+        </div>
+      </div>
+      <div class="sheet-body" id="sheet-body">
+        <div class="ex-list">${items}</div>
+        <div class="workout-actions">
+          <button class="btn btn-primary btn-block" id="toggle-done">
+            ${done ? '↺ בטל סימון אימון' : '✓ סיימתי את האימון'}
+          </button>
+        </div>
+        <div class="done-banner ${done ? 'show' : ''}" id="done-banner">🎉 כל הכבוד! השלמת את האימון להיום</div>
+      </div>`;
+
+    $('#sheet-close', sheet).addEventListener('click', closeSheet);
+    $('#toggle-done', sheet).addEventListener('click', () => toggleDone(key));
+    sheet.querySelectorAll('.ex-item').forEach(btn => {
+      btn.addEventListener('click', () => openExercise(btn.dataset.ex));
+    });
+    sheet.scrollTop = 0;
+  }
+
+  function toggleDone(key) {
+    if (doneMap[key]) delete doneMap[key];
+    else doneMap[key] = true;
+    save(STORE.done, doneMap);
+    renderWorkout(sheetDate);
+    renderCalendar();
+    updateStreak();
+    if (doneMap[key]) toast('אימון הושלם! 💪');
+  }
+
+  function openExercise(id) {
+    const ex = D.EXERCISES[id];
+    const body = $('#sheet-body', sheet);
+    body.innerHTML = `
+      <button class="detail-back" id="detail-back">→ חזרה לרשימה</button>
+      <div class="detail-stage">${A.svgFor(ex.animation)}</div>
+      <div class="detail-name">${ex.name}</div>
+      <div class="detail-badges">
+        <span class="badge reps">🔁 ${ex.reps}</span>
+        ${ex.hold !== '—' ? `<span class="badge hold">⏳ החזקה ${ex.hold}</span>` : ''}
+        <span class="badge area">${ex.area}</span>
+      </div>
+      <ol class="detail-steps">${ex.steps.map(s => `<li>${s}</li>`).join('')}</ol>
+      <div class="detail-tip"><span class="ico">💡</span><span><b>טיפ:</b> ${ex.tip}</span></div>`;
+    $('#detail-back', body).addEventListener('click', () => renderWorkout(sheetDate));
+    sheet.scrollTop = 0;
+  }
+
+  backdrop.addEventListener('click', closeSheet);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+
+  /* =========================================================
+     רצף אימונים (streak)
+     ========================================================= */
+  function updateStreak() {
+    let streak = 0;
+    const d = new Date();
+    // אם היום לא סומן, נתחיל לספור מאתמול
+    if (!doneMap[dateKey(d)]) d.setDate(d.getDate() - 1);
+    while (doneMap[dateKey(d)]) { streak++; d.setDate(d.getDate() - 1); }
+    const total = Object.keys(doneMap).length;
+    $('#streak-num').textContent = streak;
+    $('#total-num').textContent = total;
+  }
+
+  /* =========================================================
+     תזכורות יומיות
+     ========================================================= */
+  let reminderTimer = null;
+  function initReminders() {
+    const r = load(STORE.reminder, { enabled: false, time: '18:00' });
+    const toggle = $('#reminder-toggle');
+    const timeInput = $('#reminder-time');
+    toggle.checked = r.enabled;
+    timeInput.value = r.time;
+
+    const persist = () => {
+      const data = { enabled: toggle.checked, time: timeInput.value };
+      save(STORE.reminder, data);
+      scheduleReminder(data);
+      updateReminderStatus(data);
+    };
+
+    toggle.addEventListener('change', async () => {
+      if (toggle.checked && 'Notification' in window && Notification.permission !== 'granted') {
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') {
+          toggle.checked = false;
+          toast('כדי לקבל תזכורות צריך לאשר התראות');
+        }
+      }
+      persist();
+    });
+    timeInput.addEventListener('change', persist);
+
+    scheduleReminder(r);
+    updateReminderStatus(r);
+  }
+
+  function updateReminderStatus(r) {
+    const s = $('#reminder-status');
+    if (!('Notification' in window)) {
+      s.textContent = 'הדפדפן אינו תומך בהתראות. נשמח להזכיר לך בכל פתיחה של האפליקציה.';
+      return;
+    }
+    if (r.enabled && Notification.permission === 'granted') {
+      s.textContent = `תזכורת יומית פעילה לשעה ${r.time}. השאירו את האפליקציה פתוחה או פתחו אותה במהלך היום.`;
+    } else if (r.enabled) {
+      s.textContent = 'ההתראות חסומות בדפדפן. אפשר לאשר אותן בהגדרות האתר.';
+    } else {
+      s.textContent = 'התזכורות כבויות.';
+    }
+  }
+
+  function scheduleReminder(r) {
+    if (reminderTimer) { clearTimeout(reminderTimer); reminderTimer = null; }
+    if (!r.enabled) return;
+    const [h, mi] = r.time.split(':').map(Number);
+    const now = new Date();
+    const next = new Date();
+    next.setHours(h, mi, 0, 0);
+    if (next <= now) next.setDate(next.getDate() + 1);
+    const delay = Math.min(next - now, 2147483647); // תקרת setTimeout
+    reminderTimer = setTimeout(() => {
+      fireReminder();
+      scheduleReminder(load(STORE.reminder, r)); // תזמון ליום הבא
+    }, delay);
+  }
+
+  function fireReminder() {
+    const prog = D.programForDate(new Date());
+    const body = prog.rest
+      ? 'היום מנוחה פעילה 🧘 קחו כמה דקות למתיחות רגועות.'
+      : `הגיע הזמן לאימון "${prog.title}" 💪 ${prog.exercises.length} תרגילים מחכים לך.`;
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try {
+        new Notification('Excerly – זמן להתמתח!', {
+          body, icon: 'assets/icon.svg', badge: 'assets/icon.svg', tag: 'excerly-daily'
+        });
+        return;
+      } catch (e) {}
+    }
+    toast('⏰ זמן לאימון היומי!');
+  }
+
+  /* בדיקת "החמצה" בפתיחת האפליקציה – אם עברה שעת התזכורת והיום לא בוצע */
+  function checkMissedReminder() {
+    const r = load(STORE.reminder, { enabled: false, time: '18:00' });
+    if (!r.enabled) return;
+    const [h, mi] = r.time.split(':').map(Number);
+    const now = new Date();
+    const past = now.getHours() > h || (now.getHours() === h && now.getMinutes() >= mi);
+    if (past && !doneMap[dateKey(now)]) {
+      const prog = D.programForDate(now);
+      if (!prog.rest) {
+        setTimeout(() => toast(`עוד לא התאמנת היום – ${prog.title} מחכה לך 💪`), 1200);
+      }
+    }
+  }
+
+  /* =========================================================
+     אתחול
+     ========================================================= */
+  function init() {
+    // ניווט חודשים
+    $('#cal-prev').addEventListener('click', () => {
+      viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1);
+      renderCalendar();
+    });
+    $('#cal-next').addEventListener('click', () => {
+      viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1);
+      renderCalendar();
+    });
+    $('#today-btn').addEventListener('click', () => openSheet(new Date()));
+
+    initProfile();
+    renderCalendar();
+    updateStreak();
+    initReminders();
+    checkMissedReminder();
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
