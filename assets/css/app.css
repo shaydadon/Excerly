@@ -335,6 +335,56 @@ textarea:focus { border-color: var(--accent); }
 }
 .cal-legend span { display: inline-flex; align-items: center; gap: 6px; }
 
+/* ---------- היסטוריה ומגמות ---------- */
+.hist-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.hstat {
+  background: var(--card-2); border: 1px solid var(--line);
+  border-radius: 12px; padding: 12px 8px; text-align: center;
+}
+.hstat-val { font-size: 22px; font-weight: 800; line-height: 1; }
+.hstat-of { font-size: 14px; color: var(--muted); font-weight: 700; }
+.hstat-lbl { font-size: 11.5px; color: var(--muted); margin-top: 5px; }
+.hstat.w .hstat-val { color: var(--accent); }
+.hstat.c .hstat-val { color: var(--accent-2); }
+.hstat.t .hstat-val { color: var(--accent-warm); }
+
+.hist-range { display: inline-flex; gap: 4px; background: var(--card-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px; margin-bottom: 10px; }
+.hist-range button {
+  border: none; background: none; color: var(--muted);
+  font-family: inherit; font-size: 13px; font-weight: 700;
+  padding: 6px 14px; border-radius: 999px; cursor: pointer;
+}
+.hist-range button.on { background: var(--accent); color: #06231c; }
+
+.hist-chart { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.trend-svg { display: block; height: auto; }
+.trend-svg .chart-val { fill: var(--text); font-size: 9px; font-weight: 700; }
+.trend-svg .chart-axis { fill: var(--muted); font-size: 9px; }
+.trend-svg .chart-empty { fill: var(--line); }
+.trend-svg .chart-target { stroke: var(--accent-warm); stroke-width: 1.5; }
+.trend-svg .chart-target-lbl { fill: var(--accent-warm); font-size: 9px; font-weight: 700; }
+
+.hist-legend {
+  display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px;
+  font-size: 11.5px; color: var(--muted);
+}
+.hist-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.hist-legend .sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.hist-legend .ln { width: 14px; height: 0; border-top: 2px dashed var(--accent-warm); display: inline-block; }
+
+.hist-sub { font-size: 14px; font-weight: 800; margin: 18px 0 8px; }
+.hist-list { display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto; }
+.hist-row {
+  display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 10px;
+  background: var(--card-2); border: 1px solid var(--line);
+  border-radius: 10px; padding: 9px 12px; font-size: 13px;
+}
+.hr-date { font-weight: 600; }
+.hr-workout { color: var(--muted); font-size: 12px; }
+.hr-workout.on { color: var(--accent); font-weight: 700; }
+.hr-cal { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+.hr-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
 /* ---------- תזכורות ---------- */
 .reminder-row {
   display: flex; align-items: center; justify-content: space-between;

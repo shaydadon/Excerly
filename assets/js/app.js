@@ -272,6 +272,7 @@
     renderWorkout(sheetDate);
     renderCalendar();
     updateStreak();
+    renderHistory();
     if (!silent) {
       if (doneMap[key] && !wasDone) toast('כל הכבוד! השלמת את כל האימון 💪');
       else if (isExDone(key, id)) toast('תרגיל הושלם ✓');
@@ -294,6 +295,7 @@
     renderWorkout(sheetDate);
     renderCalendar();
     updateStreak();
+    renderHistory();
     if (doneMap[key]) toast('אימון הושלם! 💪');
   }
 
@@ -544,6 +546,7 @@
     const log = load(STORE.foodlog, {});
     log[dateKey(new Date())] = { text, total: res.total, target, verdict: { color: v.color, key: v.key } };
     save(STORE.foodlog, log);
+    renderHistory();
   }
 
   async function buildMenu() {
@@ -602,6 +605,120 @@
   }
 
   /* =========================================================
+     היסטוריה ומגמות
+     ========================================================= */
+  let histRange = 7;
+
+  function buildHistoryData(rangeDays) {
+    const foodlog = load(STORE.foodlog, {});
+    const arr = [];
+    const base = new Date(); base.setHours(0, 0, 0, 0);
+    for (let i = rangeDays - 1; i >= 0; i--) {
+      const d = new Date(base); d.setDate(base.getDate() - i);
+      const key = dateKey(d);
+      const log = foodlog[key];
+      arr.push({
+        date: d, key,
+        consumed: log ? log.total : null,
+        target: log ? log.target : null,
+        vkey: (log && log.verdict) ? log.verdict.key : null,
+        workout: !!doneMap[key],
+        rest: !!D.programForDate(d).rest
+      });
+    }
+    return arr;
+  }
+
+  const VKEY_COLOR = { met: 'var(--accent)', over: 'var(--danger)', under: 'var(--accent-2)' };
+  const colorForVkey = k => VKEY_COLOR[k] || 'var(--line)';
+
+  function historyStatsHtml(data) {
+    const workouts = data.filter(d => d.workout).length;
+    const logged = data.filter(d => d.consumed != null);
+    const avg = logged.length ? Math.round(logged.reduce((s, d) => s + d.consumed, 0) / logged.length) : null;
+    const onTarget = data.filter(d => d.vkey === 'met').length;
+    const tile = (val, lbl, cls) => `<div class="hstat ${cls || ''}"><div class="hstat-val">${val}</div><div class="hstat-lbl">${lbl}</div></div>`;
+    return tile(`${workouts}<span class="hstat-of">/${data.length}</span>`, 'אימונים שהושלמו', 'w')
+      + tile(avg != null ? avg.toLocaleString('he-IL') : '—', 'ממוצע קק"ל ליום', 'c')
+      + tile(onTarget, 'ימים ביעד', 't');
+  }
+
+  // גרף עמודות של הקלוריות היומיות מול קו היעד (SVG inline, מותאם לנושא)
+  function buildTrendChart(data, refTarget) {
+    const n = data.length;
+    const H = 172, padL = 10, padR = 10, top = 22, bottom = 40;
+    const Wv = n <= 7 ? 340 : n * 20;
+    const plotW = Wv - padL - padR, plotH = H - top - bottom;
+    const maxConsumed = Math.max(0, ...data.map(d => d.consumed || 0));
+    const yMax = Math.max(maxConsumed, refTarget) * 1.15 || 1;
+    const step = plotW / n;
+    const barW = Math.min(22, step * 0.6);
+    const baseY = top + plotH;
+    const yFor = v => baseY - (v / yMax) * plotH;
+
+    let bars = '';
+    data.forEach((d, i) => {
+      const cx = padL + (i + 0.5) * step;
+      const dn = D.DAY_NAMES[d.date.getDay()].slice(0, 1);
+      const dm = d.date.getDate();
+      const showLabel = n <= 7 || i % Math.ceil(n / 6) === 0;
+      // עמודה
+      if (d.consumed != null) {
+        const y = yFor(d.consumed);
+        const h = baseY - y;
+        bars += `<rect x="${(cx - barW / 2).toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(2, h).toFixed(1)}" rx="4" fill="${colorForVkey(d.vkey)}"><title>${dn} ${dm}: ${d.consumed} קק"ל${d.workout ? ' · אימון הושלם' : ''}</title></rect>`;
+        if (n <= 7) bars += `<text x="${cx.toFixed(1)}" y="${(y - 5).toFixed(1)}" class="chart-val" text-anchor="middle">${d.consumed}</text>`;
+      } else {
+        bars += `<rect x="${(cx - barW / 2).toFixed(1)}" y="${(baseY - 3).toFixed(1)}" width="${barW.toFixed(1)}" height="3" rx="1.5" class="chart-empty"><title>${dn} ${dm}: ללא רישום${d.workout ? ' · אימון הושלם' : ''}</title></rect>`;
+      }
+      // תווית ציר-X
+      if (showLabel) bars += `<text x="${cx.toFixed(1)}" y="${(baseY + 14).toFixed(1)}" class="chart-axis" text-anchor="middle">${n <= 7 ? dn : dm}</text>`;
+      // סמן אימון
+      bars += `<circle cx="${cx.toFixed(1)}" cy="${(baseY + 26).toFixed(1)}" r="${d.workout ? 4 : 2.5}" fill="${d.workout ? 'var(--accent)' : 'var(--line)'}"><title>${d.workout ? 'אימון הושלם' : 'אין אימון'}</title></circle>`;
+    });
+
+    const ty = yFor(refTarget);
+    const targetLine = `<line x1="${padL}" y1="${ty.toFixed(1)}" x2="${Wv - padR}" y2="${ty.toFixed(1)}" class="chart-target" stroke-dasharray="4 4" />` +
+      `<text x="${padL}" y="${(ty - 4).toFixed(1)}" class="chart-target-lbl" text-anchor="start">יעד</text>`;
+
+    const widthStyle = n <= 7 ? 'width:100%' : `width:${Wv}px`;
+    return `<svg class="trend-svg" style="${widthStyle}" viewBox="0 0 ${Wv} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="גרף קלוריות יומי מול היעד">${targetLine}${bars}</svg>`;
+  }
+
+  function historyListHtml() {
+    const data = buildHistoryData(14).reverse(); // חדש→ישן
+    return data.map(d => {
+      const dn = D.DAY_NAMES[d.date.getDay()];
+      const cal = d.consumed != null ? `${d.consumed.toLocaleString('he-IL')}${d.target ? '/' + d.target.toLocaleString('he-IL') : ''}` : '—';
+      return `<div class="hist-row">
+        <span class="hr-date">${dn} ${d.date.getDate()}/${d.date.getMonth() + 1}</span>
+        <span class="hr-workout ${d.workout ? 'on' : ''}">${d.workout ? '✓ אימון' : (d.rest ? '☕ מנוחה' : '—')}</span>
+        <span class="hr-cal"><i class="hr-dot" style="background:${colorForVkey(d.vkey)}"></i>${cal}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function renderHistory() {
+    const data = buildHistoryData(histRange);
+    const lastTarget = [...data].reverse().find(d => d.target);
+    const refTarget = N.targetCalories() || (lastTarget && lastTarget.target) || 2000;
+    $('#hist-stats').innerHTML = historyStatsHtml(data);
+    $('#hist-chart').innerHTML = buildTrendChart(data, refTarget);
+    $('#hist-list').innerHTML = historyListHtml();
+  }
+
+  function initHistory() {
+    $('#hist-range').addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      histRange = +btn.dataset.range;
+      Array.prototype.forEach.call($('#hist-range').children, x => x.classList.toggle('on', x === btn));
+      renderHistory();
+    });
+    renderHistory();
+  }
+
+  /* =========================================================
      אתחול
      ========================================================= */
   function init() {
@@ -620,8 +737,10 @@
     initNutrition();
     renderCalendar();
     updateStreak();
+    initHistory();
     initReminders();
     checkMissedReminder();
+    document.addEventListener('excerly:profile', renderHistory);
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
