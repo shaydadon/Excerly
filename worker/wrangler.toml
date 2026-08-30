@@ -8,4 +8,11 @@ compatibility_date = "2024-11-01"
 [vars]
 MODEL = "claude-opus-5"
 
-# הגבלת הקצב מיושמת בקוד (12 בקשות ב-60 שניות לכל IP), ללא צורך ב-binding.
+# הגבלת קצב אמינה דרך Durable Object (12 בקשות ב-60 שניות לכל IP).
+[[durable_objects.bindings]]
+name = "RATE_LIMITER_DO"
+class_name = "RateLimiter"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RateLimiter"]

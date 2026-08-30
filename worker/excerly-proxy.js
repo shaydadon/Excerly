@@ -36,9 +36,9 @@ function json(obj, status, origin) {
   });
 }
 
-// הגבלת קצב בזיכרון (ללא צורך ב-binding). לכל isolate יש מפה משלו;
-// Cloudflare ממחזר isolates לפי colo, כך שאדם שמציף מכתובת אחת ייחסם.
 const RL_LIMIT = 12, RL_WINDOW_MS = 60000;
+
+// גיבוי: הגבלת קצב בזיכרון (לכל isolate מפה משלו – פחות אמין, אך תמיד עובד).
 const rlHits = new Map(); // ip -> [timestamps]
 function memRateLimited(ip) {
   const now = Date.now();
@@ -108,13 +108,15 @@ export default {
     if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405, origin);
 
     // הגבלת קצב לכל כתובת IP (מגן על המפתח מפני שימוש-יתר).
-    // אם קיים binding מובנה (RATE_LIMITER) – משתמשים בו; אחרת נופלים
-    // להגבלה בזיכרון, כך שההגבלה עובדת גם בלי הגדרות מיוחדות.
+    // עדיפות ל-Durable Object (מונה עקבי בכל הקצה); גיבוי – הגבלה בזיכרון.
     const ip = request.headers.get('CF-Connecting-IP') || 'anon';
     let limited = false;
-    if (env.RATE_LIMITER) {
-      try { const { success } = await env.RATE_LIMITER.limit({ key: ip }); limited = !success; }
-      catch (e) { limited = memRateLimited(ip); }
+    if (env.RATE_LIMITER_DO) {
+      try {
+        const stub = env.RATE_LIMITER_DO.get(env.RATE_LIMITER_DO.idFromName(ip));
+        const r = await stub.fetch('https://rl/hit');
+        limited = (await r.json()).limited;
+      } catch (e) { limited = memRateLimited(ip); }
     } else {
       limited = memRateLimited(ip);
     }
@@ -157,3 +159,18 @@ export default {
     return json(out.parsed, 200, origin);
   }
 };
+
+// Durable Object – מונה בקשות עקבי לכל כתובת IP (חלון קבוע של 60 שניות).
+// גרסת SQLite (new_sqlite_classes) כדי לעבוד גם בתוכנית החינמית.
+export class RateLimiter {
+  constructor(state) { this.state = state; }
+  async fetch() {
+    const now = Date.now();
+    let d = await this.state.storage.get('d');
+    if (!d || now - d.start >= RL_WINDOW_MS) d = { start: now, count: 0 };
+    d.count++;
+    await this.state.storage.put('d', d);
+    return new Response(JSON.stringify({ limited: d.count > RL_LIMIT }),
+      { headers: { 'content-type': 'application/json' } });
+  }
+}
