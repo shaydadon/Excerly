@@ -27,9 +27,11 @@
     { n: ['טונה'], per100: 130, portion: 140 },
     { n: ['טופו'], per100: 76, portion: 150 },
     { n: ['ביצה', 'ביצים', 'ביצת', 'חביתה', 'אומלט'], perItem: 78 },
-    { n: ['לחם', 'טוסט', 'פרוסת לחם'], per100: 265, slice: 70, portion: 60 },
-    { n: ['פיתה'], perItem: 170 },
-    { n: ['לחמנייה', 'באגט'], perItem: 200 },
+    { n: ['לחם לבן', 'לחם מלא', 'פרוסת לחם', 'לחם', 'טוסט'], per100: 265, slice: 70, portion: 60 },
+    { n: ['פיתה', 'פיתות'], perItem: 170 },
+    { n: ['לחמניות', 'לחמנייה', 'לחמניה', 'באגט'], perItem: 200 },
+    { n: ['מיונז', 'מיונית'], per100: 680, portion: 15 },
+    { n: ['דוריטוס', 'ביסלי', 'במבה', 'חטיף', 'אפרופו', 'צ׳יפס תירס', 'תפוצ׳יפס'], per100: 520, portion: 50 },
     { n: ['קרקר', 'קרקרים', 'מצה'], perItem: 30 },
     { n: ['תפוח אדמה', 'תפו״א', 'פירה', 'בטטה'], per100: 90, portion: 150 },
     { n: ['ציפס', 'צ׳יפס', "צ'יפס"], per100: 312, portion: 130 },
@@ -83,37 +85,29 @@
   const ITEM_UNITS = ['יחידה', 'יחידות', 'מנה', 'מנות', 'פיתה', 'פיתות', 'כדור', 'כדורים'];
   const NUM_WORDS = { 'חצי': 0.5, 'רבע': 0.25, 'שליש': 0.33, 'זוג': 2 };
 
-  const clean = t => t.replace(/[.,;:!?()"']/g, '').trim();
+  const clean = t => t.replace(/[.,;:!?()"'״׳]/g, '').trim();
+  const PREPS = ['ב', 'ל', 'ה', 'מ', 'ו', 'כ', 'ש'];
+  const stripPrep = w => (w.length > 3 && PREPS.indexOf(w[0]) !== -1) ? w.slice(1) : w;
 
-  function findFood(segment) {
-    let best = null, bestLen = 0;
+  // התאמת מזון למחרוזת (מילה או צמד מילים); מחזיר את המזון והשם שהותאם
+  function matchFood(str) {
+    let best = null, bestSyn = '', bl = 0;
+    const variants = [str, stripPrep(str)];
     for (const f of FOODS) {
-      for (const name of f.n) {
-        if (segment.indexOf(name) !== -1 && name.length > bestLen) { best = f; bestLen = name.length; }
+      for (const s of f.n) {
+        for (const v of variants) {
+          if ((v === s || v.indexOf(s) === 0) && s.length > bl) { best = f; bestSyn = s; bl = s.length; }
+        }
       }
     }
-    return best;
+    return best ? { food: best, syn: bestSyn } : null;
   }
 
-  // איתור כמות ויחידה מתוך מילות המקטע (התאמה מדויקת של יחידה למילה שלמה)
-  function findQtyUnit(segment) {
-    const tokens = segment.split(/\s+/).map(clean).filter(Boolean);
-    let qty = null, unit = null;
-    for (const t of tokens) {
-      if (qty == null) {
-        const m = t.match(/^(\d+(?:[.,]\d+)?)$/);
-        if (m) { qty = parseFloat(m[1].replace(',', '.')); continue; }
-        if (NUM_WORDS[t] != null) { qty = NUM_WORDS[t]; continue; }
-      }
-      if (!unit) {
-        if (UNIT_G[t] != null) unit = { type: 'g', grams: UNIT_G[t] };
-        else if (SLICE_UNITS.indexOf(t) !== -1) unit = { type: 'slice' };
-        else if (ITEM_UNITS.indexOf(t) !== -1) unit = { type: 'item' };
-      }
-    }
-    // כמות דבוקה: "150גרם"
-    if (qty == null) { const m = segment.match(/(\d+(?:[.,]\d+)?)/); if (m) qty = parseFloat(m[1].replace(',', '.')); }
-    return { qty, unit };
+  // פירוק לטוקנים תוך הפרדת מספרים דבוקים ("150גרם" → "150","גרם")
+  function tokenize(text) {
+    return text.split(/[\s,+\n·]+/).filter(Boolean)
+      .reduce((acc, tok) => acc.concat(tok.match(/\d+(?:[.,]\d+)?|[^\d]+/g) || [tok]), [])
+      .map(clean).filter(Boolean);
   }
 
   function kcalFor(food, qty, unit) {
@@ -122,7 +116,10 @@
       : (food.per100 ? qty * (food.portion / 100 * food.per100) : 0);
     if (unit && unit.type === 'g') {
       const grams = qty * unit.grams;
-      return food.per100 ? grams / 100 * food.per100 : (food.perItem ? qty * food.perItem : 0);
+      if (food.per100) return grams / 100 * food.per100;
+      // מזון הנספר ביחידות שקיבל משקל: מעריכים ~120 גרם ליחידה
+      if (food.perItem) return food.perItem * Math.max(1, Math.round(grams / 120));
+      return 0;
     }
     if (unit && unit.type === 'slice') {
       return qty * (food.slice || food.perItem || (food.per100 ? food.portion / 100 * food.per100 : 0));
@@ -130,21 +127,50 @@
     return perItemLike(); // יחידה / מנה / ללא יחידה
   }
 
-  // הערכה מקומית של קלוריות מטקסט חופשי
+  // הערכה מקומית של קלוריות מטקסט חופשי – סורק פריט אחר פריט על פני המשפט כולו,
+  // כך שגם רשימה ללא פסיקים ("טונה 3 כפות מיונז 2 לחמניות פיתה שווארמה") מפורקת נכון.
   function estimateLocal(text) {
-    // מפרידים: פסיק, שורה, +, ·, "עם", וכן וו החיבור (רווח + ו + אות)
-    const segments = text
-      .split(/[\n,+·]| עם |\s+ו(?=[א-ת])/)
-      .map(s => s.trim()).filter(Boolean);
+    const tokens = tokenize(text);
     const items = [];
     const unmatched = [];
-    for (const seg of segments) {
-      const food = findFood(seg);
-      if (!food) { if (clean(seg).replace(/\d+/g, '').trim().length > 1) unmatched.push(seg); continue; }
-      const { qty: qtyRaw, unit } = findQtyUnit(seg);
-      const qty = qtyRaw == null ? 1 : qtyRaw;
-      const kcal = Math.round(kcalFor(food, qty, unit));
-      if (kcal > 0) items.push({ name: food.n[0], kcal });
+    let qty = null, unit = null, i = 0;
+    while (i < tokens.length) {
+      const t = tokens[i];
+      // מספר
+      const nm = t.match(/^(\d+(?:[.,]\d+)?)$/);
+      if (nm) { qty = parseFloat(nm[1].replace(',', '.')); i++; continue; }
+      if (NUM_WORDS[t] != null) { qty = NUM_WORDS[t]; i++; continue; }
+      // יחידת מידה
+      if (UNIT_G[t] != null) { unit = { type: 'g', grams: UNIT_G[t] }; i++; continue; }
+      if (SLICE_UNITS.indexOf(t) !== -1) { unit = { type: 'slice' }; i++; continue; }
+      if (ITEM_UNITS.indexOf(t) !== -1) { unit = { type: 'item' }; i++; continue; }
+      // מזון – קודם צמד מילים (רק אם השם המותאם מכיל רווח), אחרת מילה בודדת
+      let m = null, consumed = 1;
+      if (i + 1 < tokens.length) {
+        const mm = matchFood(t + ' ' + tokens[i + 1]);
+        if (mm && mm.syn.indexOf(' ') !== -1) { m = mm; consumed = 2; }
+      }
+      if (!m) m = matchFood(t);
+      if (m) {
+        let q = qty, u = unit, j = i + consumed;
+        // כמות אחרי המזון ("עוף 150 גרם") – רק אם אחריה לא בא מזון אחר,
+        // כדי שכמות מובילה ("3 כפות מיונז") תשויך למזון שאחריה
+        if (q == null && tokens[j] && /^\d+(?:[.,]\d+)?$/.test(tokens[j])) {
+          const nx = tokens[j + 1];
+          const trailUnit = nx && (UNIT_G[nx] != null ? { type: 'g', grams: UNIT_G[nx] }
+            : SLICE_UNITS.indexOf(nx) !== -1 ? { type: 'slice' }
+              : ITEM_UNITS.indexOf(nx) !== -1 ? { type: 'item' } : null);
+          const after = tokens[j + 2];
+          const afterIsFood = after && !/^\d/.test(after) && !!matchFood(after);
+          if (trailUnit && !afterIsFood) { q = parseFloat(tokens[j].replace(',', '.')); u = trailUnit; j += 2; }
+        }
+        const kcal = Math.round(kcalFor(m.food, q == null ? 1 : q, u));
+        if (kcal > 0) items.push({ name: m.food.n[0], kcal });
+        qty = null; unit = null; i = j;
+      } else {
+        if (t.length > 1) unmatched.push(t); // מילה לא מזוהה (תיאור/מזון חסר)
+        i++;
+      }
     }
     const total = items.reduce((s, i) => s + i.kcal, 0);
     return { total, items, unmatched, source: 'local' };
