@@ -36,6 +36,19 @@ function json(obj, status, origin) {
   });
 }
 
+// הגבלת קצב בזיכרון (ללא צורך ב-binding). לכל isolate יש מפה משלו;
+// Cloudflare ממחזר isolates לפי colo, כך שאדם שמציף מכתובת אחת ייחסם.
+const RL_LIMIT = 12, RL_WINDOW_MS = 60000;
+const rlHits = new Map(); // ip -> [timestamps]
+function memRateLimited(ip) {
+  const now = Date.now();
+  const arr = (rlHits.get(ip) || []).filter(ts => now - ts < RL_WINDOW_MS);
+  arr.push(now);
+  rlHits.set(ip, arr);
+  if (rlHits.size > 5000) rlHits.clear(); // ניקוי הגנתי
+  return arr.length > RL_LIMIT;
+}
+
 const ESTIMATE_SYSTEM =
   'אתה מנתח תזונה מדויק. קבל תיאור חופשי (בעברית או בכל שפה) של מה שאדם אכל, ' +
   'כולל כמויות לא פורמליות כמו "קופסת טונה", "3 כפות מיונז", "2 לחמניות", "צלחת פסטה". ' +
@@ -95,14 +108,17 @@ export default {
     if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405, origin);
 
     // הגבלת קצב לכל כתובת IP (מגן על המפתח מפני שימוש-יתר).
-    // מוגן: אם ה-binding לא זמין, פשוט ממשיכים בלי הגבלה.
+    // אם קיים binding מובנה (RATE_LIMITER) – משתמשים בו; אחרת נופלים
+    // להגבלה בזיכרון, כך שההגבלה עובדת גם בלי הגדרות מיוחדות.
+    const ip = request.headers.get('CF-Connecting-IP') || 'anon';
+    let limited = false;
     if (env.RATE_LIMITER) {
-      const ip = request.headers.get('CF-Connecting-IP') || 'anon';
-      try {
-        const { success } = await env.RATE_LIMITER.limit({ key: ip });
-        if (!success) return json({ error: 'rate_limited', detail: 'Too many requests. Please wait a minute and try again.' }, 429, origin);
-      } catch (e) { /* ה-binding לא זמין – ממשיכים */ }
+      try { const { success } = await env.RATE_LIMITER.limit({ key: ip }); limited = !success; }
+      catch (e) { limited = memRateLimited(ip); }
+    } else {
+      limited = memRateLimited(ip);
     }
+    if (limited) return json({ error: 'rate_limited', detail: 'Too many requests. Please wait a minute and try again.' }, 429, origin);
 
     if (!env.ANTHROPIC_API_KEY) return json({ error: 'Server missing ANTHROPIC_API_KEY' }, 500, origin);
 

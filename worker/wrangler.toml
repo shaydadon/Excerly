@@ -8,9 +8,4 @@ compatibility_date = "2024-11-01"
 [vars]
 MODEL = "claude-opus-5"
 
-# הגבלת קצב מובנית: עד 12 בקשות ב-60 שניות לכל כתובת IP
-[[unsafe.bindings]]
-name = "RATE_LIMITER"
-type = "ratelimit"
-namespace_id = "1001"
-simple = { limit = 12, period = 60 }
+# הגבלת הקצב מיושמת בקוד (12 בקשות ב-60 שניות לכל IP), ללא צורך ב-binding.
