@@ -178,6 +178,94 @@ body {
 .macro.c .m-val { color: var(--accent-2); }
 .macro.f .m-val { color: var(--accent-warm); }
 
+/* ---------- מעקב תזונה ---------- */
+textarea {
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 11px 12px;
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+  transition: border-color .15s;
+}
+textarea:focus { border-color: var(--accent); }
+.nutri-goal {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--card-2); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 6px;
+}
+.nutri-goal-lbl { color: var(--muted); font-size: 13px; font-weight: 600; }
+.nutri-goal-val { font-size: 18px; font-weight: 800; color: var(--accent); }
+.nutri-need-profile {
+  background: rgba(74,163,255,.1); border: 1px solid rgba(74,163,255,.35);
+  color: var(--accent-2); border-radius: var(--radius-sm);
+  padding: 11px 14px; font-size: 13.5px; margin-bottom: 6px;
+}
+.nutri-result, .menu-result { display: none; margin-top: 14px; }
+.nutri-result.show, .menu-result.show { display: block; }
+.nutri-summary { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.nutri-verdict {
+  padding: 7px 14px; border-radius: 999px;
+  font-weight: 800; font-size: 14px; color: #06231c;
+}
+.nutri-numbers { font-size: 13.5px; color: var(--text); }
+.nutri-numbers b { font-size: 18px; }
+.nutri-bar {
+  height: 10px; border-radius: 999px; background: var(--card-2);
+  border: 1px solid var(--line); margin-top: 10px; overflow: hidden;
+}
+.nutri-bar span { display: block; height: 100%; border-radius: 999px; transition: width .6s ease; }
+.nutri-src { color: var(--muted); font-size: 11.5px; margin-top: 8px; }
+.nutri-note { color: var(--muted); font-size: 13px; margin-top: 6px; line-height: 1.5; }
+.nutri-items { list-style: none; margin: 12px 0 0; padding: 0; }
+.nutri-items li {
+  display: flex; justify-content: space-between;
+  padding: 7px 2px; border-bottom: 1px dashed var(--line);
+  font-size: 13.5px;
+}
+.nutri-items li:last-child { border-bottom: none; }
+.nutri-items li span:last-child { color: var(--accent); font-weight: 700; }
+.nutri-empty, .nutri-unmatched {
+  color: var(--muted); font-size: 13px; margin-top: 10px; line-height: 1.5;
+}
+.nutri-unmatched { color: var(--accent-warm); }
+
+.menu-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.menu-title { font-size: 15px; font-weight: 800; }
+.menu-shuffle { padding: 7px 12px; font-size: 13px; }
+.menu-list { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.menu-item {
+  background: var(--card-2); border: 1px solid var(--line);
+  border-radius: 12px; padding: 10px 12px;
+}
+.menu-slot { color: var(--accent-2); font-size: 12px; font-weight: 700; }
+.menu-name { font-size: 14.5px; margin: 2px 0; }
+.menu-kcal { color: var(--accent); font-size: 12.5px; font-weight: 700; }
+.menu-total {
+  margin-top: 10px; text-align: center; font-weight: 800; font-size: 15px;
+  background: rgba(53,208,165,.1); border: 1px solid var(--accent);
+  color: var(--accent); border-radius: 12px; padding: 10px;
+}
+
+.ai-settings {
+  margin-top: 16px; border: 1px solid var(--line);
+  border-radius: var(--radius-sm); padding: 4px 14px; background: var(--card-2);
+}
+.ai-settings summary {
+  cursor: pointer; font-size: 13.5px; font-weight: 700;
+  padding: 8px 0; color: var(--muted); list-style-position: inside;
+}
+.ai-settings[open] summary { color: var(--text); }
+.ai-note { color: var(--muted); font-size: 12.5px; line-height: 1.6; margin: 4px 0 10px; }
+.ai-toggle {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13.5px; margin: 10px 0; cursor: pointer;
+}
+.ai-toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+
 /* ---------- לוח שנה ---------- */
 .cal-head {
   display: flex; align-items: center; justify-content: space-between;

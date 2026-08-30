@@ -6,12 +6,15 @@
 
   const D = window.ExcerlyData;
   const A = window.ExcerlyAnim;
+  const N = window.ExcerlyNutrition;
 
   /* ---------- אחסון מקומי ---------- */
   const STORE = {
     profile: 'excerly.profile',
     done: 'excerly.done',        // { 'YYYY-MM-DD': true }
-    reminder: 'excerly.reminder' // { enabled, time }
+    reminder: 'excerly.reminder', // { enabled, time }
+    foodlog: 'excerly.foodlog',  // { 'YYYY-MM-DD': { text, total, target, verdict } }
+    ai: 'excerly.ai'             // { key, enabled }
   };
   const load = (k, fb) => {
     try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; }
@@ -74,6 +77,7 @@
       }
       save(STORE.profile, data);
       renderBMI(data);
+      document.dispatchEvent(new CustomEvent('excerly:profile'));
       toast('הנתונים נשמרו ✓');
     });
 
@@ -213,6 +217,7 @@
           <span class="chip">🧘 ${prog.exercises.length} תרגילים</span>
           <span class="chip">⏱ כ-${mins} דק׳</span>
           ${prog.rest ? '<span class="chip rest">☕ יום מנוחה פעילה</span>' : ''}
+          ${foodChip(key)}
         </div>
       </div>
       <div class="sheet-body" id="sheet-body">
@@ -374,6 +379,145 @@
   }
 
   /* =========================================================
+     מעקב תזונה יומי (הערכת קלוריות + תפריט)
+     ========================================================= */
+  function foodChip(key) {
+    const log = load(STORE.foodlog, {})[key];
+    if (!log) return '';
+    const v = log.verdict || {};
+    const c = v.color || 'var(--muted)';
+    return `<span class="chip" style="color:${c};border-color:${c}">🍎 ${log.total}${log.target ? '/' + log.target : ''} קק"ל</span>`;
+  }
+
+  function aiCfg() { return load(STORE.ai, { key: '', enabled: false }); }
+
+  function renderNutriTarget() {
+    const box = $('#nutri-target');
+    const target = N.targetCalories();
+    if (!target) {
+      box.innerHTML = '<div class="nutri-need-profile">מלאו את פרטי הפרופיל למעלה כדי לקבל יעד קלוריות יומי מותאם.</div>';
+      return null;
+    }
+    box.innerHTML = `<div class="nutri-goal"><span class="nutri-goal-lbl">היעד היומי שלך</span><span class="nutri-goal-val">${target.toLocaleString('he-IL')} קק"ל</span></div>`;
+    return target;
+  }
+
+  function renderFoodResult(res, target) {
+    const box = $('#nutri-result');
+    const v = N.verdict(res.total, target);
+    const pct = Math.min(100, Math.round((res.total / target) * 100));
+    const itemsHtml = res.items.length
+      ? `<ul class="nutri-items">${res.items.map(i => `<li><span>${i.name}</span><span>${i.kcal} קק"ל</span></li>`).join('')}</ul>`
+      : '<div class="nutri-empty">לא זיהיתי פריטי מזון. נסו לפרט יותר, למשל "2 ביצים, פרוסת לחם, תפוח".</div>';
+    const unmatched = res.unmatched && res.unmatched.length
+      ? `<div class="nutri-unmatched">לא זוהו: ${res.unmatched.join(', ')} — לא נכללו בחישוב.</div>` : '';
+    const deltaTxt = v.key === 'over'
+      ? `חרגת ב-${v.delta.toLocaleString('he-IL')} קק"ל`
+      : v.key === 'under'
+        ? `נותרו לך ${v.delta.toLocaleString('he-IL')} קק"ל להיום`
+        : 'נשארת בטווח היעד';
+    box.innerHTML = `
+      <div class="nutri-summary">
+        <div class="nutri-verdict" style="background:${v.color}">${v.label}</div>
+        <div class="nutri-numbers"><b>${res.total.toLocaleString('he-IL')}</b> מתוך ${target.toLocaleString('he-IL')} קק"ל · ${deltaTxt}</div>
+      </div>
+      <div class="nutri-bar"><span style="width:${pct}%;background:${v.color}"></span></div>
+      ${res.source === 'ai' ? '<div class="nutri-src">✨ הוערך באמצעות Claude AI</div>' : '<div class="nutri-src">הערכה מקומית — לחישוב מדויק יותר הפעילו מצב AI למטה</div>'}
+      ${res.note ? `<div class="nutri-note">${res.note}</div>` : ''}
+      ${itemsHtml}
+      ${unmatched}`;
+    box.classList.add('show');
+  }
+
+  function renderMenu(plan) {
+    const box = $('#menu-result');
+    box.innerHTML = `
+      <div class="menu-head">
+        <div class="menu-title">תפריט יומי מוצע</div>
+        <button class="btn btn-ghost menu-shuffle" id="menu-shuffle">🔄 תפריט אחר</button>
+      </div>
+      <div class="menu-list">${plan.meals.map(m => `
+        <div class="menu-item">
+          <div class="menu-slot">${m.label}</div>
+          <div class="menu-name">${m.name}</div>
+          <div class="menu-kcal">${m.kcal} קק"ל</div>
+        </div>`).join('')}</div>
+      <div class="menu-total">סה"כ כ-${plan.total.toLocaleString('he-IL')} קק"ל${plan.target ? ' (יעד: ' + plan.target.toLocaleString('he-IL') + ')' : ''}</div>
+      ${plan.source === 'ai' ? '<div class="nutri-src">✨ נבנה באמצעות Claude AI</div>' : ''}
+      ${plan.note ? `<div class="nutri-note">${plan.note}</div>` : ''}`;
+    box.classList.add('show');
+    $('#menu-shuffle', box).addEventListener('click', buildMenu);
+  }
+
+  async function calcFood() {
+    const target = renderNutriTarget();
+    if (!target) { toast('מלאו קודם את פרטי הפרופיל'); return; }
+    const text = $('#food-text').value.trim();
+    if (!text) { toast('כתבו מה אכלתם היום'); return; }
+    const cfg = aiCfg();
+    const btn = $('#calc-food');
+    let res;
+    if (cfg.enabled && cfg.key) {
+      btn.disabled = true; btn.textContent = 'מחשב עם AI…';
+      try { res = await N.estimateAI(text, cfg.key); }
+      catch (e) { toast('שגיאת AI — עברתי למנוע המקומי'); res = N.estimateLocal(text); }
+      btn.disabled = false; btn.textContent = 'חשב קלוריות';
+    } else {
+      res = N.estimateLocal(text);
+    }
+    renderFoodResult(res, target);
+    const v = N.verdict(res.total, target);
+    const log = load(STORE.foodlog, {});
+    log[dateKey(new Date())] = { text, total: res.total, target, verdict: { color: v.color, key: v.key } };
+    save(STORE.foodlog, log);
+  }
+
+  async function buildMenu() {
+    const target = renderNutriTarget();
+    if (!target) { toast('מלאו קודם את פרטי הפרופיל'); return; }
+    const cfg = aiCfg();
+    const btn = $('#build-menu');
+    let plan;
+    if (cfg.enabled && cfg.key) {
+      btn.disabled = true; btn.textContent = 'בונה עם AI…';
+      try { plan = await N.mealPlanAI(target, cfg.key); }
+      catch (e) { toast('שגיאת AI — בניתי תפריט מקומי'); plan = N.generateMealPlan(target); }
+      btn.disabled = false; btn.textContent = '🍽️ בנה לי תפריט יומי';
+    } else {
+      plan = N.generateMealPlan(target);
+    }
+    renderMenu(plan);
+  }
+
+  function initNutrition() {
+    renderNutriTarget();
+    // שחזור רישום היום
+    const todayLog = load(STORE.foodlog, {})[dateKey(new Date())];
+    if (todayLog) {
+      $('#food-text').value = todayLog.text || '';
+      const t = N.targetCalories();
+      if (t) renderFoodResult(N.estimateLocal(todayLog.text || ''), t);
+    }
+    // הגדרות AI
+    const cfg = aiCfg();
+    $('#ai-key').value = cfg.key || '';
+    $('#ai-enabled').checked = !!cfg.enabled;
+    const persistAI = () => save(STORE.ai, { key: $('#ai-key').value.trim(), enabled: $('#ai-enabled').checked });
+    $('#ai-key').addEventListener('change', persistAI);
+    $('#ai-enabled').addEventListener('change', () => {
+      if ($('#ai-enabled').checked && !$('#ai-key').value.trim()) {
+        toast('הזינו מפתח API כדי להפעיל מצב AI');
+        $('#ai-enabled').checked = false;
+      }
+      persistAI();
+    });
+
+    $('#calc-food').addEventListener('click', calcFood);
+    $('#build-menu').addEventListener('click', buildMenu);
+    document.addEventListener('excerly:profile', renderNutriTarget);
+  }
+
+  /* =========================================================
      אתחול
      ========================================================= */
   function init() {
@@ -389,6 +533,7 @@
     $('#today-btn').addEventListener('click', () => openSheet(new Date()));
 
     initProfile();
+    initNutrition();
     renderCalendar();
     updateStreak();
     initReminders();

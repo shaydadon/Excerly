@@ -86,6 +86,39 @@
       <div class="bmi-result" id="bmi-result"></div>
     </section>
 
+    <!-- מעקב תזונה יומי -->
+    <section class="card">
+      <h2 class="card-title"><span class="ico">🍎</span> מעקב תזונה יומי</h2>
+      <p class="section-hint" id="nutri-hint">רשמו מה אכלתם היום כטקסט חופשי — האפליקציה תעריך את הקלוריות ותראה אם עמדתם ביעד.</p>
+
+      <div class="nutri-target" id="nutri-target"></div>
+
+      <div class="field wide" style="margin-top:6px">
+        <label for="food-text">מה אכלת היום?</label>
+        <textarea id="food-text" rows="3" placeholder="לדוגמה: 2 ביצים, פרוסת לחם מלא, חזה עוף 150 גרם, תפוח וכוס אורז"></textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="calc-food" style="flex:1">חשב קלוריות</button>
+        <button class="btn btn-ghost" id="build-menu" style="flex:1">🍽️ בנה לי תפריט יומי</button>
+      </div>
+
+      <div class="nutri-result" id="nutri-result"></div>
+      <div class="menu-result" id="menu-result"></div>
+
+      <details class="ai-settings" id="ai-settings">
+        <summary>⚙️ הגדרות AI (אופציונלי — דיוק גבוה יותר)</summary>
+        <p class="ai-note">אפשר לחבר מפתח Anthropic API משלך לקבלת הערכה מדויקת יותר באמצעות Claude. המפתח נשמר <b>רק במכשיר שלך</b> ונשלח אך ורק ל-Anthropic. ללא מפתח, פועל המנוע המקומי.</p>
+        <div class="field wide">
+          <label for="ai-key">מפתח Anthropic API (sk-ant-...)</label>
+          <input id="ai-key" type="password" placeholder="sk-ant-..." autocomplete="off" />
+        </div>
+        <label class="ai-toggle">
+          <input type="checkbox" id="ai-enabled" />
+          <span>השתמש ב-AI (Claude) להערכה ולתפריט</span>
+        </label>
+      </details>
+    </section>
+
     <!-- לוח שנה -->
     <section class="card">
       <h2 class="card-title"><span class="ico">📅</span> יומן האימונים</h2>
@@ -130,6 +163,7 @@
 
   <script src="assets/js/data.js"></script>
   <script src="assets/js/animations.js"></script>
+  <script src="assets/js/nutrition.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
 </html>
