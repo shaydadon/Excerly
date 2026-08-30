@@ -222,6 +222,41 @@ textarea:focus { border-color: var(--accent); }
   border-radius: var(--radius-sm); border: 1px solid var(--line);
   display: block;
 }
+/* הארוחות של היום */
+.day-meals { display: none; margin-top: 12px; }
+.day-meals.show { display: block; }
+.dm-title { font-size: 14px; font-weight: 800; margin-bottom: 8px; }
+.dm-list { display: flex; flex-direction: column; gap: 6px; }
+.dm-row {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--card-2); border: 1px solid var(--line);
+  border-radius: 10px; padding: 8px 10px;
+}
+.dm-name { flex: 1; min-width: 0; font-size: 14px; }
+.dm-kcal { color: var(--accent); font-weight: 700; font-size: 13px; }
+.dm-del {
+  flex: none; width: 28px; height: 28px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--card);
+  color: var(--danger); font-size: 14px; font-weight: 800; cursor: pointer;
+  display: grid; place-items: center;
+}
+.dm-del:active { transform: scale(.9); }
+
+/* אומדן עם כפתורי הוספה */
+.est-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.est-total { font-size: 15px; font-weight: 800; }
+.est-addall { padding: 8px 12px; font-size: 13px; }
+.add-list li { display: flex; align-items: center; gap: 10px; }
+.add-list .ni-name { flex: 1; min-width: 0; }
+.add-list .ni-k { color: var(--accent); font-weight: 700; }
+.add-item {
+  flex: none; width: 28px; height: 28px; border-radius: 50%;
+  border: none; background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #06231c; font-size: 17px; font-weight: 800; line-height: 1; cursor: pointer;
+  display: grid; place-items: center;
+}
+.add-item:active { transform: scale(.88); }
+
 .nutri-result, .menu-result { display: none; margin-top: 14px; }
 .nutri-result.show, .menu-result.show { display: block; }
 .nutri-summary { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }

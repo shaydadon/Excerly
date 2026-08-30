@@ -18,7 +18,8 @@
     done: 'excerly.done',        // { 'YYYY-MM-DD': true }
     exdone: 'excerly.exdone',    // { 'YYYY-MM-DD': { exId: true } }
     reminder: 'excerly.reminder', // { enabled, time }
-    foodlog: 'excerly.foodlog',  // { 'YYYY-MM-DD': { text, total, target, verdict } }
+    foodlog: 'excerly.foodlog',  // מטמון נגזר: { 'YYYY-MM-DD': { total, target, verdict } }
+    meals: 'excerly.meals',      // מקור האמת: { 'YYYY-MM-DD': [ { id, name, kcal } ] }
     ai: 'excerly.ai'             // { key, enabled }
   };
   const load = (k, fb) => {
@@ -466,6 +467,99 @@
     return { mode: 'local' };
   }
 
+  /* ---------- ניהול הארוחות של היום (מקור אמת אחד) ---------- */
+  let estimateItems = [];
+  const uid = () => 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+  function getMeals(key) {
+    const all = load(STORE.meals, {});
+    if (all[key]) return all[key];
+    // מיגרציה מרישום ישן (סכום בודד) לפריט ארוחה אחד
+    const log = load(STORE.foodlog, {})[key];
+    if (log && log.total > 0) {
+      const seeded = [{ id: uid(), name: t('mealLabel'), kcal: log.total }];
+      all[key] = seeded; save(STORE.meals, all);
+      return seeded;
+    }
+    return [];
+  }
+
+  // שמירת הארוחות + עדכון המטמון הנגזר (foodlog) — כך שני המסכים תואמים
+  function setMeals(key, arr) {
+    const all = load(STORE.meals, {});
+    if (arr.length) all[key] = arr; else delete all[key];
+    save(STORE.meals, all);
+    const fl = load(STORE.foodlog, {});
+    if (arr.length) {
+      const total = arr.reduce((s, m) => s + (m.kcal || 0), 0);
+      const target = N.targetCalories() || (fl[key] && fl[key].target) || 2000;
+      const v = N.verdict(total, target);
+      fl[key] = { total, target, verdict: { color: v.color, key: v.key } };
+    } else delete fl[key];
+    save(STORE.foodlog, fl);
+  }
+
+  function addMeals(items) {
+    const valid = (items || []).filter(it => it && it.kcal);
+    if (!valid.length) return;
+    const key = dateKey(new Date());
+    const arr = getMeals(key).slice();
+    valid.forEach(it => arr.push({ id: uid(), name: it.name || t('mealLabel'), kcal: Math.round(it.kcal) }));
+    setMeals(key, arr);
+    refreshNutrition();
+    toast(t('toastAdded'));
+  }
+  const addMeal = item => addMeals([item]);
+
+  function removeMeal(id) {
+    const key = dateKey(new Date());
+    setMeals(key, getMeals(key).filter(m => m.id !== id));
+    refreshNutrition();
+    toast(t('toastRemoved'));
+  }
+
+  // רענון כל התצוגות שתלויות בתזונה — עקביות מלאה בין המסכים והממוצע
+  function refreshNutrition() {
+    renderDayMeals();
+    renderHistory();
+    if (sheet.classList.contains('open') && sheetDate) renderWorkout(sheetDate);
+  }
+
+  function renderDayMeals() {
+    const box = $('#day-meals');
+    if (!box) return;
+    const key = dateKey(new Date());
+    const meals = getMeals(key);
+    if (!meals.length) { box.innerHTML = ''; box.classList.remove('show'); return; }
+    const total = meals.reduce((s, m) => s + m.kcal, 0);
+    const target = N.targetCalories();
+    const rows = meals.map(m => `
+      <div class="dm-row">
+        <button class="dm-del" data-id="${m.id}" aria-label="${t('removeMealAria')}" title="${t('removeMealAria')}">✕</button>
+        <span class="dm-name">${m.name}</span>
+        <span class="dm-kcal">${m.kcal} ${t('goalUnit')}</span>
+      </div>`).join('');
+    let summary;
+    if (target) {
+      const v = N.verdict(total, target);
+      const pct = Math.min(100, Math.round((total / target) * 100));
+      const vLabel = t(v.key === 'over' ? 'vOver' : v.key === 'met' ? 'vMet' : 'vUnder');
+      const deltaTxt = v.key === 'over' ? t('dOver', { n: nf(v.delta) })
+        : v.key === 'under' ? t('dUnder', { n: nf(v.delta) }) : t('dMet');
+      summary = `
+        <div class="nutri-summary" style="margin-top:10px">
+          <div class="nutri-verdict" style="background:${v.color}">${vLabel}</div>
+          <div class="nutri-numbers">${t('ofTarget', { a: '<b>' + nf(total) + '</b>', b: nf(target), d: deltaTxt })}</div>
+        </div>
+        <div class="nutri-bar"><span style="width:${pct}%;background:${v.color}"></span></div>`;
+    } else {
+      summary = `<div class="nutri-numbers" style="margin-top:8px"><b>${nf(total)}</b> ${t('goalUnit')}</div>`;
+    }
+    box.innerHTML = `<div class="dm-title">${t('dayMealsTitle')}</div><div class="dm-list">${rows}</div>${summary}`;
+    box.classList.add('show');
+    box.querySelectorAll('.dm-del').forEach(b => b.addEventListener('click', () => removeMeal(b.dataset.id)));
+  }
+
   function renderNutriTarget() {
     const box = $('#nutri-target');
     const target = N.targetCalories();
@@ -477,30 +571,34 @@
     return target;
   }
 
+  // מציג את האומדן עם כפתור ＋ ליד כל פריט (הוספה ליום) + "הוסף הכל"
   function renderFoodResult(res, target) {
     const box = $('#nutri-result');
-    const v = N.verdict(res.total, target);
-    const pct = Math.min(100, Math.round((res.total / target) * 100));
-    const vLabel = t(v.key === 'over' ? 'vOver' : v.key === 'met' ? 'vMet' : 'vUnder');
-    const itemsHtml = res.items.length
-      ? `<ul class="nutri-items">${res.items.map(i => `<li><span>${i.name}</span><span>${i.kcal} ${t('goalUnit')}</span></li>`).join('')}</ul>`
+    estimateItems = res.items || [];
+    const kcal = t('goalUnit');
+    const itemsHtml = estimateItems.length
+      ? `<ul class="nutri-items add-list">${estimateItems.map((i, idx) => `<li>
+          <button class="add-item" data-idx="${idx}" aria-label="${t('addMealAria')}" title="${t('addMealAria')}">＋</button>
+          <span class="ni-name">${i.name}</span>
+          <span class="ni-k">${i.kcal} ${kcal}</span>
+        </li>`).join('')}</ul>`
       : `<div class="nutri-empty">${t('itemsEmpty')}</div>`;
     const unmatched = res.unmatched && res.unmatched.length
       ? `<div class="nutri-unmatched">${t('unmatched', { list: res.unmatched.join(', ') })}</div>` : '';
-    const deltaTxt = v.key === 'over' ? t('dOver', { n: nf(v.delta) })
-      : v.key === 'under' ? t('dUnder', { n: nf(v.delta) })
-        : t('dMet');
     box.innerHTML = `
-      <div class="nutri-summary">
-        <div class="nutri-verdict" style="background:${v.color}">${vLabel}</div>
-        <div class="nutri-numbers">${t('ofTarget', { a: '<b>' + nf(res.total) + '</b>', b: nf(target), d: deltaTxt })}</div>
+      <div class="est-head">
+        <div class="est-total">${t('estimateLabel', { n: nf(res.total) })}</div>
+        ${estimateItems.length ? `<button class="btn btn-primary est-addall" id="est-addall">${t('addAll')}</button>` : ''}
       </div>
-      <div class="nutri-bar"><span style="width:${pct}%;background:${v.color}"></span></div>
       <div class="nutri-src">${res.source === 'ai' ? t('srcAi') : t('srcLocal')}</div>
       ${res.note ? `<div class="nutri-note">${res.note}</div>` : ''}
       ${itemsHtml}
       ${unmatched}`;
     box.classList.add('show');
+    const addAll = $('#est-addall', box);
+    if (addAll) addAll.addEventListener('click', () => addMeals(estimateItems));
+    box.querySelectorAll('.add-item').forEach(b =>
+      b.addEventListener('click', () => addMeal(estimateItems[+b.dataset.idx])));
   }
 
   function renderMenu(plan) {
@@ -543,11 +641,6 @@
       res = N.estimateLocal(text);
     }
     renderFoodResult(res, target);
-    const v = N.verdict(res.total, target);
-    const log = load(STORE.foodlog, {});
-    log[dateKey(new Date())] = { text, total: res.total, target, verdict: { color: v.color, key: v.key } };
-    save(STORE.foodlog, log);
-    renderHistory();
   }
 
   // כיווץ תמונה בצד הלקוח לפני שליחה ל-AI (חוסך תעבורה וזמן)
@@ -606,11 +699,6 @@
     }
     btn.disabled = false; btn.textContent = t('photoBtn');
     renderFoodResult(res, target);
-    const v = N.verdict(res.total, target);
-    const log = load(STORE.foodlog, {});
-    log[dateKey(new Date())] = { text: $('#food-text').value.trim() || '📷', total: res.total, target, verdict: { color: v.color, key: v.key } };
-    save(STORE.foodlog, log);
-    renderHistory();
   }
 
   async function buildMenu() {
@@ -635,13 +723,7 @@
 
   function initNutrition() {
     renderNutriTarget();
-    // שחזור רישום היום
-    const todayLog = load(STORE.foodlog, {})[dateKey(new Date())];
-    if (todayLog) {
-      $('#food-text').value = todayLog.text || '';
-      const tg = N.targetCalories();
-      if (tg) renderFoodResult(N.estimateLocal(todayLog.text || ''), tg);
-    }
+    renderDayMeals(); // שחזור הארוחות של היום מהאחסון (מקור אמת אחד)
     // הגדרות AI
     const cfg = aiCfg();
     $('#ai-proxy').value = cfg.proxyUrl || '';
@@ -671,7 +753,14 @@
       if (file) calcFromImage(file);
       e.target.value = ''; // מאפשר לבחור שוב את אותה תמונה
     });
-    document.addEventListener('excerly:profile', renderNutriTarget);
+    document.addEventListener('excerly:profile', () => {
+      renderNutriTarget();
+      // עדכון היעד גם ברישומי היום כדי שהמחוון והממוצע יתעדכנו
+      const k = dateKey(new Date());
+      const meals = getMeals(k);
+      if (meals.length) setMeals(k, meals);
+      renderDayMeals();
+    });
   }
 
   /* =========================================================
@@ -802,16 +891,13 @@
     const p = load(STORE.profile, null);
     if (p && p.age && p.weight && p.height) renderBMI(p);
     renderNutriTarget();
+    renderDayMeals();
     renderCalendar();
     updateStreak();
     renderHistory();
-    initReminders && updateReminderStatus(load(STORE.reminder, { enabled: false, time: '18:00' }));
+    updateReminderStatus(load(STORE.reminder, { enabled: false, time: '18:00' }));
     // אם חלון היום פתוח – רענון תוכנו
     if (sheet.classList.contains('open') && sheetDate) renderWorkout(sheetDate);
-    // רענון תוצאת התזונה של היום אם קיימת
-    const todayLog = load(STORE.foodlog, {})[dateKey(new Date())];
-    const tg = N.targetCalories();
-    if (todayLog && tg) renderFoodResult(N.estimateLocal(todayLog.text || ''), tg);
   }
 
   function init() {
