@@ -93,6 +93,17 @@ export default {
     const origin = request.headers.get('Origin') || '';
     if (request.method === 'OPTIONS') return new Response(null, { headers: corsHeaders(origin) });
     if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405, origin);
+
+    // הגבלת קצב לכל כתובת IP (מגן על המפתח מפני שימוש-יתר).
+    // מוגן: אם ה-binding לא זמין, פשוט ממשיכים בלי הגבלה.
+    if (env.RATE_LIMITER) {
+      const ip = request.headers.get('CF-Connecting-IP') || 'anon';
+      try {
+        const { success } = await env.RATE_LIMITER.limit({ key: ip });
+        if (!success) return json({ error: 'rate_limited', detail: 'Too many requests. Please wait a minute and try again.' }, 429, origin);
+      } catch (e) { /* ה-binding לא זמין – ממשיכים */ }
+    }
+
     if (!env.ANTHROPIC_API_KEY) return json({ error: 'Server missing ANTHROPIC_API_KEY' }, 500, origin);
 
     let body;
