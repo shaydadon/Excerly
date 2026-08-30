@@ -6,6 +6,8 @@
   'use strict';
 
   const D = global.ExcerlyData;
+  const I = () => global.ExcerlyI18n;
+  const curLang = () => (I() ? I().lang : 'he');
 
   /* ---------- מאגר מזונות מקומי (הערכה) ----------
      per100 = קק"ל ל-100 גרם | perItem = קק"ל ליחידה
@@ -74,18 +76,40 @@
     { n: ['יין'], per100: 83, portion: 150 }
   ];
 
-  // יחידות מידה → גרמים (התאמה מדויקת לפי מילה שלמה)
+  // תוויות אנגלית לתצוגה (לפי השם העברי הקנוני של המזון)
+  const EN_FOOD = {
+    'אורז': 'Rice', 'פסטה': 'Pasta', 'קינואה': 'Quinoa', 'בורגול': 'Bulgur', 'קוסקוס': 'Couscous',
+    'חזה עוף': 'Chicken', 'הודו': 'Turkey', 'בשר': 'Beef', 'קציצה': 'Meatballs', 'שניצל': 'Schnitzel',
+    'סלמון': 'Salmon', 'דג': 'Fish', 'טונה': 'Tuna', 'טופו': 'Tofu', 'ביצה': 'Egg',
+    'לחם לבן': 'Bread', 'פיתה': 'Pita', 'לחמניות': 'Roll', 'מיונז': 'Mayonnaise', 'דוריטוס': 'Chips/snack',
+    'קרקר': 'Crackers', 'תפוח אדמה': 'Potato', 'ציפס': 'Fries', 'סלט': 'Salad', 'ירקות': 'Vegetables',
+    'אבוקדו': 'Avocado', 'חומוס': 'Hummus', 'פול': 'Legumes', 'תפוח': 'Apple', 'בננה': 'Banana',
+    'תפוז': 'Orange', 'אגס': 'Pear', 'ענבים': 'Grapes', 'אבטיח': 'Watermelon', 'תות': 'Strawberries',
+    'חלב': 'Milk', 'יוגורט': 'Yogurt', 'גבינה לבנה': 'Cottage cheese', 'גבינה צהובה': 'Cheese',
+    'שקדים': 'Nuts', 'טחינה': 'Tahini', 'חמאת בוטנים': 'Peanut butter', 'שמן': 'Oil', 'חמאה': 'Butter',
+    'סוכר': 'Sugar', 'דבש': 'Honey', 'שוקולד': 'Chocolate', 'עוגה': 'Cake/pastry', 'גלידה': 'Ice cream',
+    'פיצה': 'Pizza', 'המבורגר': 'Burger', 'שווארמה': 'Shawarma', 'פלאפל': 'Falafel',
+    'קורנפלקס': 'Cereal', 'שיבולת שועל': 'Oatmeal', 'קפה': 'Coffee', 'קפה הפוך': 'Latte',
+    'קולה': 'Soft drink', 'בירה': 'Beer', 'יין': 'Wine'
+  };
+  const foodLabel = food => (curLang() === 'en' && EN_FOOD[food.n[0]]) ? EN_FOOD[food.n[0]] : food.n[0];
+
+  // יחידות מידה → גרמים (התאמה מדויקת לפי מילה שלמה) — עברית + אנגלית
   const UNIT_G = {
     'גרם': 1, 'גר': 1, 'גר׳': 1, "ג'": 1, 'ג׳': 1, 'ג': 1, 'ג״ר': 1,
     'קילו': 1000, 'ק״ג': 1000, 'קג': 1000, 'קילוגרם': 1000,
     'כף': 15, 'כפות': 15, 'כפית': 5, 'כפיות': 5,
-    'כוס': 240, 'כוסות': 240, 'מ״ל': 1, 'מל': 1, 'ליטר': 1000, 'ליטרים': 1000
+    'כוס': 240, 'כוסות': 240, 'מ״ל': 1, 'מל': 1, 'ליטר': 1000, 'ליטרים': 1000,
+    'g': 1, 'gr': 1, 'gram': 1, 'grams': 1, 'kg': 1000,
+    'tbsp': 15, 'tablespoon': 15, 'tablespoons': 15, 'tsp': 5, 'teaspoon': 5, 'teaspoons': 5,
+    'cup': 240, 'cups': 240, 'ml': 1, 'l': 1000, 'liter': 1000, 'litre': 1000
   };
-  const SLICE_UNITS = ['פרוסה', 'פרוסות', 'פרוסת'];
-  const ITEM_UNITS = ['יחידה', 'יחידות', 'מנה', 'מנות', 'פיתה', 'פיתות', 'כדור', 'כדורים'];
-  const NUM_WORDS = { 'חצי': 0.5, 'רבע': 0.25, 'שליש': 0.33, 'זוג': 2 };
+  const SLICE_UNITS = ['פרוסה', 'פרוסות', 'פרוסת', 'slice', 'slices'];
+  const ITEM_UNITS = ['יחידה', 'יחידות', 'מנה', 'מנות', 'פיתה', 'פיתות', 'כדור', 'כדורים',
+    'piece', 'pieces', 'serving', 'servings', 'unit', 'units'];
+  const NUM_WORDS = { 'חצי': 0.5, 'רבע': 0.25, 'שליש': 0.33, 'זוג': 2, 'half': 0.5, 'quarter': 0.25 };
 
-  const clean = t => t.replace(/[.,;:!?()"'״׳]/g, '').trim();
+  const clean = t => t.replace(/[.,;:!?()"'״׳]/g, '').trim().toLowerCase();
   const PREPS = ['ב', 'ל', 'ה', 'מ', 'ו', 'כ', 'ש'];
   const stripPrep = w => (w.length > 3 && PREPS.indexOf(w[0]) !== -1) ? w.slice(1) : w;
 
@@ -165,7 +189,7 @@
           if (trailUnit && !afterIsFood) { q = parseFloat(tokens[j].replace(',', '.')); u = trailUnit; j += 2; }
         }
         const kcal = Math.round(kcalFor(m.food, q == null ? 1 : q, u));
-        if (kcal > 0) items.push({ name: m.food.n[0], kcal });
+        if (kcal > 0) items.push({ name: foodLabel(m.food), kcal });
         qty = null; unit = null; i = j;
       } else {
         if (t.length > 1) unmatched.push(t); // מילה לא מזוהה (תיאור/מזון חסר)
@@ -179,58 +203,59 @@
   /* ---------- מחולל תפריט יומי מקומי ---------- */
   const DISHES = {
     breakfast: [
-      { name: 'חביתת 2 ביצים עם ירקות וטוסט מלא', kcal: 320 },
-      { name: 'יוגורט יווני עם גרנולה ופירות', kcal: 350 },
-      { name: 'דייסת שיבולת שועל עם בננה ואגוזים', kcal: 400 },
-      { name: 'כריך גבינה לבנה, עגבנייה ומלפפון', kcal: 300 },
-      { name: 'שייק חלבון עם בננה וחמאת בוטנים', kcal: 380 },
-      { name: 'לחם מלא עם אבוקדו וביצה קשה', kcal: 420 },
-      { name: 'שקשוקה עם 2 ביצים ולחם מלא', kcal: 480 },
-      { name: 'פנקייק שיבולת שועל עם סילאן ופירות', kcal: 520 },
-      { name: 'קוטג׳ עם קרקרים מלאים וירק חתוך', kcal: 260 }
+      { he: 'חביתת 2 ביצים עם ירקות וטוסט מלא', en: '2-egg omelette with veggies & whole-grain toast', kcal: 320 },
+      { he: 'יוגורט יווני עם גרנולה ופירות', en: 'Greek yogurt with granola & fruit', kcal: 350 },
+      { he: 'דייסת שיבולת שועל עם בננה ואגוזים', en: 'Oatmeal with banana & nuts', kcal: 400 },
+      { he: 'כריך גבינה לבנה, עגבנייה ומלפפון', en: 'Cottage cheese sandwich with tomato & cucumber', kcal: 300 },
+      { he: 'שייק חלבון עם בננה וחמאת בוטנים', en: 'Protein shake with banana & peanut butter', kcal: 380 },
+      { he: 'לחם מלא עם אבוקדו וביצה קשה', en: 'Whole-grain bread with avocado & boiled egg', kcal: 420 },
+      { he: 'שקשוקה עם 2 ביצים ולחם מלא', en: 'Shakshuka with 2 eggs & whole-grain bread', kcal: 480 },
+      { he: 'פנקייק שיבולת שועל עם סילאן ופירות', en: 'Oat pancakes with date syrup & fruit', kcal: 520 },
+      { he: 'קוטג׳ עם קרקרים מלאים וירק חתוך', en: 'Cottage cheese with whole-grain crackers & veggies', kcal: 260 }
     ],
     lunch: [
-      { name: 'חזה עוף בגריל עם אורז מלא וסלט', kcal: 550 },
-      { name: 'קציצות בקר עם פירה וירקות מאודים', kcal: 600 },
-      { name: 'סלמון אפוי עם קינואה וברוקולי', kcal: 520 },
-      { name: 'פסטה מלאה ברוטב עגבניות עם עוף', kcal: 580 },
-      { name: 'מנת חומוס עם פיתה מלאה וסלט', kcal: 480 },
-      { name: 'טופו מוקפץ עם אורז וירקות', kcal: 500 },
-      { name: 'סטייק עוף עם תפוחי אדמה אפויים וסלט גדול', kcal: 700 },
-      { name: 'בורגר בקר ביתי בלחמנייה מלאה עם ירקות', kcal: 720 },
-      { name: 'מרק עדשים סמיך עם לחם מלא', kcal: 450 }
+      { he: 'חזה עוף בגריל עם אורז מלא וסלט', en: 'Grilled chicken breast with brown rice & salad', kcal: 550 },
+      { he: 'קציצות בקר עם פירה וירקות מאודים', en: 'Beef meatballs with mashed potato & steamed veggies', kcal: 600 },
+      { he: 'סלמון אפוי עם קינואה וברוקולי', en: 'Baked salmon with quinoa & broccoli', kcal: 520 },
+      { he: 'פסטה מלאה ברוטב עגבניות עם עוף', en: 'Whole-grain pasta in tomato sauce with chicken', kcal: 580 },
+      { he: 'מנת חומוס עם פיתה מלאה וסלט', en: 'Hummus plate with whole-grain pita & salad', kcal: 480 },
+      { he: 'טופו מוקפץ עם אורז וירקות', en: 'Stir-fried tofu with rice & vegetables', kcal: 500 },
+      { he: 'סטייק עוף עם תפוחי אדמה אפויים וסלט גדול', en: 'Chicken steak with roasted potatoes & a big salad', kcal: 700 },
+      { he: 'בורגר בקר ביתי בלחמנייה מלאה עם ירקות', en: 'Homemade beef burger in a whole-grain bun with veggies', kcal: 720 },
+      { he: 'מרק עדשים סמיך עם לחם מלא', en: 'Hearty lentil soup with whole-grain bread', kcal: 450 }
     ],
     dinner: [
-      { name: 'סלט טונה גדול עם ביצה וקטניות', kcal: 400 },
-      { name: 'אומלט ירקות עם פרוסת לחם מלא', kcal: 350 },
-      { name: 'דג לבן בתנור עם בטטה וסלט', kcal: 450 },
-      { name: 'מנת פסטה מלאה עם ירקות וגבינה', kcal: 520 },
-      { name: 'טוסט גדול עם גבינה, ביצה וסלט', kcal: 500 },
-      { name: 'כריך הודו בלחם מלא עם ירקות', kcal: 420 },
-      { name: 'מרק ירקות עם קרוטונים וגבינה', kcal: 380 }
+      { he: 'סלט טונה גדול עם ביצה וקטניות', en: 'Large tuna salad with egg & legumes', kcal: 400 },
+      { he: 'אומלט ירקות עם פרוסת לחם מלא', en: 'Veggie omelette with a slice of whole-grain bread', kcal: 350 },
+      { he: 'דג לבן בתנור עם בטטה וסלט', en: 'Baked white fish with sweet potato & salad', kcal: 450 },
+      { he: 'מנת פסטה מלאה עם ירקות וגבינה', en: 'Whole-grain pasta with vegetables & cheese', kcal: 520 },
+      { he: 'טוסט גדול עם גבינה, ביצה וסלט', en: 'Big toast with cheese, egg & salad', kcal: 500 },
+      { he: 'כריך הודו בלחם מלא עם ירקות', en: 'Turkey sandwich on whole-grain bread with veggies', kcal: 420 },
+      { he: 'מרק ירקות עם קרוטונים וגבינה', en: 'Vegetable soup with croutons & cheese', kcal: 380 }
     ],
     snack: [
-      { name: 'תפוח וכף חמאת בוטנים', kcal: 180 },
-      { name: 'חופן שקדים', kcal: 160 },
-      { name: 'יוגורט עם דבש', kcal: 150 },
-      { name: 'פרי + כמה אגוזים', kcal: 200 },
-      { name: 'שייק חלבון', kcal: 220 },
-      { name: 'חופן אגוזים ופרי', kcal: 250 },
-      { name: 'ירקות חתוכים עם חומוס', kcal: 140 },
-      { name: 'בננה', kcal: 105 }
+      { he: 'תפוח וכף חמאת בוטנים', en: 'Apple with a tbsp of peanut butter', kcal: 180 },
+      { he: 'חופן שקדים', en: 'A handful of almonds', kcal: 160 },
+      { he: 'יוגורט עם דבש', en: 'Yogurt with honey', kcal: 150 },
+      { he: 'פרי + כמה אגוזים', en: 'Fruit + a few nuts', kcal: 200 },
+      { he: 'שייק חלבון', en: 'Protein shake', kcal: 220 },
+      { he: 'חופן אגוזים ופרי', en: 'A handful of nuts & fruit', kcal: 250 },
+      { he: 'ירקות חתוכים עם חומוס', en: 'Cut vegetables with hummus', kcal: 140 },
+      { he: 'בננה', en: 'Banana', kcal: 105 }
     ]
   };
-  const SLOT_LABEL = { breakfast: 'ארוחת בוקר', lunch: 'ארוחת צהריים', dinner: 'ארוחת ערב', snack: 'חטיף' };
+  const SLOT_KEY = { breakfast: 'slotBreakfast', lunch: 'slotLunch', dinner: 'slotDinner', snack: 'slotSnack' };
+  const slotLabel = slot => (I() ? I().t(SLOT_KEY[slot]) : slot);
+  const dishName = d => (I() ? I().L(d) : d.he);
 
   function pickNear(list, targetKcal, exclude) {
     const used = Array.isArray(exclude) ? exclude : (exclude ? [exclude] : []);
-    let base = list.filter(d => used.indexOf(d.name) === -1);
+    let base = list.filter(d => used.indexOf(d.he) === -1);
     if (!base.length) base = list; // אם כולם נוצלו – מאפשרים שוב
     const sorted = base
       .sort((a, b) => Math.abs(a.kcal - targetKcal) - Math.abs(b.kcal - targetKcal));
     const within = sorted.filter(d => Math.abs(d.kcal - targetKcal) <= targetKcal * 0.3);
     if (within.length) return within[Math.floor(Math.random() * within.length)]; // גיוון
-    // אין התאמה קרובה – בוחרים מבין 2 הקרובים ביותר (למשל ליעד גבוה)
     const topK = sorted.slice(0, Math.min(2, sorted.length));
     return topK[Math.floor(Math.random() * topK.length)];
   }
@@ -239,15 +264,14 @@
     const slots = [['breakfast', 0.25], ['lunch', 0.35], ['dinner', 0.30], ['snack', 0.10]];
     const meals = slots.map(([slot, w]) => {
       const d = pickNear(DISHES[slot], target * w);
-      return { slot, label: SLOT_LABEL[slot], name: d.name, kcal: d.kcal };
+      return { slot, label: slotLabel(slot), name: dishName(d), kcal: d.kcal };
     });
     let total = meals.reduce((s, m) => s + m.kcal, 0);
-    // השלמת הפער ליעד באמצעות חטיפים מגוונים (עד 3 נוספים)
     const usedSnacks = [];
     while (target - total > 180 && usedSnacks.length < 3) {
       const d = pickNear(DISHES.snack, target - total, usedSnacks);
-      meals.push({ slot: 'snack', label: 'חטיף', name: d.name, kcal: d.kcal });
-      total += d.kcal; usedSnacks.push(d.name);
+      meals.push({ slot: 'snack', label: slotLabel('snack'), name: dishName(d), kcal: d.kcal });
+      total += d.kcal; usedSnacks.push(d.he);
     }
     return { meals, total, target, source: 'local' };
   }
@@ -281,10 +305,10 @@
     return data;
   }
   async function estimateViaProxy(text, url) {
-    return normalizeEstimate(await callProxy(url, { action: 'estimate', text }));
+    return normalizeEstimate(await callProxy(url, { action: 'estimate', text, lang: curLang() }));
   }
   async function mealPlanViaProxy(target, url) {
-    return normalizeMenu(await callProxy(url, { action: 'menu', target }), target);
+    return normalizeMenu(await callProxy(url, { action: 'menu', target, lang: curLang() }), target);
   }
 
   /* ---------- מצב AI ישיר (Claude, מפתח של המשתמש – BYOK) ---------- */
@@ -313,40 +337,44 @@
     return JSON.parse(match[0]);
   }
 
-  const IMAGE_SYSTEM =
-    'אתה מנתח תזונה מדויק. קיבלת תמונה של ארוחה. זהה את הפריטים שבתמונה והערך את סך הקלוריות ' +
-    'בצורה מציאותית לפי מנות נפוצות (העדף אומדן ישראלי). התחשב בגודל המנה הנראה בתמונה. ' +
-    'החזר JSON בלבד, ללא טקסט לפני או אחרי, במבנה: ' +
+  // הנחיית שפת התשובה לפי שפת הממשק
+  const langLine = () => curLang() === 'en'
+    ? ' Respond in English (name and note in English).'
+    : ' החזר את name ואת note בעברית.';
+
+  const IMAGE_SYSTEM_BASE =
+    'You are a precise nutrition analyzer. You received a photo of a meal. Identify the items and ' +
+    'realistically estimate the total calories based on common portion sizes, considering the visible portion. ' +
+    'Return JSON only, no text before or after: ' +
     '{"total": number, "items": [{"name": string, "kcal": number}], "note": string}. ' +
-    'name בעברית, note משפט קצר בעברית. אם התמונה אינה של אוכל או אינה ברורה, החזר total=0 וציין זאת ב-note.';
+    'note is a short sentence. If the image is not food or is unclear, return total=0 and say so in note.';
 
   const imageContent = (image) => ([
     { type: 'image', source: { type: 'base64', media_type: image.media_type, data: image.data } },
-    { type: 'text', text: 'זו תמונה של הארוחה שלי. זהה את המנות והערך את סך הקלוריות.' }
+    { type: 'text', text: 'This is a photo of my meal. Identify the dishes and estimate the total calories.' }
   ]);
 
-  // ניתוח תמונת ארוחה – דרך שרת proxy
   async function estimateImageViaProxy(image, url) {
-    return normalizeEstimate(await callProxy(url, { action: 'estimate_image', image }));
+    return normalizeEstimate(await callProxy(url, { action: 'estimate_image', image, lang: curLang() }));
   }
-  // ניתוח תמונת ארוחה – ישיר (BYOK)
   async function estimateImageAI(image, key) {
-    return normalizeEstimate(await callClaude(key, IMAGE_SYSTEM, imageContent(image), 1024));
+    return normalizeEstimate(await callClaude(key, IMAGE_SYSTEM_BASE + langLine(), imageContent(image), 1024));
   }
 
   async function estimateAI(text, key) {
-    const system = 'אתה עוזר תזונה. קבל תיאור חופשי בעברית של מה שאדם אכל, והערך את סך הקלוריות. ' +
-      'החזר JSON בלבד, ללא טקסט נוסף, במבנה: ' +
-      '{"total": number, "items": [{"name": string, "kcal": number}], "note": string}. ' +
-      'note הוא משפט קצר בעברית. אל תוסיף הסברים מחוץ ל-JSON.';
+    const system = 'You are a nutrition assistant. Given a free-text description (in any language) of what ' +
+      'someone ate, realistically estimate the total calories. Return JSON only, no extra text: ' +
+      '{"total": number, "items": [{"name": string, "kcal": number}], "note": string}.' + langLine();
     return normalizeEstimate(await callClaude(key, system, text, 1024));
   }
 
   async function mealPlanAI(target, key) {
-    const system = 'אתה תזונאי. בנה תפריט יומי מגוון בעברית לפי יעד קלוריות נתון. ' +
-      'החזר JSON בלבד במבנה: {"meals": [{"label": string, "name": string, "kcal": number}], "total": number, "note": string}. ' +
-      'כלול ארוחת בוקר, צהריים, ערב וחטיף אחד או שניים. סך הקלוריות צריך להתקרב ליעד. אל תוסיף טקסט מחוץ ל-JSON.';
-    const out = await callClaude(key, 'יעד יומי: ' + target + ' קק"ל.\n' + system, 'בנה לי תפריט יומי ליעד של ' + target + ' קלוריות.', 1500);
+    const system = 'You are a dietitian. Build a varied, balanced daily menu for a given calorie goal: ' +
+      'breakfast, lunch, dinner and one or two snacks, with realistic dishes. The total should be within ' +
+      '~10% of the goal. Return JSON only: ' +
+      '{"meals": [{"label": string, "name": string, "kcal": number}], "total": number, "note": string}.' + langLine();
+    const out = await callClaude(key, 'Daily goal: ' + target + ' kcal.\n' + system,
+      'Build me a daily menu for a goal of ' + target + ' calories.', 1500);
     return normalizeMenu(out, target);
   }
 
@@ -363,15 +391,15 @@
 
   function verdict(total, target) {
     const tol = Math.max(100, Math.round(target * 0.05));
-    if (total > target + tol) return { key: 'over', label: 'חרגת מהיעד', delta: total - target, color: '#e74c3c' };
-    if (total >= target - tol) return { key: 'met', label: 'עמדת ביעד! 🎯', delta: 0, color: '#2ecc71' };
-    return { key: 'under', label: 'מתחת ליעד', delta: target - total, color: '#4aa3ff' };
+    if (total > target + tol) return { key: 'over', delta: total - target, color: '#e74c3c' };
+    if (total >= target - tol) return { key: 'met', delta: 0, color: '#2ecc71' };
+    return { key: 'under', delta: target - total, color: '#4aa3ff' };
   }
 
   global.ExcerlyNutrition = {
     estimateLocal, generateMealPlan,
     estimateAI, mealPlanAI, estimateImageAI,         // BYOK ישיר
     estimateViaProxy, mealPlanViaProxy, estimateImageViaProxy, // דרך שרת proxy
-    targetCalories, verdict, SLOT_LABEL
+    targetCalories, verdict
   };
 })(window);

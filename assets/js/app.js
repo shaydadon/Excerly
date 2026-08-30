@@ -7,6 +7,10 @@
   const D = window.ExcerlyData;
   const A = window.ExcerlyAnim;
   const N = window.ExcerlyNutrition;
+  const I18n = window.ExcerlyI18n;
+  const t = (k, v) => I18n.t(k, v);          // תרגום מחרוזת
+  const L = o => I18n.L(o);                    // בחירת ערך דו-לשוני {he,en}
+  const nf = n => Number(n).toLocaleString(I18n.lang === 'he' ? 'he-IL' : 'en-US');
 
   /* ---------- אחסון מקומי ---------- */
   const STORE = {
@@ -78,13 +82,13 @@
         activity: form.activity.value
       };
       if (!data.age || !data.weight || !data.height) {
-        toast('נא למלא גיל, משקל וגובה');
+        toast(t('toastFillAWH'));
         return;
       }
       save(STORE.profile, data);
       renderBMI(data);
       document.dispatchEvent(new CustomEvent('excerly:profile'));
-      toast('הנתונים נשמרו ✓');
+      toast(t('toastSaved'));
     });
 
     if (p.age && p.weight && p.height) renderBMI(p);
@@ -98,7 +102,10 @@
     const act = D.ACTIVITY_FACTORS[p.activity];
     const tdee = Math.round(bmr * act.factor);
     const m = D.macros(tdee);
-    // מיקום המחוג: טווח 12–36 ממופה ל-0–100
+    const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+    const catLabel = t('cat' + cap(cat.key));
+    const advice = t('adv' + cap(cat.key));
+    const actLabel = t('act' + cap(p.activity));
     const gaugeP = Math.max(0, Math.min(100, ((bmi - 12) / (36 - 12)) * 100));
 
     box.innerHTML = `
@@ -106,24 +113,24 @@
         <div class="bmi-gauge" style="--gauge-color:${cat.color}">
           <div style="text-align:center">
             <div class="val">${bmi.toFixed(1)}</div>
-            <div class="cap">BMI</div>
+            <div class="cap">${t('bmiCap')}</div>
           </div>
         </div>
         <div class="bmi-cat">
-          <span class="bmi-badge" style="background:${cat.color}">${cat.label}</span>
-          <p class="bmi-advice">${cat.advice}</p>
+          <span class="bmi-badge" style="background:${cat.color}">${catLabel}</span>
+          <p class="bmi-advice">${advice}</p>
         </div>
       </div>
       <div class="calorie-box">
         <div class="calorie-headline">
-          <span class="num">${tdee.toLocaleString('he-IL')}</span>
-          <span class="unit">קק"ל ליום (לשמירה על המשקל)</span>
+          <span class="num">${nf(tdee)}</span>
+          <span class="unit">${t('perDay')}</span>
         </div>
-        <div class="calorie-sub">חילוף חומרים בסיסי: ${Math.round(bmr).toLocaleString('he-IL')} קק"ל · רמת פעילות: ${act.label}</div>
+        <div class="calorie-sub">${t('bmrLine', { bmr: nf(Math.round(bmr)), act: actLabel })}</div>
         <div class="macros">
-          <div class="macro p"><div class="m-val">${m.protein} ג׳</div><div class="m-lbl">חלבון</div></div>
-          <div class="macro c"><div class="m-val">${m.carbs} ג׳</div><div class="m-lbl">פחמימות</div></div>
-          <div class="macro f"><div class="m-val">${m.fat} ג׳</div><div class="m-lbl">שומן</div></div>
+          <div class="macro p"><div class="m-val">${m.protein} ${t('grams')}</div><div class="m-lbl">${t('protein')}</div></div>
+          <div class="macro c"><div class="m-val">${m.carbs} ${t('grams')}</div><div class="m-lbl">${t('carbs')}</div></div>
+          <div class="macro f"><div class="m-val">${m.fat} ${t('grams')}</div><div class="m-lbl">${t('fat')}</div></div>
         </div>
       </div>`;
     // הנעת המחוג
@@ -139,11 +146,11 @@
   function renderCalendar() {
     const y = viewDate.getFullYear();
     const mo = viewDate.getMonth();
-    $('#cal-month').textContent = `${D.MONTH_NAMES[mo]} ${y}`;
+    $('#cal-month').textContent = `${I18n.monthNames()[mo]} ${y}`;
 
     const grid = $('#cal-grid');
     grid.innerHTML = '';
-    D.DAY_NAMES.forEach(n => grid.appendChild(el('div', 'cal-dow', n.slice(0, 3))));
+    I18n.dayShort().forEach(n => grid.appendChild(el('div', 'cal-dow', n)));
 
     const first = new Date(y, mo, 1).getDay();
     const days = new Date(y, mo + 1, 0).getDate();
@@ -192,23 +199,24 @@
     const prog = D.programForDate(date);
     const key = dateKey(date);
     const done = !!doneMap[key];
-    const dayLabel = `יום ${D.DAY_NAMES[date.getDay()]}, ${date.getDate()} ב${D.MONTH_NAMES[date.getMonth()]}`;
+    const dayLabel = t('dayLabel', { day: I18n.dayNames()[date.getDay()], d: date.getDate(), month: I18n.monthNames()[date.getMonth()] });
     const mins = D.estimatedMinutes(prog);
 
     const items = prog.exercises.map(id => {
       const ex = D.EXERCISES[id];
       const ed = isExDone(key, id);
+      const hold = L(ex.hold);
       return `<div class="ex-item ${ed ? 'done' : ''}">
         <button class="ex-open" data-ex="${id}">
           <span class="ex-thumb">${A.svgFor(ex.animation)}</span>
           <span class="ex-info">
-            <span class="ex-name">${ex.name}</span>
-            <span class="ex-area">${ex.area}</span>
-            <span class="ex-reps">${ex.reps}${ex.hold !== '—' ? ' · החזקה ' + ex.hold : ''}</span>
+            <span class="ex-name">${L(ex.name)}</span>
+            <span class="ex-area">${L(ex.area)}</span>
+            <span class="ex-reps">${L(ex.reps)}${hold !== '—' ? t('repsSep') + hold : ''}</span>
           </span>
         </button>
         <button class="ex-finish ${ed ? 'on' : ''}" data-ex="${id}"
-          aria-label="${ed ? 'בטל סימון' : 'סיום תרגיל'}" title="${ed ? 'בוצע' : 'סמן כבוצע'}">${ed ? '✓' : '+'}</button>
+          aria-label="${ed ? t('finishUnmark') : t('finishMark')}" title="${ed ? t('finishUnmark') : t('finishMark')}">${ed ? '✓' : '+'}</button>
       </div>`;
     }).join('');
     const dc = doneCount(prog, key);
@@ -219,16 +227,16 @@
         <div class="row">
           <div>
             <div class="sheet-date">${dayLabel}</div>
-            <div class="sheet-title">${prog.title}</div>
-            <div class="sheet-focus">${prog.focus}</div>
+            <div class="sheet-title">${L(prog.title)}</div>
+            <div class="sheet-focus">${L(prog.focus)}</div>
           </div>
-          <button class="sheet-close" id="sheet-close" aria-label="סגור">✕</button>
+          <button class="sheet-close" id="sheet-close" aria-label="✕">✕</button>
         </div>
         <div class="sheet-meta">
-          <span class="chip">🧘 ${prog.exercises.length} תרגילים</span>
-          <span class="chip">⏱ כ-${mins} דק׳</span>
-          <span class="chip" id="ex-progress">✅ ${dc}/${prog.exercises.length} הושלמו</span>
-          ${prog.rest ? '<span class="chip rest">☕ יום מנוחה פעילה</span>' : ''}
+          <span class="chip">${t('exCount', { n: prog.exercises.length })}</span>
+          <span class="chip">${t('minutesChip', { n: mins })}</span>
+          <span class="chip" id="ex-progress">${t('progressChip', { d: dc, n: prog.exercises.length })}</span>
+          ${prog.rest ? `<span class="chip rest">${t('restChip')}</span>` : ''}
           ${foodChip(key)}
         </div>
       </div>
@@ -236,10 +244,10 @@
         <div class="ex-list">${items}</div>
         <div class="workout-actions">
           <button class="btn btn-primary btn-block" id="toggle-done">
-            ${done ? '↺ בטל סימון האימון' : '✓ סיימתי את כל האימון'}
+            ${done ? t('dayUndoBtn') : t('dayDoneBtn')}
           </button>
         </div>
-        <div class="done-banner ${done ? 'show' : ''}" id="done-banner">🎉 כל הכבוד! השלמת את האימון להיום</div>
+        <div class="done-banner ${done ? 'show' : ''}" id="done-banner">${t('doneBanner')}</div>
       </div>`;
 
     $('#sheet-close', sheet).addEventListener('click', closeSheet);
@@ -274,8 +282,8 @@
     updateStreak();
     renderHistory();
     if (!silent) {
-      if (doneMap[key] && !wasDone) toast('כל הכבוד! השלמת את כל האימון 💪');
-      else if (isExDone(key, id)) toast('תרגיל הושלם ✓');
+      if (doneMap[key] && !wasDone) toast(t('toastAllDone'));
+      else if (isExDone(key, id)) toast(t('toastExDone'));
     }
   }
 
@@ -296,33 +304,34 @@
     renderCalendar();
     updateStreak();
     renderHistory();
-    if (doneMap[key]) toast('אימון הושלם! 💪');
+    if (doneMap[key]) toast(t('toastWorkoutDone'));
   }
 
   function openExercise(id) {
     const ex = D.EXERCISES[id];
     const key = dateKey(sheetDate);
     const ed = isExDone(key, id);
+    const hold = L(ex.hold);
     const body = $('#sheet-body', sheet);
     body.innerHTML = `
-      <button class="detail-back" id="detail-back">→ חזרה לרשימה</button>
+      <button class="detail-back" id="detail-back">${t('back')}</button>
       <div class="detail-stage">${A.svgFor(ex.animation)}</div>
-      <div class="detail-name">${ex.name}</div>
+      <div class="detail-name">${L(ex.name)}</div>
       <div class="detail-badges">
-        <span class="badge reps">🔁 ${ex.reps}</span>
-        ${ex.hold !== '—' ? `<span class="badge hold">⏳ החזקה ${ex.hold}</span>` : ''}
-        <span class="badge area">${ex.area}</span>
+        <span class="badge reps">${t('badgeReps', { r: L(ex.reps) })}</span>
+        ${hold !== '—' ? `<span class="badge hold">${t('badgeHold', { h: hold })}</span>` : ''}
+        <span class="badge area">${L(ex.area)}</span>
       </div>
-      <ol class="detail-steps">${ex.steps.map(s => `<li>${s}</li>`).join('')}</ol>
-      <div class="detail-tip"><span class="ico">💡</span><span><b>טיפ:</b> ${ex.tip}</span></div>
+      <ol class="detail-steps">${L(ex.steps).map(s => `<li>${s}</li>`).join('')}</ol>
+      <div class="detail-tip"><span class="ico">💡</span><span><b>${t('tipLabel')}</b> ${L(ex.tip)}</span></div>
       <button class="btn ${ed ? 'btn-ghost' : 'btn-primary'} btn-block detail-finish" id="detail-finish">
-        ${ed ? '↺ בטל סימון התרגיל' : '✓ סיימתי את התרגיל'}
+        ${ed ? t('detailUnfinish') : t('detailFinish')}
       </button>`;
     $('#detail-back', body).addEventListener('click', () => renderWorkout(sheetDate));
     $('#detail-finish', body).addEventListener('click', () => {
       toggleExDone(key, id, true);
       const nowDone = isExDone(key, id);
-      toast(nowDone ? 'תרגיל הושלם ✓' : 'הסימון בוטל');
+      toast(nowDone ? t('toastExDone') : t('toastUnmark'));
       openExercise(id); // רענון מצב הכפתור
     });
     sheet.scrollTop = 0;
@@ -368,7 +377,7 @@
         const perm = await Notification.requestPermission();
         if (perm !== 'granted') {
           toggle.checked = false;
-          toast('כדי לקבל תזכורות צריך לאשר התראות');
+          toast(t('toastReminderPerm'));
         }
       }
       persist();
@@ -381,17 +390,10 @@
 
   function updateReminderStatus(r) {
     const s = $('#reminder-status');
-    if (!('Notification' in window)) {
-      s.textContent = 'הדפדפן אינו תומך בהתראות. נשמח להזכיר לך בכל פתיחה של האפליקציה.';
-      return;
-    }
-    if (r.enabled && Notification.permission === 'granted') {
-      s.textContent = `תזכורת יומית פעילה לשעה ${r.time}. השאירו את האפליקציה פתוחה או פתחו אותה במהלך היום.`;
-    } else if (r.enabled) {
-      s.textContent = 'ההתראות חסומות בדפדפן. אפשר לאשר אותן בהגדרות האתר.';
-    } else {
-      s.textContent = 'התזכורות כבויות.';
-    }
+    if (!('Notification' in window)) { s.textContent = t('remUnsupported'); return; }
+    if (r.enabled && Notification.permission === 'granted') s.textContent = t('remActive', { time: r.time });
+    else if (r.enabled) s.textContent = t('remBlocked');
+    else s.textContent = t('remOff');
   }
 
   function scheduleReminder(r) {
@@ -412,17 +414,17 @@
   function fireReminder() {
     const prog = D.programForDate(new Date());
     const body = prog.rest
-      ? 'היום מנוחה פעילה 🧘 קחו כמה דקות למתיחות רגועות.'
-      : `הגיע הזמן לאימון "${prog.title}" 💪 ${prog.exercises.length} תרגילים מחכים לך.`;
+      ? t('notifRest')
+      : t('notifWorkout', { title: L(prog.title), n: prog.exercises.length });
     if ('Notification' in window && Notification.permission === 'granted') {
       try {
-        new Notification('Excerly – זמן להתמתח!', {
+        new Notification(t('notifTitle'), {
           body, icon: 'assets/icon.svg', badge: 'assets/icon.svg', tag: 'excerly-daily'
         });
         return;
       } catch (e) {}
     }
-    toast('⏰ זמן לאימון היומי!');
+    toast(t('toastReminderNow'));
   }
 
   /* בדיקת "החמצה" בפתיחת האפליקציה – אם עברה שעת התזכורת והיום לא בוצע */
@@ -435,7 +437,7 @@
     if (past && !doneMap[dateKey(now)]) {
       const prog = D.programForDate(now);
       if (!prog.rest) {
-        setTimeout(() => toast(`עוד לא התאמנת היום – ${prog.title} מחכה לך 💪`), 1200);
+        setTimeout(() => toast(t('toastMissed', { title: L(prog.title) })), 1200);
       }
     }
   }
@@ -448,7 +450,7 @@
     if (!log) return '';
     const v = log.verdict || {};
     const c = v.color || 'var(--muted)';
-    return `<span class="chip" style="color:${c};border-color:${c}">🍎 ${log.total}${log.target ? '/' + log.target : ''} קק"ל</span>`;
+    return `<span class="chip" style="color:${c};border-color:${c}">${t('foodChip', { t: log.total + (log.target ? '/' + log.target : '') })}</span>`;
   }
 
   function aiCfg() { return load(STORE.ai, { proxyUrl: '', key: '', enabled: false }); }
@@ -468,10 +470,10 @@
     const box = $('#nutri-target');
     const target = N.targetCalories();
     if (!target) {
-      box.innerHTML = '<div class="nutri-need-profile">מלאו את פרטי הפרופיל למעלה כדי לקבל יעד קלוריות יומי מותאם.</div>';
+      box.innerHTML = `<div class="nutri-need-profile">${t('needProfile')}</div>`;
       return null;
     }
-    box.innerHTML = `<div class="nutri-goal"><span class="nutri-goal-lbl">היעד היומי שלך</span><span class="nutri-goal-val">${target.toLocaleString('he-IL')} קק"ל</span></div>`;
+    box.innerHTML = `<div class="nutri-goal"><span class="nutri-goal-lbl">${t('goalLabel')}</span><span class="nutri-goal-val">${nf(target)} ${t('goalUnit')}</span></div>`;
     return target;
   }
 
@@ -479,23 +481,22 @@
     const box = $('#nutri-result');
     const v = N.verdict(res.total, target);
     const pct = Math.min(100, Math.round((res.total / target) * 100));
+    const vLabel = t(v.key === 'over' ? 'vOver' : v.key === 'met' ? 'vMet' : 'vUnder');
     const itemsHtml = res.items.length
-      ? `<ul class="nutri-items">${res.items.map(i => `<li><span>${i.name}</span><span>${i.kcal} קק"ל</span></li>`).join('')}</ul>`
-      : '<div class="nutri-empty">לא זיהיתי פריטי מזון. נסו לפרט יותר, למשל "2 ביצים, פרוסת לחם, תפוח".</div>';
+      ? `<ul class="nutri-items">${res.items.map(i => `<li><span>${i.name}</span><span>${i.kcal} ${t('goalUnit')}</span></li>`).join('')}</ul>`
+      : `<div class="nutri-empty">${t('itemsEmpty')}</div>`;
     const unmatched = res.unmatched && res.unmatched.length
-      ? `<div class="nutri-unmatched">לא זוהו: ${res.unmatched.join(', ')} — לא נכללו בחישוב.</div>` : '';
-    const deltaTxt = v.key === 'over'
-      ? `חרגת ב-${v.delta.toLocaleString('he-IL')} קק"ל`
-      : v.key === 'under'
-        ? `נותרו לך ${v.delta.toLocaleString('he-IL')} קק"ל להיום`
-        : 'נשארת בטווח היעד';
+      ? `<div class="nutri-unmatched">${t('unmatched', { list: res.unmatched.join(', ') })}</div>` : '';
+    const deltaTxt = v.key === 'over' ? t('dOver', { n: nf(v.delta) })
+      : v.key === 'under' ? t('dUnder', { n: nf(v.delta) })
+        : t('dMet');
     box.innerHTML = `
       <div class="nutri-summary">
-        <div class="nutri-verdict" style="background:${v.color}">${v.label}</div>
-        <div class="nutri-numbers"><b>${res.total.toLocaleString('he-IL')}</b> מתוך ${target.toLocaleString('he-IL')} קק"ל · ${deltaTxt}</div>
+        <div class="nutri-verdict" style="background:${v.color}">${vLabel}</div>
+        <div class="nutri-numbers">${t('ofTarget', { a: '<b>' + nf(res.total) + '</b>', b: nf(target), d: deltaTxt })}</div>
       </div>
       <div class="nutri-bar"><span style="width:${pct}%;background:${v.color}"></span></div>
-      ${res.source === 'ai' ? '<div class="nutri-src">✨ הוערך באמצעות Claude AI</div>' : '<div class="nutri-src">הערכה מקומית — לחישוב מדויק יותר הפעילו מצב AI למטה</div>'}
+      <div class="nutri-src">${res.source === 'ai' ? t('srcAi') : t('srcLocal')}</div>
       ${res.note ? `<div class="nutri-note">${res.note}</div>` : ''}
       ${itemsHtml}
       ${unmatched}`;
@@ -506,17 +507,17 @@
     const box = $('#menu-result');
     box.innerHTML = `
       <div class="menu-head">
-        <div class="menu-title">תפריט יומי מוצע</div>
-        <button class="btn btn-ghost menu-shuffle" id="menu-shuffle">🔄 תפריט אחר</button>
+        <div class="menu-title">${t('menuTitle')}</div>
+        <button class="btn btn-ghost menu-shuffle" id="menu-shuffle">${t('menuShuffle')}</button>
       </div>
       <div class="menu-list">${plan.meals.map(m => `
         <div class="menu-item">
           <div class="menu-slot">${m.label}</div>
           <div class="menu-name">${m.name}</div>
-          <div class="menu-kcal">${m.kcal} קק"ל</div>
+          <div class="menu-kcal">${m.kcal} ${t('goalUnit')}</div>
         </div>`).join('')}</div>
-      <div class="menu-total">סה"כ כ-${plan.total.toLocaleString('he-IL')} קק"ל${plan.target ? ' (יעד: ' + plan.target.toLocaleString('he-IL') + ')' : ''}</div>
-      ${plan.source === 'ai' ? '<div class="nutri-src">✨ נבנה באמצעות Claude AI</div>' : ''}
+      <div class="menu-total">${plan.target ? t('menuTotal', { n: nf(plan.total), t: nf(plan.target) }) : t('menuTotalNoTarget', { n: nf(plan.total) })}</div>
+      ${plan.source === 'ai' ? `<div class="nutri-src">${t('menuSrcAi')}</div>` : ''}
       ${plan.note ? `<div class="nutri-note">${plan.note}</div>` : ''}`;
     box.classList.add('show');
     $('#menu-shuffle', box).addEventListener('click', buildMenu);
@@ -524,20 +525,20 @@
 
   async function calcFood() {
     const target = renderNutriTarget();
-    if (!target) { toast('מלאו קודם את פרטי הפרופיל'); return; }
+    if (!target) { toast(t('toastFillProfile')); return; }
     const text = $('#food-text').value.trim();
-    if (!text) { toast('כתבו מה אכלתם היום'); return; }
+    if (!text) { toast(t('toastWriteFood')); return; }
     const prov = aiProvider();
     const btn = $('#calc-food');
     let res;
     if (prov.mode !== 'local') {
-      btn.disabled = true; btn.textContent = 'Claude מחשב…';
+      btn.disabled = true; btn.textContent = t('calcBtnBusy');
       try {
         res = prov.mode === 'proxy'
           ? await N.estimateViaProxy(text, prov.url)
           : await N.estimateAI(text, prov.key);
-      } catch (e) { toast('שגיאת AI — עברתי למנוע המקומי'); res = N.estimateLocal(text); }
-      btn.disabled = false; btn.textContent = 'חשב קלוריות';
+      } catch (e) { toast(t('toastAiErrLocal')); res = N.estimateLocal(text); }
+      btn.disabled = false; btn.textContent = t('calcBtn');
     } else {
       res = N.estimateLocal(text);
     }
@@ -576,57 +577,56 @@
 
   async function calcFromImage(file) {
     const target = renderNutriTarget();
-    if (!target) { toast('מלאו קודם את פרטי הפרופיל'); return; }
+    if (!target) { toast(t('toastFillProfile')); return; }
     const prov = aiProvider();
     if (prov.mode === 'local') {
-      toast('חישוב לפי תמונה דורש AI — הפעילו מצב AI בהגדרות ⚙️');
+      toast(t('toastNeedAiPhoto'));
       $('#ai-settings').open = true;
       return;
     }
     const btn = $('#photo-btn');
     let dataUrl;
     try { dataUrl = await fileToResizedDataURL(file); }
-    catch (e) { toast('לא הצלחתי לקרוא את התמונה'); return; }
-    // תצוגה מקדימה
+    catch (e) { toast(t('toastImgRead')); return; }
     const prev = $('#photo-preview');
     prev.hidden = false;
-    prev.innerHTML = `<img src="${dataUrl}" alt="תמונת הארוחה" />`;
+    prev.innerHTML = `<img src="${dataUrl}" alt="meal" />`;
 
     const image = parseDataUrl(dataUrl);
-    btn.disabled = true; btn.textContent = 'Claude מנתח את התמונה…';
+    btn.disabled = true; btn.textContent = t('photoBtnBusy');
     let res;
     try {
       res = prov.mode === 'proxy'
         ? await N.estimateImageViaProxy(image, prov.url)
         : await N.estimateImageAI(image, prov.key);
     } catch (e) {
-      toast('שגיאה בניתוח התמונה — נסו שוב');
-      btn.disabled = false; btn.textContent = '📷 חשב לפי תמונה של הארוחה';
+      toast(t('toastImgErr'));
+      btn.disabled = false; btn.textContent = t('photoBtn');
       return;
     }
-    btn.disabled = false; btn.textContent = '📷 חשב לפי תמונה של הארוחה';
+    btn.disabled = false; btn.textContent = t('photoBtn');
     renderFoodResult(res, target);
     const v = N.verdict(res.total, target);
     const log = load(STORE.foodlog, {});
-    log[dateKey(new Date())] = { text: $('#food-text').value.trim() || '📷 ארוחה מתמונה', total: res.total, target, verdict: { color: v.color, key: v.key } };
+    log[dateKey(new Date())] = { text: $('#food-text').value.trim() || '📷', total: res.total, target, verdict: { color: v.color, key: v.key } };
     save(STORE.foodlog, log);
     renderHistory();
   }
 
   async function buildMenu() {
     const target = renderNutriTarget();
-    if (!target) { toast('מלאו קודם את פרטי הפרופיל'); return; }
+    if (!target) { toast(t('toastFillProfile')); return; }
     const prov = aiProvider();
     const btn = $('#build-menu');
     let plan;
     if (prov.mode !== 'local') {
-      btn.disabled = true; btn.textContent = 'Claude בונה…';
+      btn.disabled = true; btn.textContent = t('menuBtnBusy');
       try {
         plan = prov.mode === 'proxy'
           ? await N.mealPlanViaProxy(target, prov.url)
           : await N.mealPlanAI(target, prov.key);
-      } catch (e) { toast('שגיאת AI — בניתי תפריט מקומי'); plan = N.generateMealPlan(target); }
-      btn.disabled = false; btn.textContent = '🍽️ בנה לי תפריט יומי';
+      } catch (e) { toast(t('toastAiErrMenu')); plan = N.generateMealPlan(target); }
+      btn.disabled = false; btn.textContent = t('menuBtn');
     } else {
       plan = N.generateMealPlan(target);
     }
@@ -639,8 +639,8 @@
     const todayLog = load(STORE.foodlog, {})[dateKey(new Date())];
     if (todayLog) {
       $('#food-text').value = todayLog.text || '';
-      const t = N.targetCalories();
-      if (t) renderFoodResult(N.estimateLocal(todayLog.text || ''), t);
+      const tg = N.targetCalories();
+      if (tg) renderFoodResult(N.estimateLocal(todayLog.text || ''), tg);
     }
     // הגדרות AI
     const cfg = aiCfg();
@@ -656,7 +656,7 @@
     $('#ai-key').addEventListener('change', persistAI);
     $('#ai-enabled').addEventListener('change', () => {
       if ($('#ai-enabled').checked && !$('#ai-key').value.trim()) {
-        toast('הזינו מפתח API כדי להפעיל מצב AI');
+        toast(t('toastEnterKey'));
         $('#ai-enabled').checked = false;
       }
       persistAI();
@@ -708,9 +708,9 @@
     const avg = logged.length ? Math.round(logged.reduce((s, d) => s + d.consumed, 0) / logged.length) : null;
     const onTarget = data.filter(d => d.vkey === 'met').length;
     const tile = (val, lbl, cls) => `<div class="hstat ${cls || ''}"><div class="hstat-val">${val}</div><div class="hstat-lbl">${lbl}</div></div>`;
-    return tile(`${workouts}<span class="hstat-of">/${data.length}</span>`, 'אימונים שהושלמו', 'w')
-      + tile(avg != null ? avg.toLocaleString('he-IL') : '—', 'ממוצע קק"ל ליום', 'c')
-      + tile(onTarget, 'ימים ביעד', 't');
+    return tile(`${workouts}<span class="hstat-of">/${data.length}</span>`, t('statWorkouts'), 'w')
+      + tile(avg != null ? nf(avg) : '—', t('statAvg'), 'c')
+      + tile(onTarget, t('statOnTarget'), 't');
   }
 
   // גרף עמודות של הקלוריות היומיות מול קו היעד (SVG inline, מותאם לנושא)
@@ -726,43 +726,42 @@
     const baseY = top + plotH;
     const yFor = v => baseY - (v / yMax) * plotH;
 
+    const kcal = t('goalUnit');
+    const doneTxt = t('legWorkoutDone').replace(/^✓\s*/, '');
     let bars = '';
     data.forEach((d, i) => {
       const cx = padL + (i + 0.5) * step;
-      const dn = D.DAY_NAMES[d.date.getDay()].slice(0, 1);
+      const dn = I18n.dayShort()[d.date.getDay()];
       const dm = d.date.getDate();
       const showLabel = n <= 7 || i % Math.ceil(n / 6) === 0;
-      // עמודה
       if (d.consumed != null) {
         const y = yFor(d.consumed);
         const h = baseY - y;
-        bars += `<rect x="${(cx - barW / 2).toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(2, h).toFixed(1)}" rx="4" fill="${colorForVkey(d.vkey)}"><title>${dn} ${dm}: ${d.consumed} קק"ל${d.workout ? ' · אימון הושלם' : ''}</title></rect>`;
+        bars += `<rect x="${(cx - barW / 2).toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(2, h).toFixed(1)}" rx="4" fill="${colorForVkey(d.vkey)}"><title>${dn} ${dm}: ${d.consumed} ${kcal}${d.workout ? ' · ' + doneTxt : ''}</title></rect>`;
         if (n <= 7) bars += `<text x="${cx.toFixed(1)}" y="${(y - 5).toFixed(1)}" class="chart-val" text-anchor="middle">${d.consumed}</text>`;
       } else {
-        bars += `<rect x="${(cx - barW / 2).toFixed(1)}" y="${(baseY - 3).toFixed(1)}" width="${barW.toFixed(1)}" height="3" rx="1.5" class="chart-empty"><title>${dn} ${dm}: ללא רישום${d.workout ? ' · אימון הושלם' : ''}</title></rect>`;
+        bars += `<rect x="${(cx - barW / 2).toFixed(1)}" y="${(baseY - 3).toFixed(1)}" width="${barW.toFixed(1)}" height="3" rx="1.5" class="chart-empty"><title>${dn} ${dm}${d.workout ? ' · ' + doneTxt : ''}</title></rect>`;
       }
-      // תווית ציר-X
       if (showLabel) bars += `<text x="${cx.toFixed(1)}" y="${(baseY + 14).toFixed(1)}" class="chart-axis" text-anchor="middle">${n <= 7 ? dn : dm}</text>`;
-      // סמן אימון
-      bars += `<circle cx="${cx.toFixed(1)}" cy="${(baseY + 26).toFixed(1)}" r="${d.workout ? 4 : 2.5}" fill="${d.workout ? 'var(--accent)' : 'var(--line)'}"><title>${d.workout ? 'אימון הושלם' : 'אין אימון'}</title></circle>`;
+      bars += `<circle cx="${cx.toFixed(1)}" cy="${(baseY + 26).toFixed(1)}" r="${d.workout ? 4 : 2.5}" fill="${d.workout ? 'var(--accent)' : 'var(--line)'}"></circle>`;
     });
 
     const ty = yFor(refTarget);
     const targetLine = `<line x1="${padL}" y1="${ty.toFixed(1)}" x2="${Wv - padR}" y2="${ty.toFixed(1)}" class="chart-target" stroke-dasharray="4 4" />` +
-      `<text x="${padL}" y="${(ty - 4).toFixed(1)}" class="chart-target-lbl" text-anchor="start">יעד</text>`;
+      `<text x="${padL}" y="${(ty - 4).toFixed(1)}" class="chart-target-lbl" text-anchor="start">${t('targetShort')}</text>`;
 
     const widthStyle = n <= 7 ? 'width:100%' : `width:${Wv}px`;
-    return `<svg class="trend-svg" style="${widthStyle}" viewBox="0 0 ${Wv} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="גרף קלוריות יומי מול היעד">${targetLine}${bars}</svg>`;
+    return `<svg class="trend-svg" style="${widthStyle}" viewBox="0 0 ${Wv} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="calories vs goal">${targetLine}${bars}</svg>`;
   }
 
   function historyListHtml() {
-    const data = buildHistoryData(14).reverse(); // חדש→ישן
+    const data = buildHistoryData(14).reverse();
     return data.map(d => {
-      const dn = D.DAY_NAMES[d.date.getDay()];
-      const cal = d.consumed != null ? `${d.consumed.toLocaleString('he-IL')}${d.target ? '/' + d.target.toLocaleString('he-IL') : ''}` : '—';
+      const dn = I18n.dayNames()[d.date.getDay()];
+      const cal = d.consumed != null ? `${nf(d.consumed)}${d.target ? '/' + nf(d.target) : ''}` : '—';
       return `<div class="hist-row">
         <span class="hr-date">${dn} ${d.date.getDate()}/${d.date.getMonth() + 1}</span>
-        <span class="hr-workout ${d.workout ? 'on' : ''}">${d.workout ? '✓ אימון' : (d.rest ? '☕ מנוחה' : '—')}</span>
+        <span class="hr-workout ${d.workout ? 'on' : ''}">${d.workout ? t('rowWorkout') : (d.rest ? t('rowRest') : '—')}</span>
         <span class="hr-cal"><i class="hr-dot" style="background:${colorForVkey(d.vkey)}"></i>${cal}</span>
       </div>`;
     }).join('');
@@ -791,8 +790,39 @@
   /* =========================================================
      אתחול
      ========================================================= */
+  // מסמן את כפתור השפה הפעיל
+  function markLangButtons() {
+    Array.prototype.forEach.call($('#lang-switch').children,
+      b => b.classList.toggle('on', b.dataset.lang === I18n.lang));
+  }
+
+  // רענון כל התוכן הדינמי בעת החלפת שפה
+  function reRenderAll() {
+    markLangButtons();
+    const p = load(STORE.profile, null);
+    if (p && p.age && p.weight && p.height) renderBMI(p);
+    renderNutriTarget();
+    renderCalendar();
+    updateStreak();
+    renderHistory();
+    initReminders && updateReminderStatus(load(STORE.reminder, { enabled: false, time: '18:00' }));
+    // אם חלון היום פתוח – רענון תוכנו
+    if (sheet.classList.contains('open') && sheetDate) renderWorkout(sheetDate);
+    // רענון תוצאת התזונה של היום אם קיימת
+    const todayLog = load(STORE.foodlog, {})[dateKey(new Date())];
+    const tg = N.targetCalories();
+    if (todayLog && tg) renderFoodResult(N.estimateLocal(todayLog.text || ''), tg);
+  }
+
   function init() {
-    // ניווט חודשים
+    I18n.applyStatic();
+    markLangButtons();
+    $('#lang-switch').addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (b) I18n.setLang(b.dataset.lang);
+    });
+    document.addEventListener('excerly:lang', reRenderAll);
+
     $('#cal-prev').addEventListener('click', () => {
       viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1);
       renderCalendar();

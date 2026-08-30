@@ -99,23 +99,29 @@ export default {
     try { body = await request.json(); }
     catch (e) { return json({ error: 'Bad JSON body' }, 400, origin); }
 
+    // הנחיית שפת התשובה לפי שפת הממשק
+    const lang = body.lang === 'en' ? 'en' : 'he';
+    const withLang = (system) => system + (lang === 'en'
+      ? ' Respond in English (all name/label/note fields in English).'
+      : ' החזר את כל השדות name/label/note בעברית.');
+
     let out;
     if (body.action === 'estimate') {
       const text = String(body.text || '').slice(0, 2000).trim();
       if (!text) return json({ error: 'missing text' }, 400, origin);
-      out = await callAnthropic(env, ESTIMATE_SYSTEM, text, 1024);
+      out = await callAnthropic(env, withLang(ESTIMATE_SYSTEM), text, 1024);
     } else if (body.action === 'menu') {
       const target = Math.max(800, Math.min(6000, parseInt(body.target, 10) || 2000));
-      const user = 'יעד יומי: ' + target + ' קק"ל. בנה לי תפריט יומי מתאים.';
-      out = await callAnthropic(env, MENU_SYSTEM, user, 1500);
+      const user = 'Daily goal: ' + target + ' kcal. Build me a suitable daily menu.';
+      out = await callAnthropic(env, withLang(MENU_SYSTEM), user, 1500);
     } else if (body.action === 'estimate_image') {
       const img = body.image;
       if (!img || !img.data || !img.media_type) return json({ error: 'missing image' }, 400, origin);
       const content = [
         { type: 'image', source: { type: 'base64', media_type: img.media_type, data: img.data } },
-        { type: 'text', text: 'זו תמונה של הארוחה שלי. זהה את המנות והערך את סך הקלוריות.' }
+        { type: 'text', text: 'This is a photo of my meal. Identify the dishes and estimate the total calories.' }
       ];
-      out = await callAnthropic(env, IMAGE_SYSTEM, content, 1024);
+      out = await callAnthropic(env, withLang(IMAGE_SYSTEM), content, 1024);
     } else {
       return json({ error: 'unknown action' }, 400, origin);
     }
