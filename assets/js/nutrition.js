@@ -252,7 +252,42 @@
     return { meals, total, target, source: 'local' };
   }
 
-  /* ---------- מצב AI אופציונלי (Claude, מפתח של המשתמש) ---------- */
+  /* ---------- נירמול תשובות ה-AI למבנה אחיד ---------- */
+  function normalizeEstimate(out) {
+    const items = (out.items || []).map(i => ({ name: i.name, kcal: Math.round(i.kcal || 0) }));
+    return {
+      total: Math.round(out.total || items.reduce((s, i) => s + i.kcal, 0)),
+      items, unmatched: [], note: out.note || '', source: 'ai'
+    };
+  }
+  function normalizeMenu(out, target) {
+    const meals = (out.meals || []).map(m => ({ label: m.label || '', name: m.name || '', kcal: Math.round(m.kcal || 0) }));
+    return {
+      meals, total: Math.round(out.total || meals.reduce((s, m) => s + m.kcal, 0)),
+      target, note: out.note || '', source: 'ai'
+    };
+  }
+
+  /* ---------- מצב AI דרך שרת proxy (מומלץ – בלי מפתח בדפדפן) ---------- */
+  async function callProxy(url, payload) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('proxy failed: ' + res.status);
+    const data = await res.json();
+    if (data && data.error) throw new Error('proxy error: ' + data.error);
+    return data;
+  }
+  async function estimateViaProxy(text, url) {
+    return normalizeEstimate(await callProxy(url, { action: 'estimate', text }));
+  }
+  async function mealPlanViaProxy(target, url) {
+    return normalizeMenu(await callProxy(url, { action: 'menu', target }), target);
+  }
+
+  /* ---------- מצב AI ישיר (Claude, מפתח של המשתמש – BYOK) ---------- */
   async function callClaude(key, system, userText, maxTokens) {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -283,12 +318,7 @@
       'החזר JSON בלבד, ללא טקסט נוסף, במבנה: ' +
       '{"total": number, "items": [{"name": string, "kcal": number}], "note": string}. ' +
       'note הוא משפט קצר בעברית. אל תוסיף הסברים מחוץ ל-JSON.';
-    const out = await callClaude(key, system, text, 1024);
-    return {
-      total: Math.round(out.total || (out.items || []).reduce((s, i) => s + (i.kcal || 0), 0)),
-      items: (out.items || []).map(i => ({ name: i.name, kcal: Math.round(i.kcal || 0) })),
-      unmatched: [], note: out.note || '', source: 'ai'
-    };
+    return normalizeEstimate(await callClaude(key, system, text, 1024));
   }
 
   async function mealPlanAI(target, key) {
@@ -296,8 +326,7 @@
       'החזר JSON בלבד במבנה: {"meals": [{"label": string, "name": string, "kcal": number}], "total": number, "note": string}. ' +
       'כלול ארוחת בוקר, צהריים, ערב וחטיף אחד או שניים. סך הקלוריות צריך להתקרב ליעד. אל תוסיף טקסט מחוץ ל-JSON.';
     const out = await callClaude(key, 'יעד יומי: ' + target + ' קק"ל.\n' + system, 'בנה לי תפריט יומי ליעד של ' + target + ' קלוריות.', 1500);
-    const meals = (out.meals || []).map(m => ({ label: m.label || '', name: m.name || '', kcal: Math.round(m.kcal || 0) }));
-    return { meals, total: Math.round(out.total || meals.reduce((s, m) => s + m.kcal, 0)), target, note: out.note || '', source: 'ai' };
+    return normalizeMenu(out, target);
   }
 
   /* ---------- יעד קלוריות מהפרופיל ---------- */
@@ -319,7 +348,9 @@
   }
 
   global.ExcerlyNutrition = {
-    estimateLocal, estimateAI, generateMealPlan, mealPlanAI,
+    estimateLocal, generateMealPlan,
+    estimateAI, mealPlanAI,                 // BYOK ישיר
+    estimateViaProxy, mealPlanViaProxy,     // דרך שרת proxy
     targetCalories, verdict, SLOT_LABEL
   };
 })(window);

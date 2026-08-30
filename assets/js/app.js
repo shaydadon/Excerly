@@ -389,7 +389,18 @@
     return `<span class="chip" style="color:${c};border-color:${c}">🍎 ${log.total}${log.target ? '/' + log.target : ''} קק"ל</span>`;
   }
 
-  function aiCfg() { return load(STORE.ai, { key: '', enabled: false }); }
+  function aiCfg() { return load(STORE.ai, { proxyUrl: '', key: '', enabled: false }); }
+  function updateAiBadge() {
+    const badge = $('#ai-badge');
+    if (badge) badge.hidden = aiProvider().mode === 'local';
+  }
+  // האם להשתמש ב-AI, ובאיזה ספק: 'proxy' (מומלץ) או 'key' (BYOK)
+  function aiProvider() {
+    const c = aiCfg();
+    if (c.proxyUrl) return { mode: 'proxy', url: c.proxyUrl };
+    if (c.enabled && c.key) return { mode: 'key', key: c.key };
+    return { mode: 'local' };
+  }
 
   function renderNutriTarget() {
     const box = $('#nutri-target');
@@ -454,13 +465,16 @@
     if (!target) { toast('מלאו קודם את פרטי הפרופיל'); return; }
     const text = $('#food-text').value.trim();
     if (!text) { toast('כתבו מה אכלתם היום'); return; }
-    const cfg = aiCfg();
+    const prov = aiProvider();
     const btn = $('#calc-food');
     let res;
-    if (cfg.enabled && cfg.key) {
-      btn.disabled = true; btn.textContent = 'מחשב עם AI…';
-      try { res = await N.estimateAI(text, cfg.key); }
-      catch (e) { toast('שגיאת AI — עברתי למנוע המקומי'); res = N.estimateLocal(text); }
+    if (prov.mode !== 'local') {
+      btn.disabled = true; btn.textContent = 'Claude מחשב…';
+      try {
+        res = prov.mode === 'proxy'
+          ? await N.estimateViaProxy(text, prov.url)
+          : await N.estimateAI(text, prov.key);
+      } catch (e) { toast('שגיאת AI — עברתי למנוע המקומי'); res = N.estimateLocal(text); }
       btn.disabled = false; btn.textContent = 'חשב קלוריות';
     } else {
       res = N.estimateLocal(text);
@@ -475,13 +489,16 @@
   async function buildMenu() {
     const target = renderNutriTarget();
     if (!target) { toast('מלאו קודם את פרטי הפרופיל'); return; }
-    const cfg = aiCfg();
+    const prov = aiProvider();
     const btn = $('#build-menu');
     let plan;
-    if (cfg.enabled && cfg.key) {
-      btn.disabled = true; btn.textContent = 'בונה עם AI…';
-      try { plan = await N.mealPlanAI(target, cfg.key); }
-      catch (e) { toast('שגיאת AI — בניתי תפריט מקומי'); plan = N.generateMealPlan(target); }
+    if (prov.mode !== 'local') {
+      btn.disabled = true; btn.textContent = 'Claude בונה…';
+      try {
+        plan = prov.mode === 'proxy'
+          ? await N.mealPlanViaProxy(target, prov.url)
+          : await N.mealPlanAI(target, prov.key);
+      } catch (e) { toast('שגיאת AI — בניתי תפריט מקומי'); plan = N.generateMealPlan(target); }
       btn.disabled = false; btn.textContent = '🍽️ בנה לי תפריט יומי';
     } else {
       plan = N.generateMealPlan(target);
@@ -500,9 +517,15 @@
     }
     // הגדרות AI
     const cfg = aiCfg();
+    $('#ai-proxy').value = cfg.proxyUrl || '';
     $('#ai-key').value = cfg.key || '';
     $('#ai-enabled').checked = !!cfg.enabled;
-    const persistAI = () => save(STORE.ai, { key: $('#ai-key').value.trim(), enabled: $('#ai-enabled').checked });
+    const persistAI = () => save(STORE.ai, {
+      proxyUrl: $('#ai-proxy').value.trim(),
+      key: $('#ai-key').value.trim(),
+      enabled: $('#ai-enabled').checked
+    });
+    $('#ai-proxy').addEventListener('change', () => { persistAI(); updateAiBadge(); });
     $('#ai-key').addEventListener('change', persistAI);
     $('#ai-enabled').addEventListener('change', () => {
       if ($('#ai-enabled').checked && !$('#ai-key').value.trim()) {
@@ -511,6 +534,7 @@
       }
       persistAI();
     });
+    updateAiBadge();
 
     $('#calc-food').addEventListener('click', calcFood);
     $('#build-menu').addEventListener('click', buildMenu);

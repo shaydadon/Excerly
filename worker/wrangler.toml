@@ -1,0 +1,9 @@
+name = "excerly-proxy"
+main = "excerly-proxy.js"
+compatibility_date = "2024-11-01"
+
+# מודל ברירת המחדל. אפשר לשנות ל-claude-haiku-4-5 להוזלה ותגובה מהירה,
+# או להשאיר claude-opus-5 לדיוק מרבי. המפתח עצמו נשמר כסוד (secret),
+# לא כאן: wrangler secret put ANTHROPIC_API_KEY
+[vars]
+MODEL = "claude-opus-5"

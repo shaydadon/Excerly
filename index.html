@@ -88,8 +88,8 @@
 
     <!-- מעקב תזונה יומי -->
     <section class="card">
-      <h2 class="card-title"><span class="ico">🍎</span> מעקב תזונה יומי</h2>
-      <p class="section-hint" id="nutri-hint">רשמו מה אכלתם היום כטקסט חופשי — האפליקציה תעריך את הקלוריות ותראה אם עמדתם ביעד.</p>
+      <h2 class="card-title"><span class="ico">🍎</span> מעקב תזונה יומי <span class="ai-badge" id="ai-badge" hidden>✨ AI פעיל</span></h2>
+      <p class="section-hint" id="nutri-hint">כתבו בטקסט חופשי מה אכלתם — Claude יבין ויעריך את הקלוריות, ויראה אם עמדתם ביעד.</p>
 
       <div class="nutri-target" id="nutri-target"></div>
 
@@ -106,16 +106,26 @@
       <div class="menu-result" id="menu-result"></div>
 
       <details class="ai-settings" id="ai-settings">
-        <summary>⚙️ הגדרות AI (אופציונלי — דיוק גבוה יותר)</summary>
-        <p class="ai-note">אפשר לחבר מפתח Anthropic API משלך לקבלת הערכה מדויקת יותר באמצעות Claude. המפתח נשמר <b>רק במכשיר שלך</b> ונשלח אך ורק ל-Anthropic. ללא מפתח, פועל המנוע המקומי.</p>
+        <summary>⚙️ הגדרות AI (ניתוח טקסט חכם באמצעות Claude)</summary>
+        <p class="ai-note">כשמחובר שרת AI, האפליקציה מבינה כל טקסט חופשי ומחשבת קלוריות בעזרת Claude — אוטומטית. ללא חיבור, פועל מנוע ההערכה המקומי.</p>
+
         <div class="field wide">
-          <label for="ai-key">מפתח Anthropic API (sk-ant-...)</label>
-          <input id="ai-key" type="password" placeholder="sk-ant-..." autocomplete="off" />
+          <label for="ai-proxy">כתובת שרת ה-AI (Proxy URL) — מומלץ</label>
+          <input id="ai-proxy" type="url" placeholder="https://excerly-proxy.xxx.workers.dev" autocomplete="off" inputmode="url" />
         </div>
-        <label class="ai-toggle">
-          <input type="checkbox" id="ai-enabled" />
-          <span>השתמש ב-AI (Claude) להערכה ולתפריט</span>
-        </label>
+        <p class="ai-note">מגדירים פעם אחת שרת proxy קטן (Cloudflare Worker) שמחזיק את המפתח בצד השרת — ואז ה-AI עובד לכל מי שנכנס לאתר, בלי לחשוף מפתח. הוראות ב-<code>worker/README.md</code>.</p>
+
+        <details class="ai-advanced">
+          <summary>אפשרות למתקדמים: מפתח ישיר במכשיר (BYOK)</summary>
+          <div class="field wide" style="margin-top:8px">
+            <label for="ai-key">מפתח Anthropic API (sk-ant-...)</label>
+            <input id="ai-key" type="password" placeholder="sk-ant-..." autocomplete="off" />
+          </div>
+          <label class="ai-toggle">
+            <input type="checkbox" id="ai-enabled" />
+            <span>השתמש במפתח המקומי (נשמר רק במכשיר זה)</span>
+          </label>
+        </details>
       </details>
     </section>
 
