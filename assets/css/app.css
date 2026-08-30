@@ -411,14 +411,33 @@ textarea:focus { border-color: var(--accent); }
 /* רשימת תרגילים */
 .ex-list { display: flex; flex-direction: column; gap: 10px; }
 .ex-item {
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: center; gap: 10px;
   background: var(--card); border: 1px solid var(--line);
-  border-radius: 14px; padding: 10px 12px;
-  cursor: pointer; text-align: start;
-  transition: transform .08s, border-color .15s;
+  border-radius: 14px; padding: 8px 10px;
+  transition: border-color .15s, background .15s;
 }
-.ex-item:hover { border-color: var(--accent); }
-.ex-item:active { transform: scale(.98); }
+.ex-item.done { border-color: var(--accent); background: rgba(53, 208, 165, .07); }
+.ex-item.done .ex-name { text-decoration: line-through; color: var(--muted); }
+.ex-open {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px;
+  background: none; border: none; padding: 2px; cursor: pointer;
+  text-align: start; font-family: inherit; color: inherit;
+  transition: transform .08s;
+}
+.ex-open:hover .ex-name { color: var(--accent); }
+.ex-open:active { transform: scale(.98); }
+.ex-finish {
+  flex: none; width: 40px; height: 40px; border-radius: 50%;
+  border: 1.5px solid var(--line); background: var(--card-2);
+  color: var(--muted); font-size: 20px; font-weight: 800; line-height: 1;
+  cursor: pointer; display: grid; place-items: center; transition: .15s;
+}
+.ex-finish.on {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #06231c; border-color: transparent;
+}
+.ex-finish:active { transform: scale(.88); }
+.detail-finish { margin-top: 18px; }
 .ex-thumb {
   width: 58px; height: 58px; flex: none;
   border-radius: 12px; overflow: hidden;

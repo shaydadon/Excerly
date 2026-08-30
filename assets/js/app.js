@@ -12,6 +12,7 @@
   const STORE = {
     profile: 'excerly.profile',
     done: 'excerly.done',        // { 'YYYY-MM-DD': true }
+    exdone: 'excerly.exdone',    // { 'YYYY-MM-DD': { exId: true } }
     reminder: 'excerly.reminder', // { enabled, time }
     foodlog: 'excerly.foodlog',  // { 'YYYY-MM-DD': { text, total, target, verdict } }
     ai: 'excerly.ai'             // { key, enabled }
@@ -36,8 +37,13 @@
   const sameDay = (a, b) => dateKey(a) === dateKey(b);
 
   let doneMap = load(STORE.done, {});
+  let exDoneMap = load(STORE.exdone, {}); // השלמה ברמת תרגיל בודד
   let viewDate = new Date();        // חודש מוצג בלוח
   const today = new Date();
+
+  const exSet = key => (exDoneMap[key] || (exDoneMap[key] = {}));
+  const isExDone = (key, id) => !!(exDoneMap[key] && exDoneMap[key][id]);
+  const doneCount = (prog, key) => prog.exercises.filter(id => isExDone(key, id)).length;
 
   /* ---------- Toast ---------- */
   let toastTimer;
@@ -191,16 +197,21 @@
 
     const items = prog.exercises.map(id => {
       const ex = D.EXERCISES[id];
-      return `<button class="ex-item" data-ex="${id}">
-        <span class="ex-thumb">${A.svgFor(ex.animation)}</span>
-        <span class="ex-info">
-          <span class="ex-name">${ex.name}</span>
-          <span class="ex-area">${ex.area}</span>
-          <span class="ex-reps">${ex.reps}${ex.hold !== '—' ? ' · החזקה ' + ex.hold : ''}</span>
-        </span>
-        <span class="ex-arrow">‹</span>
-      </button>`;
+      const ed = isExDone(key, id);
+      return `<div class="ex-item ${ed ? 'done' : ''}">
+        <button class="ex-open" data-ex="${id}">
+          <span class="ex-thumb">${A.svgFor(ex.animation)}</span>
+          <span class="ex-info">
+            <span class="ex-name">${ex.name}</span>
+            <span class="ex-area">${ex.area}</span>
+            <span class="ex-reps">${ex.reps}${ex.hold !== '—' ? ' · החזקה ' + ex.hold : ''}</span>
+          </span>
+        </button>
+        <button class="ex-finish ${ed ? 'on' : ''}" data-ex="${id}"
+          aria-label="${ed ? 'בטל סימון' : 'סיום תרגיל'}" title="${ed ? 'בוצע' : 'סמן כבוצע'}">${ed ? '✓' : '+'}</button>
+      </div>`;
     }).join('');
+    const dc = doneCount(prog, key);
 
     sheet.innerHTML = `
       <div class="sheet-grip"></div>
@@ -216,6 +227,7 @@
         <div class="sheet-meta">
           <span class="chip">🧘 ${prog.exercises.length} תרגילים</span>
           <span class="chip">⏱ כ-${mins} דק׳</span>
+          <span class="chip" id="ex-progress">✅ ${dc}/${prog.exercises.length} הושלמו</span>
           ${prog.rest ? '<span class="chip rest">☕ יום מנוחה פעילה</span>' : ''}
           ${foodChip(key)}
         </div>
@@ -224,7 +236,7 @@
         <div class="ex-list">${items}</div>
         <div class="workout-actions">
           <button class="btn btn-primary btn-block" id="toggle-done">
-            ${done ? '↺ בטל סימון אימון' : '✓ סיימתי את האימון'}
+            ${done ? '↺ בטל סימון האימון' : '✓ סיימתי את כל האימון'}
           </button>
         </div>
         <div class="done-banner ${done ? 'show' : ''}" id="done-banner">🎉 כל הכבוד! השלמת את האימון להיום</div>
@@ -232,16 +244,53 @@
 
     $('#sheet-close', sheet).addEventListener('click', closeSheet);
     $('#toggle-done', sheet).addEventListener('click', () => toggleDone(key));
-    sheet.querySelectorAll('.ex-item').forEach(btn => {
+    sheet.querySelectorAll('.ex-open').forEach(btn => {
       btn.addEventListener('click', () => openExercise(btn.dataset.ex));
+    });
+    sheet.querySelectorAll('.ex-finish').forEach(btn => {
+      btn.addEventListener('click', (e) => { e.stopPropagation(); toggleExDone(key, btn.dataset.ex); });
     });
     sheet.scrollTop = 0;
   }
 
-  function toggleDone(key) {
-    if (doneMap[key]) delete doneMap[key];
-    else doneMap[key] = true;
+  // סנכרון סימון היום עם השלמת כל התרגילים
+  function syncDayDone(key, prog) {
+    const all = prog.exercises.length > 0 && prog.exercises.every(id => isExDone(key, id));
+    if (all) doneMap[key] = true; else delete doneMap[key];
     save(STORE.done, doneMap);
+  }
+
+  // סימון/ביטול תרגיל בודד
+  function toggleExDone(key, id, silent) {
+    const prog = D.programForDate(sheetDate);
+    const s = exSet(key);
+    if (s[id]) delete s[id]; else s[id] = true;
+    if (Object.keys(s).length === 0) delete exDoneMap[key];
+    save(STORE.exdone, exDoneMap);
+    const wasDone = !!doneMap[key];
+    syncDayDone(key, prog);
+    renderWorkout(sheetDate);
+    renderCalendar();
+    updateStreak();
+    if (!silent) {
+      if (doneMap[key] && !wasDone) toast('כל הכבוד! השלמת את כל האימון 💪');
+      else if (isExDone(key, id)) toast('תרגיל הושלם ✓');
+    }
+  }
+
+  // סימון/ביטול כל האימון – מסמן גם את כל התרגילים
+  function toggleDone(key) {
+    const prog = D.programForDate(sheetDate);
+    if (doneMap[key]) {
+      delete doneMap[key];
+      delete exDoneMap[key];
+    } else {
+      doneMap[key] = true;
+      const s = exSet(key);
+      prog.exercises.forEach(id => { s[id] = true; });
+    }
+    save(STORE.done, doneMap);
+    save(STORE.exdone, exDoneMap);
     renderWorkout(sheetDate);
     renderCalendar();
     updateStreak();
@@ -250,6 +299,8 @@
 
   function openExercise(id) {
     const ex = D.EXERCISES[id];
+    const key = dateKey(sheetDate);
+    const ed = isExDone(key, id);
     const body = $('#sheet-body', sheet);
     body.innerHTML = `
       <button class="detail-back" id="detail-back">→ חזרה לרשימה</button>
@@ -261,8 +312,17 @@
         <span class="badge area">${ex.area}</span>
       </div>
       <ol class="detail-steps">${ex.steps.map(s => `<li>${s}</li>`).join('')}</ol>
-      <div class="detail-tip"><span class="ico">💡</span><span><b>טיפ:</b> ${ex.tip}</span></div>`;
+      <div class="detail-tip"><span class="ico">💡</span><span><b>טיפ:</b> ${ex.tip}</span></div>
+      <button class="btn ${ed ? 'btn-ghost' : 'btn-primary'} btn-block detail-finish" id="detail-finish">
+        ${ed ? '↺ בטל סימון התרגיל' : '✓ סיימתי את התרגיל'}
+      </button>`;
     $('#detail-back', body).addEventListener('click', () => renderWorkout(sheetDate));
+    $('#detail-finish', body).addEventListener('click', () => {
+      toggleExDone(key, id, true);
+      const nowDone = isExDone(key, id);
+      toast(nowDone ? 'תרגיל הושלם ✓' : 'הסימון בוטל');
+      openExercise(id); // רענון מצב הכפתור
+    });
     sheet.scrollTop = 0;
   }
 
