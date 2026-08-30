@@ -1,5 +1,5 @@
 /* Excerly – Service Worker לתמיכה בעבודה לא מקוונת (PWA) */
-const CACHE = 'excerly-v13';
+const CACHE = 'excerly-v14';
 const ASSETS = [
   '.',
   'index.html',

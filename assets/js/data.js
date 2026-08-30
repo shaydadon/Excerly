@@ -233,8 +233,27 @@
     };
   }
 
+  /* =============================================================
+     שדרוג אופציונלי לאנימציות Lottie (איכות מקצועית)
+     -------------------------------------------------------------
+     כל עוד המפה ריקה – האפליקציה מציגה את דמויות ה-SVG המובנות.
+     כדי לשדרג תרגיל לאנימציית Lottie מקצועית, הוסיפו קובץ JSON
+     לתיקייה assets/lottie/ ורשמו אותו כאן לפי מפתח האנימציה של
+     התרגיל (העמודה animation למעלה). ניתן לתת קובץ אחד, או קבצים
+     נפרדים לזכר/נקבה:
+
+       neck: 'assets/lottie/neck.json',
+       arms: { male: 'assets/lottie/arms-m.json',
+               female: 'assets/lottie/arms-f.json' },
+
+     ראו assets/lottie/README.md להסבר שלב-אחר-שלב.
+     ============================================================= */
+  const LOTTIE = {
+    // ריק כברירת מחדל – מוסיפים כאן ערכים כדי לשדרג תרגילים.
+  };
+
   global.ExcerlyData = {
-    EXERCISES, WEEKLY_PROGRAM, DAY_NAMES, MONTH_NAMES,
+    EXERCISES, WEEKLY_PROGRAM, DAY_NAMES, MONTH_NAMES, LOTTIE,
     programForDate, estimatedMinutes,
     calcBMI, bmiCategory, calcBMR, ACTIVITY_FACTORS, macros
   };

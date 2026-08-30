@@ -49,6 +49,51 @@
   // מגדר הדמות באנימציות – לפי הפרופיל (ברירת מחדל: זכר)
   const figGender = () => (load(STORE.profile, {}).gender === 'female' ? 'female' : 'male');
 
+  /* ---------- שכבת ויזואל לתרגיל: Lottie (אם הוגדר) או SVG מובנה ----------
+     אם קיים קובץ Lottie לתרגיל ב-D.LOTTIE – מציגים אותו במסכים הגדולים
+     (פירוט התרגיל והנגן). אחרת, נופלים בחזרה לדמות ה-SVG המובנית.
+     התמונות הקטנות (thumbnails) תמיד משתמשות ב-SVG הקליל. */
+  function lottieSrc(ex) {
+    const e = (D.LOTTIE || {})[ex.animation];
+    if (!e) return null;
+    if (typeof e === 'string') return e;
+    return e[figGender()] || e.male || e.female || null;
+  }
+  // מחזיר HTML לויזואל התרגיל. big=true מאפשר Lottie במסכים הגדולים.
+  function exVisual(ex, big) {
+    if (big && lottieSrc(ex)) return `<div class="ex-lottie" data-lottie="${ex.animation}"></div>`;
+    return A.svgFor(ex.animation, figGender());
+  }
+  // אתחול נגני Lottie בתוך אלמנט לאחר שהוזרק ל-DOM
+  function mountLottie(root) {
+    if (!root) return;
+    const nodes = root.querySelectorAll('.ex-lottie[data-lottie]');
+    if (!nodes.length) return;
+    withLottie(() => nodes.forEach(el => {
+      if (el.dataset.mounted) return;
+      const ex = D.EXERCISES[el.dataset.lottie] || { animation: el.dataset.lottie };
+      const src = lottieSrc(ex);
+      if (!src || !window.lottie) return;
+      el.dataset.mounted = '1';
+      window.lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: src });
+    }));
+  }
+  // טעינה עצלה של ספריית lottie-web (רק אם באמת נדרשת)
+  let _lottieLoading = null;
+  function withLottie(cb) {
+    if (window.lottie) return cb();
+    if (!_lottieLoading) {
+      _lottieLoading = new Promise((res) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js';
+        s.onload = () => res();
+        s.onerror = () => res();
+        document.head.appendChild(s);
+      });
+    }
+    _lottieLoading.then(cb);
+  }
+
   const exSet = key => (exDoneMap[key] || (exDoneMap[key] = {}));
   const isExDone = (key, id) => !!(exDoneMap[key] && exDoneMap[key][id]);
   const doneCount = (prog, key) => prog.exercises.filter(id => isExDone(key, id)).length;
@@ -321,7 +366,7 @@
     const body = $('#sheet-body', sheet);
     body.innerHTML = `
       <button class="detail-back" id="detail-back">${t('back')}</button>
-      <div class="detail-stage">${A.svgFor(ex.animation, figGender())}</div>
+      <div class="detail-stage">${exVisual(ex, true)}</div>
       <div class="detail-name">${L(ex.name)}</div>
       <div class="detail-badges">
         <span class="badge reps">${t('badgeReps', { r: L(ex.reps) })}</span>
@@ -333,6 +378,7 @@
       <button class="btn ${ed ? 'btn-ghost' : 'btn-primary'} btn-block detail-finish" id="detail-finish">
         ${ed ? t('detailUnfinish') : t('detailFinish')}
       </button>`;
+    mountLottie(body);
     $('#detail-back', body).addEventListener('click', () => renderWorkout(sheetDate));
     $('#detail-finish', body).addEventListener('click', () => {
       toggleExDone(key, id, true);
@@ -420,7 +466,7 @@
           <circle class="p-track" cx="50" cy="50" r="${RING_R}" />
           <circle class="p-prog" id="p-prog" cx="50" cy="50" r="${RING_R}" />
         </svg>
-        <div class="player-anim">${A.svgFor(ex.animation, figGender())}</div>
+        <div class="player-anim">${exVisual(ex, true)}</div>
       </div>
       <div class="player-name">${L(ex.name)}</div>
       <div class="detail-badges" style="justify-content:center;margin-top:6px">
@@ -437,6 +483,7 @@
     $('#p-prev', P()).addEventListener('click', prevExercise);
     $('#p-next', P()).addEventListener('click', nextExercise);
     $('#p-play', P()).addEventListener('click', togglePlay);
+    mountLottie(P());
     updatePlayerTime();
   }
 

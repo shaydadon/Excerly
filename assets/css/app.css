@@ -584,6 +584,9 @@ textarea:focus { border-color: var(--accent); }
   overflow: hidden;
 }
 .detail-stage .ex-anim { width: 78%; height: 78%; }
+/* מיכל אנימציית Lottie – ממלא את הבמה */
+.ex-lottie { width: 100%; height: 100%; display: grid; place-items: center; }
+.ex-lottie svg { width: 92% !important; height: 92% !important; }
 .detail-name { font-size: 21px; font-weight: 800; margin: 14px 0 4px; }
 .detail-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
 .badge {
