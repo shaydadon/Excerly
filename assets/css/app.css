@@ -633,14 +633,9 @@ textarea:focus { border-color: var(--accent); }
    דמויות התרגילים – סגנון + אנימציות
    ============================================================= */
 /* צבעי הדמות (זהים בכל ערכת נושא) */
-.ex-anim { --skin: #ecb27f; --hair: #43342a; --shirt: #35d0a5; --pants: #4671b0; --shorts: #33456b; --work: #ff9a3d; }
-/* איברים ממולאים (סגנון איור שטוח) – עור / גופייה / מכנסיים */
-.fig-sk { fill: var(--skin); }
-.fig-sh { fill: var(--shirt); }
-.fig-sr { fill: var(--shorts); }
-.fig-face { fill: #2a2018; }
-.fig-foot { fill: var(--skin); }
-.hair { fill: var(--hair); }
+.ex-anim { --work: #ff9a3d; }
+/* צל רך מתחת לדמות – מוסיף עומק */
+.fig-shadow { fill: rgba(20, 30, 50, .10); }
 .fig-male .hair-female { display: none; }
 .fig-female .hair-male { display: none; }
 .floor { stroke: var(--line); stroke-width: 4; stroke-linecap: round; }
