@@ -1,5 +1,5 @@
 /* Excerly – Service Worker לתמיכה בעבודה לא מקוונת (PWA) */
-const CACHE = 'excerly-v1';
+const CACHE = 'excerly-v2';
 const ASSETS = [
   '.',
   'index.html',
@@ -8,6 +8,8 @@ const ASSETS = [
   'assets/js/animations.js',
   'assets/js/app.js',
   'assets/icon.svg',
+  'assets/icon-192.png',
+  'assets/icon-512.png',
   'manifest.webmanifest'
 ];
 
