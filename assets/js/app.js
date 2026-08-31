@@ -23,7 +23,8 @@
     meals: 'excerly.meals',      // מקור האמת: { 'YYYY-MM-DD': [ { id, name, kcal } ] }
     ai: 'excerly.ai',            // { key, enabled }
     plan: 'excerly.plan',        // תוכנית האימון האחרונה שנבנתה
-    plans: 'excerly.plans'       // תוכניות אימון שמורות [{id,name,at,plan}]
+    plans: 'excerly.plans',      // תוכניות אימון שמורות [{id,name,at,plan}]
+    schedule: 'excerly.schedule' // תוכנית מוחלת על היומן { plan, map:{weekday:dayIdx} }
   };
   const load = (k, fb) => {
     try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; }
@@ -257,9 +258,14 @@
       if (prog.rest) cell.classList.add('rest');
       if (sameDay(date, today)) cell.classList.add('today');
 
+      const gym = scheduledDay(date);
+      if (gym) cell.classList.add('gym');
+
       cell.appendChild(el('div', 'd-num', String(d)));
+      if (gym && !doneMap[key]) cell.appendChild(el('div', 'cell-gym', '🏋️'));
       const dot = el('div', 'dot');
       if (doneMap[key]) { dot.classList.add('done'); cell.appendChild(el('div', 'cell-check', '✓')); }
+      else if (gym) dot.classList.add('gym');
       else if (prog.rest) dot.classList.add('rest');
       cell.appendChild(dot);
 
@@ -288,7 +294,20 @@
     document.body.style.overflow = '';
   }
 
+  /* ---------- שילוב תוכנית האימון ביומן ---------- */
+  function scheduleCfg() { return load(STORE.schedule, null); }
+  function scheduledDay(date) {
+    const s = scheduleCfg();
+    if (!s || !s.plan || !s.map) return null;
+    const idx = s.map[date.getDay()];
+    if (idx == null) return null;
+    const day = s.plan.days && s.plan.days[idx];
+    return day ? { plan: s.plan, dayIdx: idx, day } : null;
+  }
+
   function renderWorkout(date) {
+    const sched = scheduledDay(date);
+    if (sched) { renderGymDay(date, sched); return; }
     const prog = D.programForDate(date);
     const key = dateKey(date);
     const done = !!doneMap[key];
@@ -360,6 +379,91 @@
       btn.addEventListener('click', (e) => { e.stopPropagation(); toggleExDone(key, btn.dataset.ex); });
     });
     sheet.scrollTop = 0;
+  }
+
+  // מסך יום אימון כוח (מתוך תוכנית שהוחלה על היומן)
+  function renderGymDay(date, sched) {
+    const key = dateKey(date);
+    const day = sched.day;
+    const ids = day.exercises.map((_, i) => `gym:${sched.dayIdx}:${i}`);
+    const dc = ids.filter(id => isExDone(key, id)).length;
+    const done = !!doneMap[key];
+    const dayLabel = t('dayLabel', { day: I18n.dayNames()[date.getDay()], d: date.getDate(), month: I18n.monthNames()[date.getMonth()] });
+
+    const items = day.exercises.map((e, i) => {
+      const id = `gym:${sched.dayIdx}:${i}`;
+      const ed = isExDone(key, id);
+      return `<div class="ex-item ${ed ? 'done' : ''}">
+        <div class="gym-ex">
+          <span class="ex-name">${escapeHtml(e.name)}</span>
+          <span class="ex-reps">${escapeHtml(e.sets)}×${escapeHtml(e.reps)}${e.rest && e.rest !== '—' ? ' · ⏱ ' + escapeHtml(e.rest) : ''}</span>
+          ${e.note ? `<span class="ex-area">${escapeHtml(e.note)}</span>` : ''}
+        </div>
+        <button class="ex-finish ${ed ? 'on' : ''}" data-gid="${id}"
+          aria-label="${ed ? t('finishUnmark') : t('finishMark')}" title="${ed ? t('finishUnmark') : t('finishMark')}">${ed ? '✓' : '+'}</button>
+      </div>`;
+    }).join('');
+
+    sheet.innerHTML = `
+      <div class="sheet-grip"></div>
+      <div class="sheet-head">
+        <div class="row">
+          <div class="sheet-head-main">
+            <div class="gym-hero">🏋️</div>
+            <div>
+              <div class="sheet-date">${dayLabel}</div>
+              <div class="sheet-title">${escapeHtml(day.name || sched.plan.title || t('gymDayChip'))}</div>
+              <div class="sheet-focus">${escapeHtml(day.focus || '')}</div>
+            </div>
+          </div>
+          <button class="sheet-close" id="sheet-close" aria-label="✕">✕</button>
+        </div>
+        <div class="sheet-meta">
+          <span class="chip gym">${t('gymDayChip')}</span>
+          <span class="chip">${t('exCount', { n: day.exercises.length })}</span>
+          <span class="chip" id="ex-progress">${t('progressChip', { d: dc, n: day.exercises.length })}</span>
+        </div>
+      </div>
+      <div class="sheet-body" id="sheet-body">
+        <div class="ex-list">${items}</div>
+        <div class="workout-actions">
+          <button class="btn btn-ghost btn-block" id="toggle-done">${done ? t('dayUndoBtn') : t('dayDoneBtn')}</button>
+        </div>
+        <div class="done-banner ${done ? 'show' : ''}">${t('doneBanner')}</div>
+      </div>`;
+
+    $('#sheet-close', sheet).addEventListener('click', closeSheet);
+    $('#toggle-done', sheet).addEventListener('click', () => toggleGymDay(key, ids));
+    sheet.querySelectorAll('.ex-finish').forEach(btn =>
+      btn.addEventListener('click', (e) => { e.stopPropagation(); toggleGymEx(key, btn.dataset.gid, ids); }));
+    sheet.scrollTop = 0;
+  }
+
+  function syncGymDone(key, ids) {
+    const all = ids.length > 0 && ids.every(id => isExDone(key, id));
+    if (all) doneMap[key] = true; else delete doneMap[key];
+    save(STORE.done, doneMap);
+  }
+  function toggleGymEx(key, id, ids) {
+    const s = exSet(key);
+    if (s[id]) delete s[id]; else s[id] = true;
+    if (Object.keys(s).length === 0) delete exDoneMap[key];
+    save(STORE.exdone, exDoneMap);
+    const wasDone = !!doneMap[key];
+    syncGymDone(key, ids);
+    renderWorkout(sheetDate); renderCalendar(); updateStreak(); renderHistory();
+    if (doneMap[key] && !wasDone) toast(t('toastAllDone'));
+    else if (isExDone(key, id)) toast(t('toastExDone'));
+  }
+  function toggleGymDay(key, ids) {
+    const allDone = ids.length > 0 && ids.every(id => isExDone(key, id));
+    const s = exSet(key);
+    if (allDone) { ids.forEach(id => delete s[id]); if (Object.keys(s).length === 0) delete exDoneMap[key]; }
+    else { ids.forEach(id => s[id] = true); }
+    save(STORE.exdone, exDoneMap);
+    syncGymDone(key, ids);
+    renderWorkout(sheetDate); renderCalendar(); updateStreak(); renderHistory();
+    toast(allDone ? t('toastUnmark') : t('toastAllDone'));
   }
 
   // סנכרון סימון היום עם השלמת כל התרגילים
@@ -1025,12 +1129,44 @@
           <div class="pex-list">${rows}</div>
         </details>`;
     }).join('');
+    const applied = !!scheduleCfg();
     box.innerHTML = `
       <div class="plan-head">
         <div class="plan-title">${escapeHtml(plan.title)} ${badge}</div>
         ${plan.note ? `<p class="plan-note">💡 ${escapeHtml(plan.note)}</p>` : ''}
       </div>
-      <div class="plan-days">${days}</div>`;
+      <div class="plan-days">${days}</div>
+      <div class="plan-apply">
+        <button class="btn btn-primary btn-block" id="apply-plan">📅 ${t('applyToCalendar')}</button>
+        ${applied ? `<button class="btn btn-ghost btn-block" id="remove-plan" style="margin-top:8px">${t('removeFromCalendar')}</button>` : ''}
+      </div>`;
+    const ap = $('#apply-plan', box);
+    if (ap) ap.addEventListener('click', () => applyPlanToCalendar(plan));
+    const rp = $('#remove-plan', box);
+    if (rp) rp.addEventListener('click', removeSchedule);
+  }
+
+  // חלוקת ימי התוכנית לימות השבוע (0=ראשון) לפי מספר הימים
+  function defaultWeekdayMap(n) {
+    const WD = { 2: [0, 3], 3: [0, 2, 4], 4: [0, 1, 3, 4], 5: [0, 1, 2, 3, 4], 6: [0, 1, 2, 3, 4, 5] };
+    const arr = WD[Math.min(6, Math.max(2, n))] || [0, 2, 4];
+    const map = {};
+    arr.slice(0, n).forEach((wd, i) => { map[wd] = i; });
+    return map;
+  }
+  function applyPlanToCalendar(plan) {
+    const n = (plan.days || []).length;
+    if (!n) return;
+    save(STORE.schedule, { plan, map: defaultWeekdayMap(n) });
+    toast(t('appliedToCalendar'));
+    renderCalendar();
+    renderPlan(load(STORE.plan, null) || plan);
+  }
+  function removeSchedule() {
+    save(STORE.schedule, null);
+    toast(t('removedFromCalendar'));
+    renderCalendar();
+    renderPlan(load(STORE.plan, null));
   }
 
   function readPlanInputs() {
