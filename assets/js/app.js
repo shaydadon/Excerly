@@ -296,13 +296,45 @@
 
   /* ---------- שילוב תוכנית האימון ביומן ---------- */
   function scheduleCfg() { return load(STORE.schedule, null); }
+  // assign[dayIdx] = weekday(0-6) או null → מפה weekday→dayIdx
+  function assignToMap(assign) {
+    const map = {};
+    (assign || []).forEach((wd, idx) => { if (wd != null) map[wd] = idx; });
+    return map;
+  }
+  function weekIndexFor(startKey, date) {
+    if (!startKey) return 0;
+    const start = new Date(startKey + 'T00:00:00');
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const diff = Math.floor((d - start) / 86400000);
+    return Math.max(0, Math.floor(diff / 7));
+  }
   function scheduledDay(date) {
     const s = scheduleCfg();
-    if (!s || !s.plan || !s.map) return null;
-    const idx = s.map[date.getDay()];
+    if (!s || !s.plan) return null;
+    // לא לשבץ אימונים על תאריכים שלפני יום ההחלה (באג: הופיע גם אחורה בזמן)
+    if (s.start && dateKey(date) < s.start) return null;
+    const map = assignToMap(s.assign);
+    const idx = map[date.getDay()];
     if (idx == null) return null;
     const day = s.plan.days && s.plan.days[idx];
-    return day ? { plan: s.plan, dayIdx: idx, day } : null;
+    if (!day) return null;
+    return { plan: s.plan, dayIdx: idx, day, cfg: s, week: weekIndexFor(s.start, date) + 1 };
+  }
+
+  // התקדמות שבועית (double progression): מעלה חזרות בטווח, ואז מוסיף משקל
+  function progressTarget(setStr, repStr, weekIndex, pct) {
+    if (/min|sec|דק|שנ/.test(repStr)) return null;         // קרדיו/זמן – לא רלוונטי
+    const rr = String(repStr).match(/(\d+)\s*[–\-]\s*(\d+)/);
+    const lo = rr ? parseInt(rr[1], 10) : (String(repStr).match(/\d+/) ? parseInt(String(repStr).match(/\d+/)[0], 10) : null);
+    const hi = rr ? parseInt(rr[2], 10) : lo;
+    if (lo == null) return null;
+    const setsNums = String(setStr).match(/\d+/g);
+    const sets = setsNums ? Math.max.apply(null, setsNums.map(Number)) : 3;
+    const cycle = Math.max(1, hi - lo + 1);
+    const within = weekIndex % cycle;
+    const adds = Math.floor(weekIndex / cycle);
+    return { sets, reps: lo + within, weightPct: adds > 0 ? (adds * pct) : 0 };
   }
 
   function renderWorkout(date) {
@@ -390,13 +422,24 @@
     const done = !!doneMap[key];
     const dayLabel = t('dayLabel', { day: I18n.dayNames()[date.getDay()], d: date.getDate(), month: I18n.monthNames()[date.getMonth()] });
 
+    const prog = !!(sched.cfg && sched.cfg.progression);
+    const pct = (sched.cfg && sched.cfg.progPct) || 2.5;
     const items = day.exercises.map((e, i) => {
       const id = `gym:${sched.dayIdx}:${i}`;
       const ed = isExDone(key, id);
+      let progLine = '';
+      if (prog) {
+        const pt = progressTarget(e.sets, e.reps, sched.week - 1, pct);
+        if (pt) {
+          const w = pt.weightPct ? ' · ' + t('progWeight', { p: pt.weightPct.toFixed(1) }) : '';
+          progLine = `<span class="ex-prog">🎯 ${t('progThisWeek', { s: pt.sets, r: pt.reps })}${w}</span>`;
+        }
+      }
       return `<div class="ex-item ${ed ? 'done' : ''}">
         <div class="gym-ex">
           <span class="ex-name">${escapeHtml(e.name)}</span>
           <span class="ex-reps">${escapeHtml(e.sets)}×${escapeHtml(e.reps)}${e.rest && e.rest !== '—' ? ' · ⏱ ' + escapeHtml(e.rest) : ''}</span>
+          ${progLine}
           ${e.note ? `<span class="ex-area">${escapeHtml(e.note)}</span>` : ''}
         </div>
         <button class="ex-finish ${ed ? 'on' : ''}" data-gid="${id}"
@@ -420,6 +463,7 @@
         </div>
         <div class="sheet-meta">
           <span class="chip gym">${t('gymDayChip')}</span>
+          ${prog ? `<span class="chip week">${t('weekChip', { n: sched.week })}</span>` : ''}
           <span class="chip">${t('exCount', { n: day.exercises.length })}</span>
           <span class="chip" id="ex-progress">${t('progressChip', { d: dc, n: day.exercises.length })}</span>
         </div>
@@ -609,6 +653,7 @@
   function renderPlayer() {
     const ex = D.EXERCISES[player.exs[player.idx]];
     const hold = L(ex.hold);
+    const rtl = I18n.lang === 'he';
     P().innerHTML = `
       <div class="player-top">
         <button class="p-icon" id="p-close" aria-label="${t('ariaClose')}">✕</button>
@@ -627,18 +672,39 @@
         <span class="badge reps">${t('badgeReps', { r: L(ex.reps) })}</span>
         ${hold !== '—' ? `<span class="badge hold">${t('badgeHold', { h: hold })}</span>` : ''}
       </div>
+      <button class="player-help" id="p-help">💬 ${t('needHelp')}</button>
       <div class="player-time" id="p-time">${fmtTime(player.remaining)}</div>
       <div class="player-controls">
-        <button class="p-ctrl" id="p-prev" aria-label="${t('ariaPrev')}">⏮</button>
+        <button class="p-ctrl" id="p-prev" aria-label="${t('ariaPrev')}">${rtl ? '⏭' : '⏮'}</button>
         <button class="p-ctrl p-main" id="p-play" aria-label="${t('ariaPause')}">⏸</button>
-        <button class="p-ctrl" id="p-next" aria-label="${t('ariaNext')}">⏭</button>
+        <button class="p-ctrl" id="p-next" aria-label="${t('ariaNext')}">${rtl ? '⏮' : '⏭'}</button>
       </div>`;
     $('#p-close', P()).addEventListener('click', closePlayer);
     $('#p-prev', P()).addEventListener('click', prevExercise);
     $('#p-next', P()).addEventListener('click', nextExercise);
     $('#p-play', P()).addEventListener('click', togglePlay);
+    $('#p-help', P()).addEventListener('click', () => showExerciseHelp(ex));
     mountLottie(P());
     updatePlayerTime();
+  }
+
+  // חלונית "צריך עזרה?" – הוראות ביצוע התרגיל בתוך הנגן
+  function showExerciseHelp(ex) {
+    const steps = L(ex.steps).map(s => `<li>${escapeHtml(s)}</li>`).join('');
+    const pop = el('div', 'help-pop');
+    pop.innerHTML = `
+      <div class="help-card" role="dialog" aria-modal="true">
+        <div class="help-head">
+          <span class="help-title">${escapeHtml(L(ex.name))}</span>
+          <button class="help-close" aria-label="${t('closeWord')}">✕</button>
+        </div>
+        <ol class="help-steps">${steps}</ol>
+        <div class="detail-tip"><span class="ico">💡</span><span><b>${t('tipLabel')}</b> ${escapeHtml(L(ex.tip))}</span></div>
+      </div>`;
+    const close = () => pop.remove();
+    pop.addEventListener('click', (e) => { if (e.target === pop) close(); });
+    pop.querySelector('.help-close').addEventListener('click', close);
+    P().appendChild(pop);
   }
 
   function finishPlayer() {
@@ -1129,7 +1195,32 @@
           <div class="pex-list">${rows}</div>
         </details>`;
     }).join('');
-    const applied = !!scheduleCfg();
+    const sched = scheduleCfg();
+    const applied = !!sched;
+    let editor = '';
+    if (applied) {
+      const dayNames = I18n.dayNames();
+      const rows = (sched.plan.days || []).map((d, idx) => {
+        const wd = (sched.assign && sched.assign[idx] != null) ? sched.assign[idx] : '';
+        const opts = `<option value="">${t('unassignedOpt')}</option>` +
+          dayNames.map((n, w) => `<option value="${w}"${wd === w ? ' selected' : ''}>${n}</option>`).join('');
+        return `<div class="sch-row">
+          <span class="sch-day">${escapeHtml(d.name)}</span>
+          <select class="sch-wd" data-idx="${idx}">${opts}</select>
+        </div>`;
+      }).join('');
+      editor = `
+        <div class="sch-editor">
+          <div class="sch-title">${t('scheduleTitle')}</div>
+          ${rows}
+          <label class="sch-prog">
+            <input type="checkbox" id="prog-toggle"${sched.progression ? ' checked' : ''} />
+            <span>${t('progToggle')}</span>
+          </label>
+          <button class="btn btn-ghost btn-block" id="gcal-export" style="margin-top:8px">📅 ${t('gcalExport')}</button>
+          <button class="btn btn-ghost btn-block" id="remove-plan" style="margin-top:8px">${t('removeFromCalendar')}</button>
+        </div>`;
+    }
     box.innerHTML = `
       <div class="plan-head">
         <div class="plan-title">${escapeHtml(plan.title)} ${badge}</div>
@@ -1137,36 +1228,113 @@
       </div>
       <div class="plan-days">${days}</div>
       <div class="plan-apply">
-        <button class="btn btn-primary btn-block" id="apply-plan">📅 ${t('applyToCalendar')}</button>
-        ${applied ? `<button class="btn btn-ghost btn-block" id="remove-plan" style="margin-top:8px">${t('removeFromCalendar')}</button>` : ''}
+        ${applied ? '' : `<button class="btn btn-primary btn-block" id="apply-plan">📅 ${t('applyToCalendar')}</button>`}
+        ${editor}
       </div>`;
     const ap = $('#apply-plan', box);
     if (ap) ap.addEventListener('click', () => applyPlanToCalendar(plan));
     const rp = $('#remove-plan', box);
     if (rp) rp.addEventListener('click', removeSchedule);
+    box.querySelectorAll('.sch-wd').forEach(sel => sel.addEventListener('change', () => {
+      const idx = parseInt(sel.dataset.idx, 10);
+      const val = sel.value === '' ? null : parseInt(sel.value, 10);
+      setAssign(idx, val);
+    }));
+    const pt = $('#prog-toggle', box);
+    if (pt) pt.addEventListener('change', () => setProgression(pt.checked));
+    const gx = $('#gcal-export', box);
+    if (gx) gx.addEventListener('click', exportScheduleICS);
   }
 
-  // חלוקת ימי התוכנית לימות השבוע (0=ראשון) לפי מספר הימים
-  function defaultWeekdayMap(n) {
+  // חלוקת ימי התוכנית לימות השבוע (0=ראשון) → מערך assign[dayIdx]=weekday
+  function defaultAssign(n) {
     const WD = { 2: [0, 3], 3: [0, 2, 4], 4: [0, 1, 3, 4], 5: [0, 1, 2, 3, 4], 6: [0, 1, 2, 3, 4, 5] };
     const arr = WD[Math.min(6, Math.max(2, n))] || [0, 2, 4];
-    const map = {};
-    arr.slice(0, n).forEach((wd, i) => { map[wd] = i; });
-    return map;
+    return arr.slice(0, n);
   }
   function applyPlanToCalendar(plan) {
     const n = (plan.days || []).length;
     if (!n) return;
-    save(STORE.schedule, { plan, map: defaultWeekdayMap(n) });
+    const prev = scheduleCfg();
+    save(STORE.schedule, {
+      plan, assign: defaultAssign(n), start: dateKey(new Date()),
+      progression: prev ? !!prev.progression : false, progPct: (prev && prev.progPct) || 2.5
+    });
     toast(t('appliedToCalendar'));
     renderCalendar();
     renderPlan(load(STORE.plan, null) || plan);
+  }
+  function setAssign(idx, weekday) {
+    const s = scheduleCfg();
+    if (!s) return;
+    s.assign = s.assign || [];
+    s.assign[idx] = weekday;
+    save(STORE.schedule, s);
+    renderCalendar();
+    if (sheet.classList.contains('open') && sheetDate) renderWorkout(sheetDate);
+  }
+  function setProgression(enabled) {
+    const s = scheduleCfg();
+    if (!s) return;
+    s.progression = enabled;
+    save(STORE.schedule, s);
+    if (sheet.classList.contains('open') && sheetDate) renderWorkout(sheetDate);
+    toast(enabled ? t('progOn') : t('progOff'));
   }
   function removeSchedule() {
     save(STORE.schedule, null);
     toast(t('removedFromCalendar'));
     renderCalendar();
     renderPlan(load(STORE.plan, null));
+  }
+
+  /* ---------- ייצוא ליומן Google / כל יומן (קובץ ICS עם תזכורות) ---------- */
+  const pad2 = n => String(n).padStart(2, '0');
+  function icsLocal(d) { return `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}T180000`; }
+  function icsStamp(d) {
+    return `${d.getUTCFullYear()}${pad2(d.getUTCMonth() + 1)}${pad2(d.getUTCDate())}T${pad2(d.getUTCHours())}${pad2(d.getUTCMinutes())}${pad2(d.getUTCSeconds())}Z`;
+  }
+  function escICS(s) { return String(s).replace(/([,;\\])/g, '\\$1').replace(/\r?\n/g, '\\n'); }
+  function nextOccurrence(startKey, weekday) {
+    const d = new Date(startKey + 'T00:00:00');
+    while (d.getDay() !== weekday) d.setDate(d.getDate() + 1);
+    return d;
+  }
+  function exportScheduleICS() {
+    const s = scheduleCfg();
+    if (!s) return;
+    const DAYCODE = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+    const stamp = icsStamp(new Date());
+    let ev = '';
+    (s.assign || []).forEach((wd, idx) => {
+      if (wd == null) return;
+      const day = s.plan.days[idx];
+      if (!day) return;
+      const dt = icsLocal(nextOccurrence(s.start, wd));
+      const desc = escICS((day.focus ? day.focus + ' — ' : '') +
+        (day.exercises || []).map(e => `${e.name} ${e.sets}x${e.reps}`).join('\n'));
+      ev += [
+        'BEGIN:VEVENT',
+        `UID:excerly-${idx}-${wd}-${s.start}@excerly`,
+        `DTSTAMP:${stamp}`,
+        `DTSTART:${dt}`,
+        'DURATION:PT60M',
+        `RRULE:FREQ=WEEKLY;BYDAY=${DAYCODE[wd]}`,
+        `SUMMARY:${escICS((s.plan.title || '') + ' – ' + (day.name || ''))}`,
+        `DESCRIPTION:${desc}`,
+        'BEGIN:VALARM', 'TRIGGER:-PT2H', 'ACTION:DISPLAY',
+        `DESCRIPTION:${escICS(s.plan.title || t('gymDayChip'))}`, 'END:VALARM',
+        'END:VEVENT'
+      ].join('\r\n') + '\r\n';
+    });
+    if (!ev) { toast(t('gcalNothing')); return; }
+    const ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Excerly//Workout//EN\r\nCALSCALE:GREGORIAN\r\n' + ev + 'END:VCALENDAR\r\n';
+    const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = 'excerly-workouts.ics';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    toast(t('gcalDone'));
   }
 
   function readPlanInputs() {

@@ -1,5 +1,5 @@
 /* Excerly – Service Worker לתמיכה בעבודה לא מקוונת (PWA) */
-const CACHE = 'excerly-v22';
+const CACHE = 'excerly-v23';
 const EX_KEYS = ['neck','shoulders','arms','sidebend','twist','forwardfold','hamstring',
   'butterfly','quad','hipflexor','calf','catcow','cobra','child'];
 const EX_IMGS = EX_KEYS.flatMap((k) => [
