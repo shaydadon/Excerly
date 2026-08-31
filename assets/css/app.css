@@ -190,6 +190,23 @@ body {
 .btn-block { width: 100%; }
 .btn-row { display: flex; gap: 10px; margin-top: 12px; }
 
+/* חשבון ענן */
+.cloud-card .cloud-note { margin: 14px 0 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+.btn-google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;
+  background: #fff; color: #1f2328; border: 1px solid var(--line); font-weight: 700; }
+.btn-google:hover { filter: brightness(.97); }
+.btn-google .g-ico { width: 18px; height: 18px; flex: none; }
+.cloud-or { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 12px; margin: 14px 0; }
+.cloud-or::before, .cloud-or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.cloud-email-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.cloud-email-row input { flex: 1; min-width: 0; padding: 11px 12px; border-radius: 12px;
+  background: var(--card-2); color: var(--text); border: 1px solid var(--line); font-size: 15px; }
+.cloud-email-row .btn { flex: none; }
+.cloud-who { font-size: 15px; margin-bottom: 6px; }
+.cloud-who b { color: var(--accent); word-break: break-all; }
+.cloud-sync { font-size: 13px; color: var(--accent); font-weight: 600; margin-bottom: 12px; min-height: 18px; }
+@media (max-width: 460px) { .cloud-email-row .btn { width: 100%; } }
+
 /* תוצאות BMI */
 .bmi-result { margin-top: 16px; }
 .bmi-top { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
