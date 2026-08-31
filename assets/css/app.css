@@ -39,6 +39,7 @@
 html, body {
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
   background: var(--bg);
   color: var(--text);
   font-family: "Segoe UI", "Assistant", "Rubik", system-ui, -apple-system, sans-serif;
@@ -109,12 +110,15 @@ body {
 /* ---------- פרופיל / BMI ---------- */
 .profile-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
-.field { display: flex; flex-direction: column; gap: 6px; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .field label { font-size: 12.5px; color: var(--muted); font-weight: 600; }
 .field input, .field select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   background: var(--card-2);
   border: 1px solid var(--line);
   color: var(--text);
@@ -125,6 +129,7 @@ body {
   outline: none;
   transition: border-color .15s;
 }
+.field select { max-width: 100%; }
 .field input:focus, .field select:focus { border-color: var(--accent); }
 .field.wide { grid-column: 1 / -1; }
 
