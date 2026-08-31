@@ -24,7 +24,8 @@
     ai: 'excerly.ai',            // { key, enabled }
     plan: 'excerly.plan',        // תוכנית האימון האחרונה שנבנתה
     plans: 'excerly.plans',      // תוכניות אימון שמורות [{id,name,at,plan}]
-    schedule: 'excerly.schedule' // תוכנית מוחלת על היומן { plan, map:{weekday:dayIdx} }
+    schedule: 'excerly.schedule', // תוכנית מוחלת על היומן { plan, map:{weekday:dayIdx} }
+    tab: 'excerly.tab'           // הטאב הפעיל האחרון
   };
   const load = (k, fb) => {
     try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; }
@@ -1624,9 +1625,25 @@
     if (sheet.classList.contains('open') && sheetDate) renderWorkout(sheetDate);
   }
 
+  /* ---------- ניווט טאבים תחתון ---------- */
+  const TABS = ['home', 'workouts', 'nutrition', 'me'];
+  function setTab(name) {
+    if (TABS.indexOf(name) === -1) name = 'home';
+    document.querySelectorAll('section.card[data-tab]').forEach(s => { s.hidden = s.dataset.tab !== name; });
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
+    save(STORE.tab, name);
+    window.scrollTo(0, 0);
+  }
+  function initTabs() {
+    document.querySelectorAll('.tab-btn').forEach(b =>
+      b.addEventListener('click', () => setTab(b.dataset.tab)));
+    setTab(load(STORE.tab, 'home'));
+  }
+
   function init() {
     I18n.applyStatic();
     markLangButtons();
+    initTabs();
     $('#lang-switch').addEventListener('click', (e) => {
       const b = e.target.closest('button');
       if (b) I18n.setLang(b.dataset.lang);

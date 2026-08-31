@@ -7,6 +7,7 @@
   const DICT = {
     he: {
       appSub: 'יומן המתיחות והכושר הביתי שלך',
+      tabHome: 'בית', tabWorkouts: 'אימונים', tabNutrition: 'תזונה', tabMe: 'אני',
       langName: 'עברית',
       streakTitle: 'רצף אימונים 🔥',
       streakDays: '{n} ימים', daysWord: 'ימים',
@@ -165,6 +166,7 @@
 
     en: {
       appSub: 'Your home stretching & fitness journal',
+      tabHome: 'Home', tabWorkouts: 'Workouts', tabNutrition: 'Nutrition', tabMe: 'Me',
       langName: 'English',
       streakTitle: 'Workout streak 🔥',
       streakDays: '{n} days', daysWord: 'days',

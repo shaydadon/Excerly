@@ -37,7 +37,7 @@
     </header>
 
     <!-- סיכום התקדמות -->
-    <section class="card">
+    <section class="card" data-tab="home">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
         <div style="display:flex;align-items:center;gap:14px;min-width:0">
           <img id="hero-fig" class="hero-fig" alt="" hidden />
@@ -52,7 +52,7 @@
     </section>
 
     <!-- פרופיל + BMI -->
-    <section class="card">
+    <section class="card" data-tab="me">
       <h2 class="card-title"><span class="ico">⚖️</span> <span data-i18n="profileTitle">פרופיל בריאות ו-BMI</span></h2>
       <p class="section-hint" data-i18n="profileHint">מלאו את הפרטים לחישוב מדד מסת גוף, קלוריות יומיות והמלצות תזונה.</p>
       <form id="profile-form">
@@ -94,7 +94,7 @@
     </section>
 
     <!-- תוכנית אימון אישית לחדר כושר (AI) -->
-    <section class="card">
+    <section class="card" data-tab="workouts">
       <h2 class="card-title"><span class="ico">🏋️</span> <span data-i18n="planTitle">תוכנית אימון אישית</span> <span class="ai-badge" id="plan-ai-badge" data-i18n="aiActive" hidden>✨ AI פעיל</span></h2>
       <p class="section-hint" data-i18n="planHint">בנו תוכנית אימון אישית לחדר כושר לפי המטרה, מספר הימים והרמה שלכם.</p>
       <div class="profile-grid">
@@ -176,7 +176,7 @@
     </section>
 
     <!-- מעקב תזונה יומי -->
-    <section class="card">
+    <section class="card" data-tab="nutrition">
       <h2 class="card-title"><span class="ico">🍎</span> <span data-i18n="nutriTitle">מעקב תזונה יומי</span> <span class="ai-badge" id="ai-badge" data-i18n="aiActive" hidden>✨ AI פעיל</span></h2>
       <p class="section-hint" id="nutri-hint" data-i18n="nutriHint">כתבו בטקסט חופשי מה אכלתם — Claude יבין ויעריך את הקלוריות, ויראה אם עמדתם ביעד.</p>
 
@@ -227,7 +227,7 @@
     </section>
 
     <!-- לוח שנה -->
-    <section class="card">
+    <section class="card" data-tab="home">
       <h2 class="card-title"><span class="ico">📅</span> <span data-i18n="calTitle">יומן האימונים</span></h2>
       <div class="cal-head">
         <div class="cal-month" id="cal-month"></div>
@@ -246,7 +246,7 @@
     </section>
 
     <!-- היסטוריה ומגמות -->
-    <section class="card">
+    <section class="card" data-tab="me">
       <h2 class="card-title"><span class="ico">📊</span> <span data-i18n="histTitle">היסטוריה ומגמות</span></h2>
       <div class="hist-stats" id="hist-stats"></div>
       <div class="hist-range" id="hist-range" role="tablist">
@@ -266,7 +266,7 @@
     </section>
 
     <!-- תזכורות -->
-    <section class="card">
+    <section class="card" data-tab="me">
       <h2 class="card-title"><span class="ico">⏰</span> <span data-i18n="reminderTitle">תזכורת יומית</span></h2>
       <div class="reminder-row">
         <div class="time-input">
@@ -283,6 +283,14 @@
 
     <footer class="app-footer" data-i18n="footer">Excerly · אפליקציית כושר ביתי · הנתונים נשמרים במכשיר שלך בלבד</footer>
   </div>
+
+  <!-- ניווט תחתון -->
+  <nav class="tabbar" id="tabbar">
+    <button class="tab-btn" data-tab="home"><span class="ti">🏠</span><span data-i18n="tabHome">בית</span></button>
+    <button class="tab-btn" data-tab="workouts"><span class="ti">💪</span><span data-i18n="tabWorkouts">אימונים</span></button>
+    <button class="tab-btn" data-tab="nutrition"><span class="ti">🍎</span><span data-i18n="tabNutrition">תזונה</span></button>
+    <button class="tab-btn" data-tab="me"><span class="ti">📊</span><span data-i18n="tabMe">אני</span></button>
+  </nav>
 
   <!-- חלון יומי -->
   <div class="sheet-backdrop" id="sheet-backdrop"></div>
