@@ -552,6 +552,20 @@ textarea:focus { border-color: var(--accent); }
 .ex-thumb .ex-photo { width: 96%; height: 96%; }
 .detail-stage .ex-photo { width: 90%; height: 90%; }
 .player-anim .ex-photo { width: 98%; height: 98%; }
+
+/* דמות "גיבור" – מסך הבית וכותרת חלון היום */
+.hero-fig {
+  width: 78px; height: 78px; flex: none; object-fit: contain;
+  border-radius: 16px;
+  background: radial-gradient(circle at 50% 38%, var(--card-2), var(--card));
+}
+.sheet-head-main { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.sheet-hero {
+  width: 72px; height: 72px; flex: none; object-fit: contain;
+  border-radius: 16px;
+  background: radial-gradient(circle at 50% 38%, var(--card-2), var(--card));
+}
+@media (max-width: 360px) { .hero-fig, .sheet-hero { display: none; } }
 .ex-info { flex: 1; min-width: 0; }
 .ex-name { font-weight: 700; font-size: 15px; }
 .ex-area { color: var(--muted); font-size: 12.5px; margin-top: 2px; }

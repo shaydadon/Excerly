@@ -277,15 +277,21 @@
       </div>`;
     }).join('');
     const dc = doneCount(prog, key);
+    const heroEx = prog.exercises && prog.exercises.length ? D.EXERCISES[prog.exercises[0]] : null;
+    const heroSrc = heroEx ? exImg(heroEx) : null;
+    const heroImg = heroSrc ? `<img class="sheet-hero" src="${heroSrc}" alt="" />` : '';
 
     sheet.innerHTML = `
       <div class="sheet-grip"></div>
       <div class="sheet-head">
         <div class="row">
-          <div>
-            <div class="sheet-date">${dayLabel}</div>
-            <div class="sheet-title">${L(prog.title)}</div>
-            <div class="sheet-focus">${L(prog.focus)}</div>
+          <div class="sheet-head-main">
+            ${heroImg}
+            <div>
+              <div class="sheet-date">${dayLabel}</div>
+              <div class="sheet-title">${L(prog.title)}</div>
+              <div class="sheet-focus">${L(prog.focus)}</div>
+            </div>
           </div>
           <button class="sheet-close" id="sheet-close" aria-label="✕">✕</button>
         </div>
@@ -527,6 +533,18 @@
     const total = Object.keys(doneMap).length;
     $('#streak-num').textContent = streak;
     $('#total-num').textContent = total;
+    renderHero();
+  }
+
+  // דמות "גיבור" במסך הבית – התרגיל הראשון של היום, לפי מגדר הפרופיל
+  function renderHero() {
+    const el = document.getElementById('hero-fig');
+    if (!el) return;
+    const prog = D.programForDate(new Date());
+    const firstId = prog && prog.exercises && prog.exercises[0];
+    const ex = firstId ? D.EXERCISES[firstId] : D.EXERCISES.child;
+    const src = ex ? exImg(ex) : null;
+    if (src) { el.src = src; el.hidden = false; } else { el.hidden = true; }
   }
 
   /* =========================================================
@@ -1103,6 +1121,7 @@
     document.addEventListener('excerly:profile', renderHistory);
     // שינוי מגדר בפרופיל → רענון הדמויות אם חלון האימון פתוח
     document.addEventListener('excerly:profile', () => {
+      renderHero();
       if (sheet.classList.contains('open') && sheetDate) renderWorkout(sheetDate);
     });
 
