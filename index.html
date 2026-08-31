@@ -108,6 +108,32 @@
           </select>
         </div>
         <div class="field">
+          <label for="plan-style" data-i18n="planStyle">דגש האימון</label>
+          <select id="plan-style">
+            <option value="hypertrophy" data-i18n="styleHypertrophy">מסת שריר</option>
+            <option value="strength" data-i18n="styleStrength">כוח מרבי</option>
+            <option value="endurance" data-i18n="styleEndurance">סיבולת שרירית</option>
+            <option value="power" data-i18n="stylePower">כוח מתפרץ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="plan-focus" data-i18n="planFocusArea">מיקוד גוף</label>
+          <select id="plan-focus">
+            <option value="full" data-i18n="focusFull">כל הגוף</option>
+            <option value="upper" data-i18n="focusUpper">פלג גוף עליון</option>
+            <option value="lower" data-i18n="focusLower">פלג גוף תחתון</option>
+            <option value="posterior" data-i18n="focusPosterior">גב וישבן (שרשרת אחורית)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="plan-cardio" data-i18n="planCardio">קרדיו</label>
+          <select id="plan-cardio">
+            <option value="none" data-i18n="cardioNone">בלי</option>
+            <option value="some" data-i18n="cardioSome">מעט (לסיום)</option>
+            <option value="lots" data-i18n="cardioLots">הרבה</option>
+          </select>
+        </div>
+        <div class="field">
           <label for="plan-days" data-i18n="planDays">ימים בשבוע</label>
           <select id="plan-days">
             <option value="2">2</option><option value="3" selected>3</option>
@@ -146,6 +172,7 @@
         <button class="btn btn-primary btn-block" id="build-plan" data-i18n="buildPlanBtn">בנה לי תוכנית אימון</button>
       </div>
       <div class="plan-result" id="plan-result"></div>
+      <div class="saved-plans" id="saved-plans"></div>
     </section>
 
     <!-- מעקב תזונה יומי -->

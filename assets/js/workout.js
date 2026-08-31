@@ -35,12 +35,22 @@
     cardio: { he: 'קרדיו קל לסיום (הליכון/אופניים)', en: 'Light finisher cardio (treadmill/bike)' }
   };
 
-  // מרשמי סטים/חזרות/מנוחה לפי מטרה
-  function scheme(goal) {
-    if (goal === 'strength') return { sets: '4–5', reps: '5–8', rest: "2–3 דק'", restEn: '2–3 min' };
-    if (goal === 'fatloss') return { sets: '3', reps: '12–15', rest: "45 שנ'", restEn: '45 sec' };
-    if (goal === 'muscle') return { sets: '3–4', reps: '8–12', rest: "60–90 שנ'", restEn: '60–90 sec' };
-    return { sets: '3', reps: '10–12', rest: "60 שנ'", restEn: '60 sec' }; // general
+  // מרשמי סטים/חזרות/מנוחה לפי דגש האימון (כוח / מסת שריר / סיבולת / כוח מתפרץ)
+  function scheme(style) {
+    if (style === 'strength') return { sets: '4–5', reps: '4–6', rest: "2–3 דק'", restEn: '2–3 min' };
+    if (style === 'power') return { sets: '5', reps: '3–5', rest: "2–3 דק'", restEn: '2–3 min' };
+    if (style === 'endurance') return { sets: '3', reps: '15–20', rest: "30–45 שנ'", restEn: '30–45 sec' };
+    return { sets: '3–4', reps: '8–12', rest: "60–90 שנ'", restEn: '60–90 sec' }; // hypertrophy (מסת שריר)
+  }
+
+  // בחירת ימי האימון לפי מיקוד הגוף
+  function chooseDays(days, focusArea) {
+    let pool;
+    if (focusArea === 'upper') pool = ['upper', 'push', 'upper2', 'pull', 'push2', 'pull2'];
+    else if (focusArea === 'lower') pool = ['lower', 'legs', 'lower2', 'legs2', 'lower', 'legs'];
+    else if (focusArea === 'posterior') pool = ['pull', 'legs', 'pull2', 'legs2', 'pull', 'legs'];
+    else pool = split(days);
+    return pool.slice(0, days);
   }
 
   // חלוקת ימים לפי כמות ימים בשבוע
@@ -76,16 +86,19 @@
   /* ---------- מחולל תבנית מקומי (ללא AI) ---------- */
   function planLocal(p) {
     const days = Math.max(2, Math.min(6, parseInt(p.days, 10) || 3));
-    const sc = scheme(p.goal);
-    const addCardio = p.goal === 'fatloss';
+    const sc = scheme(p.style);
+    const cardioLevel = p.cardio || (p.goal === 'fatloss' ? 'some' : 'none');
     const rest = curLang() === 'en' ? sc.restEn : sc.rest;
-    const dayList = split(days).slice(0, days).map((k, idx) => {
+    const dayList = chooseDays(days, p.focusArea).map((k, idx) => {
       const def = DAY_DEF[k];
       const exs = def.ex.map(e => ({
         name: exName(e), sets: sc.sets, reps: e === 'plank' ? (curLang() === 'en' ? '3 × 40 sec' : "3 × 40 שנ'") : sc.reps,
         rest, note: ''
       }));
-      if (addCardio) exs.push({ name: exName('cardio'), sets: '1', reps: curLang() === 'en' ? '10–15 min' : "10–15 דק'", rest: '—', note: '' });
+      if (cardioLevel !== 'none') {
+        const mins = cardioLevel === 'lots' ? (curLang() === 'en' ? '20 min' : "20 דק'") : (curLang() === 'en' ? '10 min' : "10 דק'");
+        exs.push({ name: exName('cardio'), sets: '1', reps: mins, rest: '—', note: '' });
+      }
       return {
         name: (curLang() === 'en' ? 'Day ' : 'יום ') + (idx + 1),
         focus: L(def.focus),
@@ -142,9 +155,10 @@
       '{"title": string, "note": string, "days": [{"name": string, "focus": string, "exercises": ' +
       '[{"name": string, "sets": string, "reps": string, "rest": string, "note": string}]}]}.' + langLine();
     const user =
-      'Goal: ' + (p.goal || 'general fitness') + '\nDays/week: ' + (p.days || 3) +
+      'Goal: ' + (p.goal || 'general fitness') + '\nTraining emphasis: ' + (p.style || 'hypertrophy') +
+      '\nBody focus: ' + (p.focusArea || 'full body') + '\nDays/week: ' + (p.days || 3) +
       '\nMinutes/session: ' + (p.minutes || 45) + '\nLevel: ' + (p.level || 'beginner') +
-      '\nEquipment: ' + (p.equipment || 'full gym') +
+      '\nCardio: ' + (p.cardio || 'none') + '\nEquipment: ' + (p.equipment || 'full gym') +
       '\nTrainee: age ' + (p.age || '-') + ', weight ' + (p.weight || '-') + ' kg, height ' + (p.height || '-') +
       ' cm, sex ' + (p.gender || '-') + '\nNotes/limitations: ' + (String(p.notes || '').slice(0, 300) || 'none');
     const res = await fetch('https://api.anthropic.com/v1/messages', {

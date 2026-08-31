@@ -206,6 +206,13 @@ body {
 .pex-meta { display: flex; gap: 12px; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
 .pex-rest { color: var(--muted); }
 .pex-note { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.saved-plans:not(:empty) { margin-top: 14px; }
+.saved-title { font-size: 12.5px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+.saved-plan { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+.sp-load { flex: 1; text-align: start; background: var(--card-2); border: 1px solid var(--line); color: var(--text); border-radius: 10px; padding: 9px 11px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.sp-load:hover { border-color: var(--accent); }
+.sp-del { background: none; border: none; cursor: pointer; font-size: 16px; padding: 6px; opacity: .7; }
+.sp-del:hover { opacity: 1; }
 
 .calorie-box {
   margin-top: 14px;

@@ -22,7 +22,8 @@
     foodlog: 'excerly.foodlog',  // מטמון נגזר: { 'YYYY-MM-DD': { total, target, verdict } }
     meals: 'excerly.meals',      // מקור האמת: { 'YYYY-MM-DD': [ { id, name, kcal } ] }
     ai: 'excerly.ai',            // { key, enabled }
-    plan: 'excerly.plan'         // תוכנית האימון האישית האחרונה שנבנתה
+    plan: 'excerly.plan',        // תוכנית האימון האחרונה שנבנתה
+    plans: 'excerly.plans'       // תוכניות אימון שמורות [{id,name,at,plan}]
   };
   const load = (k, fb) => {
     try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; }
@@ -1036,6 +1037,9 @@
     const prof = load(STORE.profile, {});
     return {
       goal: $('#plan-goal').value,
+      style: $('#plan-style').value,
+      focusArea: $('#plan-focus').value,
+      cardio: $('#plan-cardio').value,
       days: $('#plan-days').value,
       minutes: $('#plan-minutes').value,
       level: $('#plan-level').value,
@@ -1043,6 +1047,40 @@
       notes: $('#plan-notes').value.trim(),
       age: prof.age, weight: prof.weight, height: prof.height, gender: prof.gender
     };
+  }
+
+  /* ---------- שמירת מספר תוכניות ---------- */
+  function savedPlans() { return load(STORE.plans, []); }
+  function planName(p) {
+    const parts = [t('goal' + p.goal.charAt(0).toUpperCase() + p.goal.slice(1))];
+    return parts.filter(Boolean).join(' · ') + ' · ' + t('planDays') + ' ' + p.days;
+  }
+  function storePlan(plan, params) {
+    const list = savedPlans();
+    const entry = { id: uid(), name: planName(params), at: Date.now(), plan };
+    list.unshift(entry);
+    save(STORE.plans, list.slice(0, 8)); // עד 8 תוכניות שמורות
+    renderSavedPlans();
+  }
+  function renderSavedPlans() {
+    const box = $('#saved-plans');
+    if (!box) return;
+    const list = savedPlans();
+    if (!list.length) { box.innerHTML = ''; return; }
+    const items = list.map(e => `
+      <div class="saved-plan" data-id="${e.id}">
+        <button class="sp-load" data-id="${e.id}">${escapeHtml(e.name)}</button>
+        <button class="sp-del" data-id="${e.id}" aria-label="${t('deleteWord')}" title="${t('deleteWord')}">🗑</button>
+      </div>`).join('');
+    box.innerHTML = `<div class="saved-title">${t('savedPlans')}</div>${items}`;
+    box.querySelectorAll('.sp-load').forEach(b => b.addEventListener('click', () => {
+      const e = savedPlans().find(x => x.id === b.dataset.id);
+      if (e) { save(STORE.plan, e.plan); renderPlan(e.plan); box.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+    }));
+    box.querySelectorAll('.sp-del').forEach(b => b.addEventListener('click', () => {
+      save(STORE.plans, savedPlans().filter(x => x.id !== b.dataset.id));
+      renderSavedPlans();
+    }));
   }
 
   async function buildPlan() {
@@ -1059,6 +1097,7 @@
       else plan = W.planLocal(p);
       save(STORE.plan, plan);
       renderPlan(plan);
+      storePlan(plan, p);
       if (prov.mode === 'local') toast(t('planLocalToast'));
     } catch (e) {
       // נפילה חיננית לתבנית המקומית אם ה-AI נכשל
@@ -1074,6 +1113,7 @@
 
   function initWorkout() {
     renderPlan(load(STORE.plan, null));
+    renderSavedPlans();
     const badge = $('#plan-ai-badge');
     if (badge) badge.hidden = aiProvider().mode === 'local';
     $('#build-plan').addEventListener('click', buildPlan);

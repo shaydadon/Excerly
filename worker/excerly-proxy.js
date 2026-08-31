@@ -159,9 +159,12 @@ export default {
       const user =
         'Build a personalized gym program.\n' +
         'Goal: ' + String(p.goal || 'general fitness') + '\n' +
+        'Training emphasis (quality): ' + String(p.style || 'hypertrophy') + '\n' +
+        'Body focus: ' + String(p.focusArea || 'full body') + '\n' +
         'Training days per week: ' + (parseInt(p.days, 10) || 3) + '\n' +
         'Minutes per session: ' + (parseInt(p.minutes, 10) || 45) + '\n' +
         'Experience level: ' + String(p.level || 'beginner') + '\n' +
+        'Cardio preference: ' + String(p.cardio || 'none') + '\n' +
         'Equipment: ' + String(p.equipment || 'full gym') + '\n' +
         'Trainee: age ' + (parseInt(p.age, 10) || '-') + ', weight ' + (p.weight || '-') + ' kg, height ' +
         (p.height || '-') + ' cm, sex ' + String(p.gender || '-') + '.\n' +
