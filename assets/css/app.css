@@ -83,6 +83,15 @@ body {
 .tab-btn.on .ti { filter: none; transform: translateY(-1px) scale(1.06); }
 .tab-btn:active { transform: scale(.94); }
 
+/* באנר התקנה כאפליקציה */
+.install-banner { display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+  background: var(--card-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; }
+.install-banner[hidden] { display: none; }
+.install-banner .ib-icon { font-size: 22px; flex: none; }
+.install-banner .ib-text { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; }
+.install-banner .ib-btn { flex: none; padding: 8px 14px; font-size: 14px; }
+.install-banner .ib-close { flex: none; background: none; border: none; color: var(--muted); font-size: 16px; cursor: pointer; padding: 4px; }
+
 /* מעבר כניסה עדין בהחלפת טאב */
 .card.tab-in { animation: tabIn .28s cubic-bezier(.22, .61, .36, 1) both; }
 @keyframes tabIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }

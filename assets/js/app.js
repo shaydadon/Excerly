@@ -1644,10 +1644,52 @@
     setTab(load(STORE.tab, 'home'));
   }
 
+  /* ---------- באנר התקנה כאפליקציה (PWA) ---------- */
+  let deferredInstall = null;
+  function isStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  }
+  function initInstall() {
+    const banner = $('#install-banner');
+    if (!banner) return;
+    const txt = $('#ib-text'), btn = $('#ib-install'), close = $('#ib-close');
+    const dismissed = () => { try { return localStorage.getItem('excerly.installDismiss') === '1'; } catch (e) { return false; } };
+    const hide = () => { banner.hidden = true; };
+    if (isStandalone() || dismissed()) { hide(); return; }
+
+    close.addEventListener('click', () => { try { localStorage.setItem('excerly.installDismiss', '1'); } catch (e) {} hide(); });
+
+    // אנדרואיד/כרום: אירוע התקנה זמין → כפתור שמפעיל אותו
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstall = e;
+      txt.textContent = t('installCta');
+      btn.textContent = t('installBtn');
+      btn.hidden = false;
+      banner.hidden = false;
+      btn.onclick = async () => {
+        if (!deferredInstall) return;
+        deferredInstall.prompt();
+        try { await deferredInstall.userChoice; } catch (e) {}
+        deferredInstall = null; hide();
+      };
+    });
+    window.addEventListener('appinstalled', hide);
+
+    // iOS/Safari: אין אירוע — מציגים הנחיית "שיתוף → הוסף למסך הבית"
+    const iOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (iOS && !isStandalone()) {
+      txt.textContent = t('installIos');
+      btn.hidden = true;
+      banner.hidden = false;
+    }
+  }
+
   function init() {
     I18n.applyStatic();
     markLangButtons();
     initTabs();
+    initInstall();
     $('#lang-switch').addEventListener('click', (e) => {
       const b = e.target.closest('button');
       if (b) I18n.setLang(b.dataset.lang);

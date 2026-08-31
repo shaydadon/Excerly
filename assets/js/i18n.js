@@ -8,6 +8,8 @@
     he: {
       appSub: 'יומן המתיחות והכושר הביתי שלך',
       tabHome: 'בית', tabWorkouts: 'אימונים', tabNutrition: 'תזונה', tabMe: 'אני',
+      installCta: 'התקינו את Excerly כאפליקציה במסך הבית', installBtn: 'התקן',
+      installIos: 'להתקנה: לחצו על שיתוף ⬆️ ואז "הוסף למסך הבית" (בדפדפן Safari).',
       langName: 'עברית',
       streakTitle: 'רצף אימונים 🔥',
       streakDays: '{n} ימים', daysWord: 'ימים',
@@ -167,6 +169,8 @@
     en: {
       appSub: 'Your home stretching & fitness journal',
       tabHome: 'Home', tabWorkouts: 'Workouts', tabNutrition: 'Nutrition', tabMe: 'Me',
+      installCta: 'Install Excerly as an app on your home screen', installBtn: 'Install',
+      installIos: 'To install: tap Share ⬆️ then "Add to Home Screen" (in Safari).',
       langName: 'English',
       streakTitle: 'Workout streak 🔥',
       streakDays: '{n} days', daysWord: 'days',
