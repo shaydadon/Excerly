@@ -64,6 +64,17 @@ const MENU_SYSTEM =
   'החזר JSON בלבד, ללא טקסט נוסף, במבנה: ' +
   '{"meals": [{"label": string, "name": string, "kcal": number}], "total": number, "note": string}.';
 
+const WORKOUT_SYSTEM =
+  'You are a certified strength & conditioning coach. Build a safe, personalized GYM workout program ' +
+  'from the user\'s profile and preferences. Use standard gym exercises (machines, free weights, cables, ' +
+  'bodyweight) suited to the stated equipment and experience level. Split the requested number of training ' +
+  'days sensibly (full-body / upper-lower / push-pull-legs). For each exercise give sets, a rep range and ' +
+  'rest. Keep each session within the requested minutes, include a brief warm-up, and respect any stated ' +
+  'limitations/injuries. In note add one short weekly progression tip. ' +
+  'Return JSON only, no text before or after: ' +
+  '{"title": string, "note": string, "days": [{"name": string, "focus": string, ' +
+  '"exercises": [{"name": string, "sets": string, "reps": string, "rest": string, "note": string}]}]}.';
+
 const IMAGE_SYSTEM =
   'אתה מנתח תזונה מדויק. קיבלת תמונה של ארוחה. זהה את הפריטים שבתמונה והערך את סך הקלוריות ' +
   'בצורה מציאותית לפי מנות נפוצות (העדף אומדן ישראלי), תוך התחשבות בגודל המנה הנראה. ' +
@@ -143,6 +154,19 @@ export default {
       const target = Math.max(800, Math.min(6000, parseInt(body.target, 10) || 2000));
       const user = 'Daily goal: ' + target + ' kcal. Build me a suitable daily menu.';
       out = await callAnthropic(env, withLang(MENU_SYSTEM), user, 1500);
+    } else if (body.action === 'workout_plan') {
+      const p = body.plan || {};
+      const user =
+        'Build a personalized gym program.\n' +
+        'Goal: ' + String(p.goal || 'general fitness') + '\n' +
+        'Training days per week: ' + (parseInt(p.days, 10) || 3) + '\n' +
+        'Minutes per session: ' + (parseInt(p.minutes, 10) || 45) + '\n' +
+        'Experience level: ' + String(p.level || 'beginner') + '\n' +
+        'Equipment: ' + String(p.equipment || 'full gym') + '\n' +
+        'Trainee: age ' + (parseInt(p.age, 10) || '-') + ', weight ' + (p.weight || '-') + ' kg, height ' +
+        (p.height || '-') + ' cm, sex ' + String(p.gender || '-') + '.\n' +
+        'Notes/limitations: ' + (String(p.notes || '').slice(0, 300) || 'none') + '.';
+      out = await callAnthropic(env, withLang(WORKOUT_SYSTEM), user, 2600);
     } else if (body.action === 'estimate_image') {
       const img = body.image;
       if (!img || !img.data || !img.media_type) return json({ error: 'missing image' }, 400, origin);

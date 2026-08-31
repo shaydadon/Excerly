@@ -93,6 +93,61 @@
       <div class="bmi-result" id="bmi-result"></div>
     </section>
 
+    <!-- תוכנית אימון אישית לחדר כושר (AI) -->
+    <section class="card">
+      <h2 class="card-title"><span class="ico">🏋️</span> <span data-i18n="planTitle">תוכנית אימון אישית</span> <span class="ai-badge" id="plan-ai-badge" data-i18n="aiActive" hidden>✨ AI פעיל</span></h2>
+      <p class="section-hint" data-i18n="planHint">בנו תוכנית אימון אישית לחדר כושר לפי המטרה, מספר הימים והרמה שלכם.</p>
+      <div class="profile-grid">
+        <div class="field">
+          <label for="plan-goal" data-i18n="planGoal">מטרה</label>
+          <select id="plan-goal">
+            <option value="muscle" data-i18n="goalMuscle">בניית שריר</option>
+            <option value="strength" data-i18n="goalStrength">כוח</option>
+            <option value="fatloss" data-i18n="goalFatloss">חיטוב / ירידה בשומן</option>
+            <option value="general" data-i18n="goalGeneral">כושר כללי</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="plan-days" data-i18n="planDays">ימים בשבוע</label>
+          <select id="plan-days">
+            <option value="2">2</option><option value="3" selected>3</option>
+            <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="plan-minutes" data-i18n="planMinutes">דקות לאימון</label>
+          <select id="plan-minutes">
+            <option value="30">30</option><option value="45" selected>45</option>
+            <option value="60">60</option><option value="75">75</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="plan-level" data-i18n="planLevel">רמה</label>
+          <select id="plan-level">
+            <option value="beginner" data-i18n="levelBeginner">מתחיל</option>
+            <option value="intermediate" data-i18n="levelIntermediate">בינוני</option>
+            <option value="advanced" data-i18n="levelAdvanced">מתקדם</option>
+          </select>
+        </div>
+        <div class="field wide">
+          <label for="plan-equipment" data-i18n="planEquipment">ציוד זמין</label>
+          <select id="plan-equipment">
+            <option value="full gym" data-i18n="equipGym">חדר כושר מלא</option>
+            <option value="dumbbells only" data-i18n="equipDumbbells">משקולות יד בלבד</option>
+            <option value="bodyweight" data-i18n="equipBodyweight">משקל גוף בלבד</option>
+          </select>
+        </div>
+        <div class="field wide">
+          <label for="plan-notes" data-i18n="planNotes">הערות / מגבלות (לא חובה)</label>
+          <input id="plan-notes" type="text" data-i18n-placeholder="planNotesPh" placeholder="לדוגמה: כאב בברך, בלי קפיצות" />
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary btn-block" id="build-plan" data-i18n="buildPlanBtn">בנה לי תוכנית אימון</button>
+      </div>
+      <div class="plan-result" id="plan-result"></div>
+    </section>
+
     <!-- מעקב תזונה יומי -->
     <section class="card">
       <h2 class="card-title"><span class="ico">🍎</span> <span data-i18n="nutriTitle">מעקב תזונה יומי</span> <span class="ai-badge" id="ai-badge" data-i18n="aiActive" hidden>✨ AI פעיל</span></h2>
@@ -209,6 +264,7 @@
   <script src="assets/js/data.js"></script>
   <script src="assets/js/animations.js"></script>
   <script src="assets/js/nutrition.js"></script>
+  <script src="assets/js/workout.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
 </html>

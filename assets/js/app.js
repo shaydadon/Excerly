@@ -7,6 +7,7 @@
   const D = window.ExcerlyData;
   const A = window.ExcerlyAnim;
   const N = window.ExcerlyNutrition;
+  const W = window.ExcerlyWorkout;
   const I18n = window.ExcerlyI18n;
   const t = (k, v) => I18n.t(k, v);          // תרגום מחרוזת
   const L = o => I18n.L(o);                    // בחירת ערך דו-לשוני {he,en}
@@ -20,7 +21,8 @@
     reminder: 'excerly.reminder', // { enabled, time }
     foodlog: 'excerly.foodlog',  // מטמון נגזר: { 'YYYY-MM-DD': { total, target, verdict } }
     meals: 'excerly.meals',      // מקור האמת: { 'YYYY-MM-DD': [ { id, name, kcal } ] }
-    ai: 'excerly.ai'             // { key, enabled }
+    ai: 'excerly.ai',            // { key, enabled }
+    plan: 'excerly.plan'         // תוכנית האימון האישית האחרונה שנבנתה
   };
   const load = (k, fb) => {
     try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; }
@@ -681,8 +683,11 @@
 
   function aiCfg() { return load(STORE.ai, { proxyUrl: '', key: '', enabled: false }); }
   function updateAiBadge() {
+    const local = aiProvider().mode === 'local';
     const badge = $('#ai-badge');
-    if (badge) badge.hidden = aiProvider().mode === 'local';
+    if (badge) badge.hidden = local;
+    const planBadge = $('#plan-ai-badge');
+    if (planBadge) planBadge.hidden = local;
   }
   // האם להשתמש ב-AI, ובאיזה ספק: 'proxy' (מומלץ) או 'key' (BYOK)
   function aiProvider() {
@@ -989,6 +994,95 @@
   }
 
   /* =========================================================
+     תוכנית אימון אישית לחדר כושר (AI + תבנית מקומית)
+     ========================================================= */
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function renderPlan(plan) {
+    const box = $('#plan-result');
+    if (!box) return;
+    if (!plan) { box.innerHTML = ''; return; }
+    const badge = plan.source === 'ai'
+      ? `<span class="plan-src ai">${t('planSrcAi')}</span>`
+      : `<span class="plan-src local">${t('planSrcLocal')}</span>`;
+    const days = (plan.days || []).map((d, i) => {
+      const rows = (d.exercises || []).map(e => `
+        <div class="pex">
+          <div class="pex-name">${escapeHtml(e.name)}</div>
+          <div class="pex-meta">
+            <span>${escapeHtml(e.sets)}×${escapeHtml(e.reps)}</span>
+            ${e.rest && e.rest !== '—' ? `<span class="pex-rest">⏱ ${escapeHtml(e.rest)}</span>` : ''}
+          </div>
+          ${e.note ? `<div class="pex-note">${escapeHtml(e.note)}</div>` : ''}
+        </div>`).join('');
+      return `
+        <details class="plan-day"${i === 0 ? ' open' : ''}>
+          <summary><span class="pd-name">${escapeHtml(d.name)}</span><span class="pd-focus">${escapeHtml(d.focus)}</span></summary>
+          <div class="pex-list">${rows}</div>
+        </details>`;
+    }).join('');
+    box.innerHTML = `
+      <div class="plan-head">
+        <div class="plan-title">${escapeHtml(plan.title)} ${badge}</div>
+        ${plan.note ? `<p class="plan-note">💡 ${escapeHtml(plan.note)}</p>` : ''}
+      </div>
+      <div class="plan-days">${days}</div>`;
+  }
+
+  function readPlanInputs() {
+    const prof = load(STORE.profile, {});
+    return {
+      goal: $('#plan-goal').value,
+      days: $('#plan-days').value,
+      minutes: $('#plan-minutes').value,
+      level: $('#plan-level').value,
+      equipment: $('#plan-equipment').value,
+      notes: $('#plan-notes').value.trim(),
+      age: prof.age, weight: prof.weight, height: prof.height, gender: prof.gender
+    };
+  }
+
+  async function buildPlan() {
+    const btn = $('#build-plan');
+    const p = readPlanInputs();
+    const prov = aiProvider();
+    btn.disabled = true;
+    const orig = btn.textContent;
+    btn.textContent = t('planBuilding');
+    try {
+      let plan;
+      if (prov.mode === 'proxy') plan = await W.planViaProxy(p, prov.url);
+      else if (prov.mode === 'key') plan = await W.planAI(p, prov.key);
+      else plan = W.planLocal(p);
+      save(STORE.plan, plan);
+      renderPlan(plan);
+      if (prov.mode === 'local') toast(t('planLocalToast'));
+    } catch (e) {
+      // נפילה חיננית לתבנית המקומית אם ה-AI נכשל
+      const plan = W.planLocal(p);
+      save(STORE.plan, plan);
+      renderPlan(plan);
+      toast(t('planAiFail'));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = orig;
+    }
+  }
+
+  function initWorkout() {
+    renderPlan(load(STORE.plan, null));
+    const badge = $('#plan-ai-badge');
+    if (badge) badge.hidden = aiProvider().mode === 'local';
+    $('#build-plan').addEventListener('click', buildPlan);
+    document.addEventListener('excerly:profile', () => {
+      const b = $('#plan-ai-badge'); if (b) b.hidden = aiProvider().mode === 'local';
+    });
+  }
+
+  /* =========================================================
      היסטוריה ומגמות
      ========================================================= */
   let histRange = 7;
@@ -1120,6 +1214,7 @@
     renderCalendar();
     updateStreak();
     renderHistory();
+    renderPlan(load(STORE.plan, null));
     updateReminderStatus(load(STORE.reminder, { enabled: false, time: '18:00' }));
     // אם חלון היום פתוח – רענון תוכנו
     if (sheet.classList.contains('open') && sheetDate) renderWorkout(sheetDate);
@@ -1146,6 +1241,7 @@
 
     initProfile();
     initNutrition();
+    initWorkout();
     renderCalendar();
     updateStreak();
     initHistory();
