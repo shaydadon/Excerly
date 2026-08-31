@@ -547,6 +547,11 @@ textarea:focus { border-color: var(--accent); }
   background: var(--card-2); display: grid; place-items: center;
 }
 .ex-thumb .ex-anim { width: 100%; height: 100%; }
+/* תמונות אווטאר סטטיות */
+.ex-photo { width: 100%; height: 100%; object-fit: contain; display: block; }
+.ex-thumb .ex-photo { width: 96%; height: 96%; }
+.detail-stage .ex-photo { width: 90%; height: 90%; }
+.player-anim .ex-photo { width: 98%; height: 98%; }
 .ex-info { flex: 1; min-width: 0; }
 .ex-name { font-weight: 700; font-size: 15px; }
 .ex-area { color: var(--muted); font-size: 12.5px; margin-top: 2px; }

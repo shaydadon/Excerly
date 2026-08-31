@@ -1,5 +1,11 @@
 /* Excerly – Service Worker לתמיכה בעבודה לא מקוונת (PWA) */
-const CACHE = 'excerly-v14';
+const CACHE = 'excerly-v15';
+const EX_KEYS = ['neck','shoulders','arms','sidebend','twist','forwardfold','hamstring',
+  'butterfly','quad','hipflexor','calf','catcow','cobra','child'];
+const EX_IMGS = EX_KEYS.flatMap((k) => [
+  `assets/exercise-img/${k}-m.png`,
+  `assets/exercise-img/${k}-f.png`
+]);
 const ASSETS = [
   '.',
   'index.html',
@@ -12,7 +18,8 @@ const ASSETS = [
   'assets/icon.svg',
   'assets/icon-192.png',
   'assets/icon-512.png',
-  'manifest.webmanifest'
+  'manifest.webmanifest',
+  ...EX_IMGS
 ];
 
 self.addEventListener('install', (e) => {

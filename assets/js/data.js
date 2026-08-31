@@ -252,8 +252,16 @@
     // ריק כברירת מחדל – מוסיפים כאן ערכים כדי לשדרג תרגילים.
   };
 
+  /* תמונות אווטאר סטטיות (זכר/נקבה) לכל תרגיל.
+     קבצים: assets/exercise-img/<key>-m.png  /  -f.png
+     מפתחות הרשומים כאן מוצגים כתמונה במקום דמות ה-SVG. */
+  const EXIMG = {
+    neck: 1, shoulders: 1, arms: 1, sidebend: 1, twist: 1, forwardfold: 1,
+    hamstring: 1, butterfly: 1, quad: 1, hipflexor: 1, calf: 1, catcow: 1, cobra: 1, child: 1
+  };
+
   global.ExcerlyData = {
-    EXERCISES, WEEKLY_PROGRAM, DAY_NAMES, MONTH_NAMES, LOTTIE,
+    EXERCISES, WEEKLY_PROGRAM, DAY_NAMES, MONTH_NAMES, LOTTIE, EXIMG,
     programForDate, estimatedMinutes,
     calcBMI, bmiCategory, calcBMR, ACTIVITY_FACTORS, macros
   };

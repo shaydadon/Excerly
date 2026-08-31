@@ -59,9 +59,17 @@
     if (typeof e === 'string') return e;
     return e[figGender()] || e.male || e.female || null;
   }
-  // מחזיר HTML לויזואל התרגיל. big=true מאפשר Lottie במסכים הגדולים.
+  // תמונת אווטאר סטטית (זכר/נקבה) אם קיימת לתרגיל
+  function exImg(ex) {
+    if (!(D.EXIMG || {})[ex.animation]) return null;
+    const g = figGender() === 'female' ? 'f' : 'm';
+    return `assets/exercise-img/${ex.animation}-${g}.png`;
+  }
+  // מחזיר HTML לויזואל התרגיל: Lottie (מסך גדול) > תמונה סטטית > דמות SVG.
   function exVisual(ex, big) {
     if (big && lottieSrc(ex)) return `<div class="ex-lottie" data-lottie="${ex.animation}"></div>`;
+    const img = exImg(ex);
+    if (img) return `<img class="ex-photo" src="${img}" alt="" loading="lazy">`;
     return A.svgFor(ex.animation, figGender());
   }
   // אתחול נגני Lottie בתוך אלמנט לאחר שהוזרק ל-DOM
@@ -257,7 +265,7 @@
       const hold = L(ex.hold);
       return `<div class="ex-item ${ed ? 'done' : ''}">
         <button class="ex-open" data-ex="${id}">
-          <span class="ex-thumb">${A.svgFor(ex.animation, figGender())}</span>
+          <span class="ex-thumb">${exVisual(ex, false)}</span>
           <span class="ex-info">
             <span class="ex-name">${L(ex.name)}</span>
             <span class="ex-area">${L(ex.area)}</span>
