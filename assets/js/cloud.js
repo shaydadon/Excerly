@@ -102,16 +102,27 @@
     const out = $('#cloud-signout'); if (out) out.addEventListener('click', signOut);
   }
   async function signInGoogle() {
-    try { await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.href.split('#')[0] } }); }
-    catch (e) { note(T('googleErr', 'התחברות Google עדיין לא מופעלת בשרת. הפעילו את ספק Google ב-Supabase.')); }
+    try {
+      const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.href.split('#')[0] } });
+      if (error) note(T('googleErr', 'התחברות Google עדיין לא מופעלת בשרת. הפעילו את ספק Google ב-Supabase.'));
+    } catch (e) { note(T('googleErr', 'התחברות Google עדיין לא מופעלת בשרת. הפעילו את ספק Google ב-Supabase.')); }
   }
   async function signInEmail() {
-    const email = ($('#cloud-email') || {}).value;
+    const email = ((($('#cloud-email') || {}).value) || '').trim();
     if (!email || email.indexOf('@') === -1) { note(T('emailBad', 'הכניסו כתובת אימייל תקינה')); return; }
+    const btn = $('#cloud-email-btn'); if (btn) btn.disabled = true;
     try {
-      await sb.auth.signInWithOtp({ email: email.trim(), options: { emailRedirectTo: location.href.split('#')[0] } });
-      note(T('checkEmail', 'שלחנו לך קישור התחברות למייל 📧'));
+      const { error } = await sb.auth.signInWithOtp({
+        email, options: { emailRedirectTo: location.href.split('#')[0], shouldCreateUser: true }
+      });
+      if (error) {
+        if (error.status === 429 || /rate/i.test(error.message || '')) note(T('emailRate', 'נשלחו יותר מדי בקשות. המתינו כמה דקות ונסו שוב.'));
+        else note(T('emailErr', 'שליחת המייל נכשלה. נסו שוב.'));
+      } else {
+        note(T('checkEmail', 'שלחנו לך קישור התחברות למייל 📧 (בדקו גם בספאם)'));
+      }
     } catch (e) { note(T('emailErr', 'שליחת המייל נכשלה. נסו שוב.')); }
+    finally { if (btn) btn.disabled = false; }
   }
   async function signOut() { try { await sb.auth.signOut(); } catch (e) {} uid = null; sessionStorage.removeItem('excerly.cloudStamp'); renderSignedOut(); }
 
