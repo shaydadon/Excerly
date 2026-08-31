@@ -168,6 +168,21 @@ body {
 }
 .bmi-advice { color: var(--muted); font-size: 13.5px; margin-top: 8px; line-height: 1.6; }
 
+.target-weight {
+  margin-top: 14px;
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+}
+.tw-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.tw-title { font-weight: 700; font-size: 14px; }
+.tw-range { font-size: 22px; font-weight: 800; color: var(--accent-2); font-variant-numeric: tabular-nums; }
+.tw-hint { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.tw-status { margin-top: 10px; font-size: 13px; font-weight: 700; padding: 7px 10px; border-radius: 10px; }
+.tw-status.ok   { color: #12b886; background: color-mix(in srgb, #2ecc71 16%, transparent); }
+.tw-status.lose { color: var(--accent-warm); background: color-mix(in srgb, var(--accent-warm) 16%, transparent); }
+.tw-status.gain { color: var(--accent-2); background: color-mix(in srgb, var(--accent-2) 16%, transparent); }
 .calorie-box {
   margin-top: 14px;
   background: var(--card-2);

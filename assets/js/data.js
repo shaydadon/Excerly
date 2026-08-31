@@ -207,6 +207,12 @@
   /* ----- BMI, תזונה וקלוריות ----- */
   function calcBMI(weightKg, heightCm) { const h = heightCm / 100; return weightKg / (h * h); }
 
+  // טווח משקל בריא לפי גובה (BMI 18.5–24.9)
+  function healthyWeight(heightCm) {
+    const h = heightCm / 100;
+    return { lo: 18.5 * h * h, hi: 24.9 * h * h };
+  }
+
   // מחזיר מפתח קטגוריה + צבע; התוויות והטקסטים מגיעים מ-i18n
   function bmiCategory(bmi) {
     if (bmi < 18.5) return { key: 'under', color: '#4aa3ff' };
@@ -263,6 +269,6 @@
   global.ExcerlyData = {
     EXERCISES, WEEKLY_PROGRAM, DAY_NAMES, MONTH_NAMES, LOTTIE, EXIMG,
     programForDate, estimatedMinutes,
-    calcBMI, bmiCategory, calcBMR, ACTIVITY_FACTORS, macros
+    calcBMI, bmiCategory, healthyWeight, calcBMR, ACTIVITY_FACTORS, macros
   };
 })(window);

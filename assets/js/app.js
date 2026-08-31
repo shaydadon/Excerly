@@ -165,6 +165,14 @@
     const actLabel = t('act' + cap(p.activity));
     const gaugeP = Math.max(0, Math.min(100, ((bmi - 12) / (36 - 12)) * 100));
 
+    // משקל רצוי – טווח בריא לפי הגובה + כמה להוריד/להוסיף
+    const hw = D.healthyWeight(p.height);
+    const rangeLabel = t('targetWeightRange', { lo: hw.lo.toFixed(1), hi: hw.hi.toFixed(1) });
+    let twStatus;
+    if (p.weight > hw.hi) twStatus = { cls: 'lose', text: t('twLose', { kg: (p.weight - hw.hi).toFixed(1) }) };
+    else if (p.weight < hw.lo) twStatus = { cls: 'gain', text: t('twGain', { kg: (hw.lo - p.weight).toFixed(1) }) };
+    else twStatus = { cls: 'ok', text: t('twInRange') };
+
     box.innerHTML = `
       <div class="bmi-top">
         <div class="bmi-gauge" style="--gauge-color:${cat.color}">
@@ -177,6 +185,14 @@
           <span class="bmi-badge" style="background:${cat.color}">${catLabel}</span>
           <p class="bmi-advice">${advice}</p>
         </div>
+      </div>
+      <div class="target-weight">
+        <div class="tw-head">
+          <span class="tw-title">🎯 ${t('targetWeightTitle')}</span>
+          <span class="tw-range">${rangeLabel}</span>
+        </div>
+        <div class="tw-hint">${t('targetWeightHint')}</div>
+        <div class="tw-status ${twStatus.cls}">${twStatus.text}</div>
       </div>
       <div class="calorie-box">
         <div class="calorie-headline">
