@@ -183,6 +183,10 @@ body {
 .tw-status.ok   { color: #12b886; background: color-mix(in srgb, #2ecc71 16%, transparent); }
 .tw-status.lose { color: var(--accent-warm); background: color-mix(in srgb, var(--accent-warm) 16%, transparent); }
 .tw-status.gain { color: var(--accent-2); background: color-mix(in srgb, var(--accent-2) 16%, transparent); }
+.tw-plan { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.tw-plan-row { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-top: 6px; }
+.tw-plan-row .ic { font-size: 15px; flex: none; }
+.tw-plan-note { color: var(--muted); font-size: 11px; margin-top: 8px; }
 .calorie-box {
   margin-top: 14px;
   background: var(--card-2);

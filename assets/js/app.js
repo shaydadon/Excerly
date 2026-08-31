@@ -168,10 +168,26 @@
     // משקל רצוי – טווח בריא לפי הגובה + כמה להוריד/להוסיף
     const hw = D.healthyWeight(p.height);
     const rangeLabel = t('targetWeightRange', { lo: hw.lo.toFixed(1), hi: hw.hi.toFixed(1) });
-    let twStatus;
+    let twStatus, twPlan = '';
     if (p.weight > hw.hi) twStatus = { cls: 'lose', text: t('twLose', { kg: (p.weight - hw.hi).toFixed(1) }) };
     else if (p.weight < hw.lo) twStatus = { cls: 'gain', text: t('twGain', { kg: (hw.lo - p.weight).toFixed(1) }) };
     else twStatus = { cls: 'ok', text: t('twInRange') };
+
+    // המלצת קלוריות יומית וזמן משוער להגעה ליעד (רק אם מחוץ לטווח)
+    if (twStatus.cls !== 'ok') {
+      const lose = twStatus.cls === 'lose';
+      const kg = lose ? (p.weight - hw.hi) : (hw.lo - p.weight);
+      const rate = lose ? 0.5 : 0.4;                       // ק"ג בשבוע (בקצב בריא)
+      const weeks = Math.max(1, Math.round(kg / rate));
+      const kcal = lose ? Math.max(1200, tdee - 500) : (tdee + 400);
+      const time = weeks <= 8 ? t('planWeeks', { w: weeks }) : t('planMonths', { m: (weeks / 4.345).toFixed(1) });
+      twPlan = `
+        <div class="tw-plan">
+          <div class="tw-plan-row"><span class="ic">🍽️</span><span>${t(lose ? 'planCaloriesLose' : 'planCaloriesGain', { kcal: nf(kcal) })}</span></div>
+          <div class="tw-plan-row"><span class="ic">⏱️</span><span>${t('planTime', { time, rate })}</span></div>
+          <div class="tw-plan-note">${t('planNote')}</div>
+        </div>`;
+    }
 
     box.innerHTML = `
       <div class="bmi-top">
@@ -193,6 +209,7 @@
         </div>
         <div class="tw-hint">${t('targetWeightHint')}</div>
         <div class="tw-status ${twStatus.cls}">${twStatus.text}</div>
+        ${twPlan}
       </div>
       <div class="calorie-box">
         <div class="calorie-headline">
