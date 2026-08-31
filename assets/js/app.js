@@ -1629,10 +1629,14 @@
   const TABS = ['home', 'workouts', 'nutrition', 'me'];
   function setTab(name) {
     if (TABS.indexOf(name) === -1) name = 'home';
-    document.querySelectorAll('section.card[data-tab]').forEach(s => { s.hidden = s.dataset.tab !== name; });
+    document.querySelectorAll('section.card[data-tab]').forEach(s => {
+      const active = s.dataset.tab === name;
+      s.hidden = !active;
+      if (active) { s.classList.remove('tab-in'); void s.offsetWidth; s.classList.add('tab-in'); }
+    });
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
     save(STORE.tab, name);
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, behavior: 'auto' });
   }
   function initTabs() {
     document.querySelectorAll('.tab-btn').forEach(b =>
