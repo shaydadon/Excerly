@@ -582,6 +582,14 @@ textarea:focus { border-color: var(--accent); }
 .player-help:active { transform: scale(.96); }
 .gym-ex { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: 2px 0; }
 .gym-hero { width: 72px; height: 72px; flex: none; display: grid; place-items: center; font-size: 34px; border-radius: 16px; background: color-mix(in srgb, var(--accent-warm) 16%, var(--card-2)); }
+/* מקטע מתיחות נלווה ביום כוח */
+.stretch-companion { margin-top: 16px; border-top: 1px dashed var(--line); padding-top: 12px; }
+.stretch-companion > summary { list-style: none; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+.stretch-companion > summary::-webkit-details-marker { display: none; }
+.stretch-companion .sc-title { font-weight: 800; font-size: 15px; }
+.stretch-companion .sc-hint { color: var(--muted); font-size: 12.5px; }
+.stretch-companion .ex-list { margin-top: 10px; }
+.stretch-companion #start-stretch { margin-top: 4px; }
 .plan-apply { margin-top: 14px; }
 .sheet-body { padding: 14px 18px 22px; }
 

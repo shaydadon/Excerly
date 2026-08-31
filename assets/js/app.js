@@ -447,6 +447,38 @@
       </div>`;
     }).join('');
 
+    // מקטע מתיחות נלווה (חימום/שחרור) – מתוכנית המתיחות של אותו יום
+    const stretchIds = (D.programForDate(date).exercises || []);
+    let companion = '';
+    if (stretchIds.length) {
+      const sItems = stretchIds.map(sid => {
+        const ex = D.EXERCISES[sid];
+        const ed = isExDone(key, sid);
+        const hold = L(ex.hold);
+        return `<div class="ex-item ${ed ? 'done' : ''}">
+          <button class="ex-open" data-ex="${sid}">
+            <span class="ex-thumb">${exVisual(ex, false)}</span>
+            <span class="ex-info">
+              <span class="ex-name">${L(ex.name)}</span>
+              <span class="ex-area">${L(ex.area)}</span>
+              <span class="ex-reps">${L(ex.reps)}${hold !== '—' ? t('repsSep') + hold : ''}</span>
+            </span>
+          </button>
+          <button class="ex-finish ${ed ? 'on' : ''}" data-ex="${sid}"
+            aria-label="${ed ? t('finishUnmark') : t('finishMark')}" title="${ed ? t('finishUnmark') : t('finishMark')}">${ed ? '✓' : '+'}</button>
+        </div>`;
+      }).join('');
+      companion = `
+        <details class="stretch-companion">
+          <summary>
+            <span class="sc-title">🧘 ${t('stretchCompanion')}</span>
+            <span class="sc-hint">${t('stretchCompanionHint')}</span>
+          </summary>
+          <div class="ex-list">${sItems}</div>
+          <button class="btn btn-ghost btn-block" id="start-stretch">${t('startStretch')}</button>
+        </details>`;
+    }
+
     sheet.innerHTML = `
       <div class="sheet-grip"></div>
       <div class="sheet-head">
@@ -473,13 +505,21 @@
         <div class="workout-actions">
           <button class="btn btn-ghost btn-block" id="toggle-done">${done ? t('dayUndoBtn') : t('dayDoneBtn')}</button>
         </div>
+        ${companion}
         <div class="done-banner ${done ? 'show' : ''}">${t('doneBanner')}</div>
       </div>`;
 
     $('#sheet-close', sheet).addEventListener('click', closeSheet);
     $('#toggle-done', sheet).addEventListener('click', () => toggleGymDay(key, ids));
-    sheet.querySelectorAll('.ex-finish').forEach(btn =>
+    sheet.querySelectorAll('.ex-finish[data-gid]').forEach(btn =>
       btn.addEventListener('click', (e) => { e.stopPropagation(); toggleGymEx(key, btn.dataset.gid, ids); }));
+    // מתיחות נלוות – פירוט/סימון/נגן (לא משפיע על השלמת יום הכוח)
+    const st = $('#start-stretch', sheet);
+    if (st) st.addEventListener('click', () => openPlayer(date));
+    sheet.querySelectorAll('.ex-open').forEach(btn =>
+      btn.addEventListener('click', () => openExercise(btn.dataset.ex)));
+    sheet.querySelectorAll('.ex-finish[data-ex]').forEach(btn =>
+      btn.addEventListener('click', (e) => { e.stopPropagation(); toggleExDone(key, btn.dataset.ex); }));
     sheet.scrollTop = 0;
   }
 
@@ -512,6 +552,13 @@
 
   // סנכרון סימון היום עם השלמת כל התרגילים
   function syncDayDone(key, prog) {
+    // ביום שיש בו אימון כוח – השלמת היום נקבעת לפי אימון הכוח בלבד;
+    // המתיחות הן נלוות (חימום/שחרור) ואינן קובעות אם היום הושלם.
+    const sched = sheetDate ? scheduledDay(sheetDate) : null;
+    if (sched) {
+      syncGymDone(key, sched.day.exercises.map((_, i) => `gym:${sched.dayIdx}:${i}`));
+      return;
+    }
     const all = prog.exercises.length > 0 && prog.exercises.every(id => isExDone(key, id));
     if (all) doneMap[key] = true; else delete doneMap[key];
     save(STORE.done, doneMap);
@@ -710,7 +757,11 @@
   function finishPlayer() {
     stopTick();
     const key = player.key, prog = D.programForDate(player.date);
-    const s = exSet(key); prog.exercises.forEach(id => { s[id] = true; }); doneMap[key] = true;
+    const s = exSet(key); prog.exercises.forEach(id => { s[id] = true; });
+    // המתיחות סומנו; אם זה יום כוח – השלמת היום נשארת בבעלות אימון הכוח בלבד
+    const sched = scheduledDay(player.date);
+    if (sched) syncGymDone(key, sched.day.exercises.map((_, i) => `gym:${sched.dayIdx}:${i}`));
+    else doneMap[key] = true;
     save(STORE.exdone, exDoneMap); save(STORE.done, doneMap);
     renderCalendar(); updateStreak(); renderHistory();
     P().innerHTML = `
