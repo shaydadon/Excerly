@@ -191,7 +191,11 @@
         <button class="btn btn-primary" id="calc-food" style="flex:1" data-i18n="calcBtn">חשב קלוריות</button>
         <button class="btn btn-ghost" id="build-menu" style="flex:1" data-i18n="menuBtn">🍽️ בנה לי תפריט יומי</button>
       </div>
-      <button class="btn btn-ghost btn-block" id="photo-btn" style="margin-top:10px" data-i18n="photoBtn">📷 חשב לפי תמונה של הארוחה</button>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn btn-ghost photo-action" id="camera-btn" style="flex:1" data-i18n="cameraBtn">📷 צלם ארוחה</button>
+        <button class="btn btn-ghost photo-action" id="gallery-btn" style="flex:1" data-i18n="galleryBtn">🖼️ מהגלריה</button>
+      </div>
+      <input type="file" id="food-camera" accept="image/*" capture="environment" hidden />
       <input type="file" id="food-photo" accept="image/*" hidden />
       <div class="photo-preview" id="photo-preview" hidden></div>
 

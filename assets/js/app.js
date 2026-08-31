@@ -1129,7 +1129,6 @@
       $('#ai-settings').open = true;
       return;
     }
-    const btn = $('#photo-btn');
     let dataUrl;
     try { dataUrl = await fileToResizedDataURL(file); }
     catch (e) { toast(t('toastImgRead')); return; }
@@ -1138,7 +1137,7 @@
     prev.innerHTML = `<img src="${dataUrl}" alt="meal" />`;
 
     const image = parseDataUrl(dataUrl);
-    btn.disabled = true; btn.textContent = t('photoBtnBusy');
+    setPhotoBusy(true);
     let res;
     try {
       res = prov.mode === 'proxy'
@@ -1146,11 +1145,18 @@
         : await N.estimateImageAI(image, prov.key);
     } catch (e) {
       toast(t('toastImgErr'));
-      btn.disabled = false; btn.textContent = t('photoBtn');
+      setPhotoBusy(false);
       return;
     }
-    btn.disabled = false; btn.textContent = t('photoBtn');
+    setPhotoBusy(false);
     renderFoodResult(res, target);
+  }
+  // מצב "עסוק" לשני כפתורי התמונה (מצלמה + גלריה)
+  function setPhotoBusy(busy) {
+    document.querySelectorAll('.photo-action').forEach(b => {
+      b.disabled = busy;
+      b.textContent = busy ? t('photoBtnBusy') : t(b.getAttribute('data-i18n'));
+    });
   }
 
   async function buildMenu() {
@@ -1199,12 +1205,15 @@
 
     $('#calc-food').addEventListener('click', calcFood);
     $('#build-menu').addEventListener('click', buildMenu);
-    $('#photo-btn').addEventListener('click', () => $('#food-photo').click());
-    $('#food-photo').addEventListener('change', (e) => {
+    const onPhoto = (e) => {
       const file = e.target.files && e.target.files[0];
       if (file) calcFromImage(file);
       e.target.value = ''; // מאפשר לבחור שוב את אותה תמונה
-    });
+    };
+    $('#camera-btn').addEventListener('click', () => $('#food-camera').click());
+    $('#gallery-btn').addEventListener('click', () => $('#food-photo').click());
+    $('#food-camera').addEventListener('change', onPhoto);
+    $('#food-photo').addEventListener('change', onPhoto);
     document.addEventListener('excerly:profile', () => {
       renderNutriTarget();
       // עדכון היעד גם ברישומי היום כדי שהמחוון והממוצע יתעדכנו
