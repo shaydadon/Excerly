@@ -924,9 +924,23 @@
   let estimateItems = [];
   const uid = () => 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
+  // השלמת מקרו לארוחות ישנות שנשמרו לפני התכונה (לפי שם + קלוריות)
+  function backfillMacros(arr) {
+    let changed = false;
+    const out = (arr || []).map(m => {
+      if (m && m.carbs == null && N.macrosFor) { changed = true; return Object.assign({}, m, N.macrosFor(m.name, m.kcal || 0)); }
+      return m;
+    });
+    return { out, changed };
+  }
+
   function getMeals(key) {
     const all = load(STORE.meals, {});
-    if (all[key]) return all[key];
+    if (all[key]) {
+      const bf = backfillMacros(all[key]);
+      if (bf.changed) { all[key] = bf.out; save(STORE.meals, all); }
+      return bf.out;
+    }
     // מיגרציה מרישום ישן (סכום בודד) לפריט ארוחה אחד
     const log = load(STORE.foodlog, {})[key];
     if (log && log.total > 0) {

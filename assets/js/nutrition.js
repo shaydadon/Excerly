@@ -435,6 +435,6 @@
     estimateLocal, generateMealPlan,
     estimateAI, mealPlanAI, estimateImageAI,         // BYOK ישיר
     estimateViaProxy, mealPlanViaProxy, estimateImageViaProxy, // דרך שרת proxy
-    targetCalories, verdict
+    targetCalories, verdict, macrosFor
   };
 })(window);
