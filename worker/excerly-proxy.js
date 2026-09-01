@@ -54,8 +54,8 @@ const ESTIMATE_SYSTEM =
   'כולל כמויות לא פורמליות כמו "קופסת טונה", "3 כפות מיונז", "2 לחמניות", "צלחת פסטה". ' +
   'הערך בצורה מציאותית את סך הקלוריות לפי מנות נפוצות (העדף אומדן ישראלי). ' +
   'החזר JSON בלבד, ללא טקסט לפני או אחרי, במבנה: ' +
-  '{"total": number, "items": [{"name": string, "kcal": number}], "note": string}. ' +
-  'name בעברית, note הוא משפט קצר בעברית. אם פריט לא ברור, שערך בזהירות וציין זאת ב-note.';
+  '{"total": number, "items": [{"name": string, "kcal": number, "carbs": number, "protein": number, "fat": number}], "note": string}. ' +
+  'carbs, protein, fat הם גרמים לאותו פריט. name בעברית, note הוא משפט קצר בעברית. אם פריט לא ברור, שערך בזהירות וציין זאת ב-note.';
 
 const MENU_SYSTEM =
   'אתה תזונאי. בנה תפריט יומי מגוון ומאוזן בעברית ליעד קלוריות נתון: ' +
@@ -79,8 +79,8 @@ const IMAGE_SYSTEM =
   'אתה מנתח תזונה מדויק. קיבלת תמונה של ארוחה. זהה את הפריטים שבתמונה והערך את סך הקלוריות ' +
   'בצורה מציאותית לפי מנות נפוצות (העדף אומדן ישראלי), תוך התחשבות בגודל המנה הנראה. ' +
   'החזר JSON בלבד, ללא טקסט נוסף: ' +
-  '{"total": number, "items": [{"name": string, "kcal": number}], "note": string}. ' +
-  'name בעברית, note משפט קצר בעברית. אם התמונה אינה של אוכל או אינה ברורה, החזר total=0 וציין זאת ב-note.';
+  '{"total": number, "items": [{"name": string, "kcal": number, "carbs": number, "protein": number, "fat": number}], "note": string}. ' +
+  'carbs, protein, fat הם גרמים לאותו פריט. name בעברית, note משפט קצר בעברית. אם התמונה אינה של אוכל או אינה ברורה, החזר total=0 וציין זאת ב-note.';
 
 // content יכול להיות מחרוזת (טקסט) או מערך בלוקים (למשל תמונה + טקסט)
 async function callAnthropic(env, system, content, maxTokens) {

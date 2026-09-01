@@ -153,6 +153,32 @@
 
   // הערכה מקומית של קלוריות מטקסט חופשי – סורק פריט אחר פריט על פני המשפט כולו,
   // כך שגם רשימה ללא פסיקים ("טונה 3 כפות מיונז 2 לחמניות פיתה שווארמה") מפורקת נכון.
+  /* ---------- הערכת מקרו-נוטריאנטים (חלבון/פחמימה/שומן) ----------
+     המאגר המקומי מכיל רק קלוריות, ולכן נאמדים לפי סיווג המזון והתפלגות
+     אנרגיה טיפוסית (4 קק"ל/ג׳ לפחמימה וחלבון, 9 קק"ל/ג׳ לשומן). מצב AI
+     מחזיר ערכים מדויקים יותר. */
+  const MACRO_SPLIT = { // [carb%, protein%, fat%] מתוך הקלוריות
+    carb: [0.75, 0.13, 0.12], protein: [0.10, 0.55, 0.35], fat: [0.10, 0.10, 0.80],
+    veg: [0.60, 0.20, 0.20], fruit: [0.90, 0.05, 0.05], dairy: [0.40, 0.30, 0.30],
+    legume: [0.55, 0.25, 0.20], mixed: [0.50, 0.20, 0.30]
+  };
+  function macroClass(name) {
+    const s = String(name || '').toLowerCase();
+    const has = (...w) => w.some(x => s.indexOf(x) !== -1);
+    if (has('אורז', 'פסטה', 'ספגטי', 'נודלס', 'קינואה', 'בורגול', 'קוסקוס', 'לחם', 'טוסט', 'פיתה', 'לחמני', 'באגט', 'קרקר', 'מצה', 'תפוח אדמה', 'פירה', 'בטטה', 'ציפס', 'צ׳יפס', "צ'יפס", 'דגני', 'גרנולה', 'שיבולת', 'דייס', 'פנקייק', 'טורטיה', 'סוכר', 'דבש', 'סילאן')) return 'carb';
+    if (has('עוף', 'פרגית', 'הודו', 'בשר', 'בקר', 'סטייק', 'אנטריקוט', 'קציצ', 'שניצל', 'סלמון', 'דג', 'טונה', 'טופו', 'ביצה', 'ביצים', 'חביתה', 'אומלט')) return 'protein';
+    if (has('גבינה צהובה', 'שמן', 'חמאה', 'טחינה', 'מיונ', 'חמאת בוטנים', 'שקד', 'אגוז', 'קשיו', 'בוטנים', 'אבוקדו')) return 'fat';
+    if (has('חלב', 'יוגורט', 'יופלה', 'קוטג', 'גבינה לבנה')) return 'dairy';
+    if (has('חומוס', 'עדשים', 'שעועית', 'פול', 'קטני')) return 'legume';
+    if (has('סלט', 'ירק', 'מלפפון', 'עגבני', 'גזר', 'פלפל', 'ברוקולי', 'חסה', 'כרוב')) return 'veg';
+    if (has('תפוח', 'בננה', 'תפוז', 'קלמנטינ', 'אגס', 'ענבים', 'אבטיח', 'מלון', 'תות', 'פרי')) return 'fruit';
+    return 'mixed';
+  }
+  function macrosFor(name, kcal) {
+    const sp = MACRO_SPLIT[macroClass(name)] || MACRO_SPLIT.mixed;
+    return { carbs: Math.round(kcal * sp[0] / 4), protein: Math.round(kcal * sp[1] / 4), fat: Math.round(kcal * sp[2] / 9) };
+  }
+
   function estimateLocal(text) {
     const tokens = tokenize(text);
     const items = [];
@@ -189,7 +215,7 @@
           if (trailUnit && !afterIsFood) { q = parseFloat(tokens[j].replace(',', '.')); u = trailUnit; j += 2; }
         }
         const kcal = Math.round(kcalFor(m.food, q == null ? 1 : q, u));
-        if (kcal > 0) items.push({ name: foodLabel(m.food), kcal });
+        if (kcal > 0) { const nm2 = foodLabel(m.food); items.push(Object.assign({ name: nm2, kcal }, macrosFor(nm2, kcal))); }
         qty = null; unit = null; i = j;
       } else {
         if (t.length > 1) unmatched.push(t); // מילה לא מזוהה (תיאור/מזון חסר)
@@ -278,7 +304,15 @@
 
   /* ---------- נירמול תשובות ה-AI למבנה אחיד ---------- */
   function normalizeEstimate(out) {
-    const items = (out.items || []).map(i => ({ name: i.name, kcal: Math.round(i.kcal || 0) }));
+    const items = (out.items || []).map(i => {
+      const kcal = Math.round(i.kcal || 0);
+      // אם ה-AI לא החזיר מקרו — נאמד מקומית לפי שם המזון
+      const hasMacro = i.carbs != null || i.protein != null || i.fat != null;
+      const mac = hasMacro
+        ? { carbs: Math.round(i.carbs || 0), protein: Math.round(i.protein || 0), fat: Math.round(i.fat || 0) }
+        : macrosFor(i.name, kcal);
+      return Object.assign({ name: i.name, kcal }, mac);
+    });
     return {
       total: Math.round(out.total || items.reduce((s, i) => s + i.kcal, 0)),
       items, unmatched: [], note: out.note || '', source: 'ai'
@@ -346,8 +380,8 @@
     'You are a precise nutrition analyzer. You received a photo of a meal. Identify the items and ' +
     'realistically estimate the total calories based on common portion sizes, considering the visible portion. ' +
     'Return JSON only, no text before or after: ' +
-    '{"total": number, "items": [{"name": string, "kcal": number}], "note": string}. ' +
-    'note is a short sentence. If the image is not food or is unclear, return total=0 and say so in note.';
+    '{"total": number, "items": [{"name": string, "kcal": number, "carbs": number, "protein": number, "fat": number}], "note": string}. ' +
+    'carbs, protein and fat are grams for that item. note is a short sentence. If the image is not food or is unclear, return total=0 and say so in note.';
 
   const imageContent = (image) => ([
     { type: 'image', source: { type: 'base64', media_type: image.media_type, data: image.data } },
@@ -363,8 +397,9 @@
 
   async function estimateAI(text, key) {
     const system = 'You are a nutrition assistant. Given a free-text description (in any language) of what ' +
-      'someone ate, realistically estimate the total calories. Return JSON only, no extra text: ' +
-      '{"total": number, "items": [{"name": string, "kcal": number}], "note": string}.' + langLine();
+      'someone ate, realistically estimate the total calories and macronutrients. Return JSON only, no extra text: ' +
+      '{"total": number, "items": [{"name": string, "kcal": number, "carbs": number, "protein": number, "fat": number}], "note": string}. ' +
+      'carbs, protein and fat are grams for that item.' + langLine();
     return normalizeEstimate(await callClaude(key, system, text, 1024));
   }
 

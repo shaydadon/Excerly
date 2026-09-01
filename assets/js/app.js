@@ -957,7 +957,10 @@
     if (!valid.length) return;
     const key = dateKey(new Date());
     const arr = getMeals(key).slice();
-    valid.forEach(it => arr.push({ id: uid(), name: it.name || t('mealLabel'), kcal: Math.round(it.kcal) }));
+    valid.forEach(it => arr.push({
+      id: uid(), name: it.name || t('mealLabel'), kcal: Math.round(it.kcal),
+      carbs: Math.round(it.carbs || 0), protein: Math.round(it.protein || 0), fat: Math.round(it.fat || 0)
+    }));
     setMeals(key, arr);
     refreshNutrition();
     toast(t('toastAdded'));
@@ -1008,7 +1011,17 @@
     } else {
       summary = `<div class="nutri-numbers" style="margin-top:8px"><b>${nf(total)}</b> ${t('goalUnit')}</div>`;
     }
-    box.innerHTML = `<div class="dm-title">${t('dayMealsTitle')}</div><div class="dm-list">${rows}</div>${summary}`;
+    // סיכום מקרו-נוטריאנטים לכל היום
+    const carbs = meals.reduce((s, m) => s + (m.carbs || 0), 0);
+    const protein = meals.reduce((s, m) => s + (m.protein || 0), 0);
+    const fat = meals.reduce((s, m) => s + (m.fat || 0), 0);
+    const macroRow = (carbs || protein || fat) ? `
+      <div class="dm-macros">
+        <span class="dm-mac c"><b>${carbs}</b> ${t('grams')} ${t('carbs')}</span>
+        <span class="dm-mac p"><b>${protein}</b> ${t('grams')} ${t('protein')}</span>
+        <span class="dm-mac f"><b>${fat}</b> ${t('grams')} ${t('fat')}</span>
+      </div>` : '';
+    box.innerHTML = `<div class="dm-title">${t('dayMealsTitle')}</div><div class="dm-list">${rows}</div>${macroRow}${summary}`;
     box.classList.add('show');
     box.querySelectorAll('.dm-del').forEach(b => b.addEventListener('click', () => removeMeal(b.dataset.id)));
   }
@@ -1038,11 +1051,18 @@
       : `<div class="nutri-empty">${t('itemsEmpty')}</div>`;
     const unmatched = res.unmatched && res.unmatched.length
       ? `<div class="nutri-unmatched">${t('unmatched', { list: res.unmatched.join(', ') })}</div>` : '';
+    const eC = estimateItems.reduce((s, i) => s + (i.carbs || 0), 0);
+    const eP = estimateItems.reduce((s, i) => s + (i.protein || 0), 0);
+    const eF = estimateItems.reduce((s, i) => s + (i.fat || 0), 0);
+    const macroLine = estimateItems.length && (eC || eP || eF)
+      ? `<div class="dm-macros est"><span class="dm-mac c"><b>${eC}</b> ${t('grams')} ${t('carbs')}</span><span class="dm-mac p"><b>${eP}</b> ${t('grams')} ${t('protein')}</span><span class="dm-mac f"><b>${eF}</b> ${t('grams')} ${t('fat')}</span></div>`
+      : '';
     box.innerHTML = `
       <div class="est-head">
         <div class="est-total">${t('estimateLabel', { n: nf(res.total) })}</div>
         ${estimateItems.length ? `<button class="btn btn-primary est-addall" id="est-addall">${t('addAll')}</button>` : ''}
       </div>
+      ${macroLine}
       <div class="nutri-src">${res.source === 'ai' ? t('srcAi') : t('srcLocal')}</div>
       ${res.note ? `<div class="nutri-note">${res.note}</div>` : ''}
       ${itemsHtml}

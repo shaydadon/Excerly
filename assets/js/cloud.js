@@ -14,12 +14,16 @@
   const I18n = window.ExcerlyI18n;
   const T = (k, fb) => (I18n && I18n.t ? I18n.t(k) : fb);
 
-  // מפתחות שלא מסנכרנים: מפתח ה-AI (סוד אישי) ומצב-UI זמני
-  const SKIP = { 'excerly.ai': 1 };
+  // מפתחות שלא מסנכרנים: מפתח ה-AI (סוד אישי) ודגל "שינויים מקומיים שלא נדחפו"
+  const SKIP = { 'excerly.ai': 1, 'excerly.dirty': 1 };
   const isSyncKey = k => k.indexOf('excerly.') === 0 && !SKIP[k];
+  const DIRTY = 'excerly.dirty';
 
   const _set = localStorage.setItem.bind(localStorage);
   const _remove = localStorage.removeItem.bind(localStorage);
+  const markDirty = () => { try { _set(DIRTY, '1'); } catch (e) {} };
+  const clearDirty = () => { try { _remove(DIRTY); } catch (e) {} };
+  const isDirty = () => { try { return localStorage.getItem(DIRTY) === '1'; } catch (e) { return false; } };
 
   function snapshot() {
     const out = {};
@@ -51,12 +55,13 @@
         .upsert({ user_id: uid, data: snapshot(), updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
         .select('updated_at').single();
       if (data) sessionStorage.setItem('excerly.cloudStamp', data.updated_at);
+      clearDirty(); // נדחף בהצלחה — אין עוד שינויים מקומיים תלויים
       setSyncStatus(true);
     } catch (e) { /* לא מקוון – ננסה בשינוי הבא */ }
   }
 
-  // עטיפת setItem כדי לדחוף אוטומטית בכל שינוי במצב האפליקציה
-  localStorage.setItem = function (k, v) { _set(k, v); if (isSyncKey(k)) schedulePush(); };
+  // עטיפת setItem כדי לדחוף אוטומטית בכל שינוי במצב האפליקציה (ולסמן "מלוכלך")
+  localStorage.setItem = function (k, v) { _set(k, v); if (isSyncKey(k)) { markDirty(); schedulePush(); } };
 
   async function syncOnLogin(session) {
     uid = session.user.id;
@@ -74,7 +79,9 @@
     }
     const stamp = row.updated_at;
     if (sessionStorage.getItem('excerly.cloudStamp') === stamp) { setSyncStatus(true); return; }
-    // מיישמים את השרת מקומית וטוענים מחדש כדי לשקף בכל המסכים
+    // יש שינויים מקומיים שלא נדחפו — המקומי מנצח, דוחפים אותו במקום לדרוס
+    if (isDirty()) { await pushNow(); return; }
+    // אחרת מיישמים את השרת מקומית וטוענים מחדש כדי לשקף בכל המסכים
     applySnapshot(row.data);
     sessionStorage.setItem('excerly.cloudStamp', stamp);
     location.reload();
@@ -137,6 +144,9 @@
     }
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
     wireUI();
+    // דחיפה מיידית כשעוזבים/ממזערים את הדף — כדי שהשרת תמיד מעודכן לפני רענון
+    document.addEventListener('visibilitychange', () => { if (document.hidden && uid && isDirty()) pushNow(); });
+    window.addEventListener('pagehide', () => { if (uid && isDirty()) pushNow(); });
     sb.auth.getSession().then(({ data }) => {
       if (data.session) { renderSignedIn(data.session); syncOnLogin(data.session); }
       else renderSignedOut();

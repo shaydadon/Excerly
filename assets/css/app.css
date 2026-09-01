@@ -367,6 +367,14 @@ textarea:focus { border-color: var(--accent); }
 
 .nutri-result, .menu-result { display: none; margin-top: 14px; }
 .nutri-result.show, .menu-result.show { display: block; }
+.dm-macros { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.dm-macros.est { margin: 8px 0 2px; }
+.dm-mac { flex: 1; min-width: 84px; text-align: center; padding: 7px 8px; border-radius: 10px;
+  font-size: 12px; font-weight: 600; color: var(--muted); background: var(--card-2); border: 1px solid var(--line); }
+.dm-mac b { display: block; font-size: 16px; font-weight: 800; color: var(--text); }
+.dm-mac.c { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.dm-mac.p { border-color: color-mix(in srgb, var(--accent-2) 45%, var(--line)); }
+.dm-mac.f { border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); }
 .nutri-summary { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .nutri-verdict {
   padding: 7px 14px; border-radius: 999px;
