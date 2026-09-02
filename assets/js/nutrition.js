@@ -328,14 +328,26 @@
 
   /* ---------- מצב AI דרך שרת proxy (מומלץ – בלי מפתח בדפדפן) ---------- */
   async function callProxy(url, payload) {
+    // צירוף אסימון המשתמש (למכסת ה-AI). נשלח בגוף כדי להימנע מ-CORS preflight.
+    const token = (global.ExcerlyCloud && global.ExcerlyCloud.token && global.ExcerlyCloud.token()) || null;
+    const body = token ? Object.assign({ token }, payload) : payload;
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(body)
     });
+    let data = null;
+    try { data = await res.json(); } catch (e) {}
+    if (res.status === 429 && data && data.error === 'quota_exceeded') {
+      const err = new Error('quota'); err.code = 'quota'; err.used = data.used; err.limit = data.limit; throw err;
+    }
+    if (res.status === 401 && data && data.error === 'login_required') {
+      const err = new Error('login'); err.code = 'login'; throw err;
+    }
     if (!res.ok) throw new Error('proxy failed: ' + res.status);
-    const data = await res.json();
     if (data && data.error) throw new Error('proxy error: ' + data.error);
+    // עדכון מצב המכסה לתצוגה
+    if (data && data._quota && global.ExcerlyCloud) global.ExcerlyCloud.quota = data._quota;
     return data;
   }
   async function estimateViaProxy(text, url) {

@@ -8,6 +8,16 @@
      2) wrangler secret put ANTHROPIC_API_KEY   (מדביקים sk-ant-...)
      3) wrangler deploy
    ראו worker/README.md להוראות מלאות.
+
+   ── מכסות AI לכל משתמש (רשות; בקרת עלויות) ──────────────────────
+   כדי לאכוף מכסה יומית לכל משתמש מחובר, הגדירו:
+     [vars]   SUPABASE_URL = "https://<ref>.supabase.co"
+     wrangler secret put SUPABASE_ANON            (anon key — לאימות ה-JWT)
+     wrangler secret put SUPABASE_SERVICE_ROLE    (service_role — לספירת שימוש)
+     [vars]   AI_DAILY_LIMIT = "25"               (בקשות ליום; ברירת מחדל 25)
+     [vars]   AI_REQUIRE_LOGIN = "1"              (רשות — לחסום AI משותף ללא התחברות)
+   וכן להריץ ב-Supabase את טבלת ai_usage והפונקציה increment_ai_usage (ראו README).
+   ללא SUPABASE_SERVICE_ROLE — לא נאכפת מכסה (התנהגות כמו קודם).
    ============================================================= */
 
 // דומיינים שמורשים לקרוא ל-proxy (CORS). עדכנו לפי הצורך.
@@ -112,6 +122,44 @@ async function callAnthropic(env, system, content, maxTokens) {
   catch (e) { return { error: true, status: 502, detail: 'invalid JSON from model' }; }
 }
 
+/* =============================================================
+   מכסות AI לכל משתמש (בקרת עלויות)
+   מזהים את המשתמש דרך ה-JWT של Supabase, סופרים שימוש יומי בטבלה,
+   וחוסמים מעל המכסה. משתמש עם מפתח אישי (BYOK) לא עובר דרך כאן כלל.
+   ============================================================= */
+async function verifyUser(env, token) {
+  if (!token || !env.SUPABASE_URL || !env.SUPABASE_ANON) return null;
+  try {
+    const r = await fetch(env.SUPABASE_URL + '/auth/v1/user', {
+      headers: { apikey: env.SUPABASE_ANON, Authorization: 'Bearer ' + token }
+    });
+    if (!r.ok) return null;
+    const u = await r.json();
+    return u && u.id ? u.id : null;
+  } catch (e) { return null; }
+}
+async function getUsage(env, userId, day) {
+  try {
+    const r = await fetch(`${env.SUPABASE_URL}/rest/v1/ai_usage?user_id=eq.${userId}&day=eq.${day}&select=count`, {
+      headers: { apikey: env.SUPABASE_SERVICE_ROLE, Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE }
+    });
+    if (!r.ok) return 0;
+    const rows = await r.json();
+    return (rows[0] && rows[0].count) || 0;
+  } catch (e) { return 0; }
+}
+async function incrementUsage(env, userId, day) {
+  try {
+    const r = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/increment_ai_usage`, {
+      method: 'POST',
+      headers: { apikey: env.SUPABASE_SERVICE_ROLE, Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE, 'content-type': 'application/json' },
+      body: JSON.stringify({ p_user: userId, p_day: day })
+    });
+    if (!r.ok) return null;
+    return await r.json(); // הספירה החדשה
+  } catch (e) { return null; }
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || '';
@@ -138,6 +186,19 @@ export default {
     let body;
     try { body = await request.json(); }
     catch (e) { return json({ error: 'Bad JSON body' }, 400, origin); }
+
+    // ----- מכסת AI לכל משתמש -----
+    const token = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '') || body.token || '';
+    const userId = await verifyUser(env, token);
+    const enforce = userId && env.SUPABASE_SERVICE_ROLE;
+    const day = new Date().toISOString().slice(0, 10);
+    const limit = parseInt(env.AI_DAILY_LIMIT || '25', 10);
+    if (enforce) {
+      const used = await getUsage(env, userId, day);
+      if (used >= limit) return json({ error: 'quota_exceeded', used, limit }, 429, origin);
+    } else if (!userId && env.AI_REQUIRE_LOGIN === '1') {
+      return json({ error: 'login_required' }, 401, origin);
+    }
 
     // הנחיית שפת התשובה לפי שפת הממשק
     const lang = body.lang === 'en' ? 'en' : 'he';
@@ -183,7 +244,13 @@ export default {
     }
 
     if (out.error) return json({ error: 'upstream', status: out.status, detail: out.detail }, 502, origin);
-    return json(out.parsed, 200, origin);
+    // סופרים רק בקשה שהצליחה, ומחזירים ללקוח את המצב
+    let quota = null;
+    if (enforce) {
+      const n = await incrementUsage(env, userId, day);
+      quota = { used: (typeof n === 'number' ? n : null), limit };
+    }
+    return json(quota ? Object.assign({ _quota: quota }, out.parsed) : out.parsed, 200, origin);
   }
 };
 

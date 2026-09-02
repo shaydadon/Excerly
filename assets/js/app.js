@@ -1108,6 +1108,13 @@
     $('#menu-shuffle', box).addEventListener('click', buildMenu);
   }
 
+  // הודעה ידידותית לשגיאות AI (מכסה/התחברות). מחזיר true אם טופל.
+  function aiErrToast(e) {
+    if (e && e.code === 'quota') { toast(t('aiQuota', { used: e.used, limit: e.limit })); return true; }
+    if (e && e.code === 'login') { toast(t('aiLoginNeeded')); return true; }
+    return false;
+  }
+
   async function calcFood() {
     const target = renderNutriTarget();
     if (!target) { toast(t('toastFillProfile')); return; }
@@ -1122,7 +1129,7 @@
         res = prov.mode === 'proxy'
           ? await N.estimateViaProxy(text, prov.url)
           : await N.estimateAI(text, prov.key);
-      } catch (e) { toast(t('toastAiErrLocal')); res = N.estimateLocal(text); }
+      } catch (e) { if (!aiErrToast(e)) toast(t('toastAiErrLocal')); res = N.estimateLocal(text); }
       btn.disabled = false; btn.textContent = t('calcBtn');
     } else {
       res = N.estimateLocal(text);
@@ -1179,7 +1186,7 @@
         ? await N.estimateImageViaProxy(image, prov.url)
         : await N.estimateImageAI(image, prov.key);
     } catch (e) {
-      toast(t('toastImgErr'));
+      if (!aiErrToast(e)) toast(t('toastImgErr'));
       setPhotoBusy(false);
       return;
     }
@@ -1206,7 +1213,7 @@
         plan = prov.mode === 'proxy'
           ? await N.mealPlanViaProxy(target, prov.url)
           : await N.mealPlanAI(target, prov.key);
-      } catch (e) { toast(t('toastAiErrMenu')); plan = N.generateMealPlan(target); }
+      } catch (e) { if (!aiErrToast(e)) toast(t('toastAiErrMenu')); plan = N.generateMealPlan(target); }
       btn.disabled = false; btn.textContent = t('menuBtn');
     } else {
       plan = N.generateMealPlan(target);
@@ -1503,7 +1510,7 @@
       const plan = W.planLocal(p);
       save(STORE.plan, plan);
       renderPlan(plan);
-      toast(t('planAiFail'));
+      if (!aiErrToast(e)) toast(t('planAiFail'));
     } finally {
       btn.disabled = false;
       btn.textContent = orig;

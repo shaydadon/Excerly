@@ -130,12 +130,17 @@
 
   /* ---------- קריאות AI (proxy / BYOK) ---------- */
   async function callProxy(url, payload) {
+    const token = (global.ExcerlyCloud && global.ExcerlyCloud.token && global.ExcerlyCloud.token()) || null;
+    const body = token ? Object.assign({ token }, payload) : payload;
     const res = await fetch(url, {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload)
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body)
     });
+    let data = null; try { data = await res.json(); } catch (e) {}
+    if (res.status === 429 && data && data.error === 'quota_exceeded') { const err = new Error('quota'); err.code = 'quota'; err.used = data.used; err.limit = data.limit; throw err; }
+    if (res.status === 401 && data && data.error === 'login_required') { const err = new Error('login'); err.code = 'login'; throw err; }
     if (!res.ok) throw new Error('proxy failed: ' + res.status);
-    const data = await res.json();
     if (data && data.error) throw new Error('proxy error: ' + data.error);
+    if (data && data._quota && global.ExcerlyCloud) global.ExcerlyCloud.quota = data._quota;
     return data;
   }
   async function planViaProxy(p, url) {

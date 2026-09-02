@@ -148,13 +148,22 @@
     document.addEventListener('visibilitychange', () => { if (document.hidden && uid && isDirty()) pushNow(); });
     window.addEventListener('pagehide', () => { if (uid && isDirty()) pushNow(); });
     sb.auth.getSession().then(({ data }) => {
-      if (data.session) { renderSignedIn(data.session); syncOnLogin(data.session); }
+      if (data.session) { accessToken = data.session.access_token || null; renderSignedIn(data.session); syncOnLogin(data.session); }
       else renderSignedOut();
     });
     sb.auth.onAuthStateChange((event, session) => {
+      accessToken = session ? (session.access_token || null) : null;
       if (session) { renderSignedIn(session); if (event === 'SIGNED_IN') syncOnLogin(session); }
       else renderSignedOut();
     });
   }
+
+  // חשיפה לשאר האפליקציה: אסימון הגישה (למכסת ה-AI בפרוקסי) ומצב מכסה
+  let accessToken = null;
+  window.ExcerlyCloud = {
+    token: () => accessToken,
+    quota: null // {used, limit} — מתעדכן ע"י nutrition.js אחרי קריאת AI
+  };
+
   document.addEventListener('DOMContentLoaded', init);
 })();
