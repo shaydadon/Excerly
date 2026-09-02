@@ -1901,10 +1901,11 @@
     return items;
   }
   function refreshGCalUI() {
+    const override = window.ExcerlyGCal && ExcerlyGCal.hasOverride && ExcerlyGCal.hasOverride();
     const configured = window.ExcerlyGCal && ExcerlyGCal.configured();
     const row = $('#gcal-client-row'), conn = $('#gcal-connected');
-    if (row) row.hidden = !!configured;   // מסתירים את שדה ה-Client ID אחרי שהוזן
-    if (conn) conn.hidden = !configured;
+    if (row) row.hidden = !!configured;    // מוסתר כשיש Client ID (כולל המוטמע כברירת מחדל)
+    if (conn) conn.hidden = !override;      // "מחובר / שנה מזהה" רק אם הוזן מזהה ידני (מתקדם)
   }
   function initGCal() {
     const input = $('#gcal-client'), btn = $('#gcal-sync'), change = $('#gcal-change');

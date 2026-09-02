@@ -9,7 +9,7 @@
 
   // Client ID מוטמע (ברירת מחדל למוצר) — לא סוד, גלוי ממילא בדף. כשמוגדר,
   // הלקוח לא רואה שדה כלל, רק כפתור סנכרון. אפשר לדרוס דרך ההגדרות (localStorage).
-  const DEFAULT_CLIENT_ID = '';
+  const DEFAULT_CLIENT_ID = '372588686007-8qmm1i1jgtfipfmbcqrsh1g2p01tp6gb.apps.googleusercontent.com';
   const CID_KEY = 'excerly.gcalClient';   // Google OAuth Client ID (דריסה מקומית אופציונלית)
   const MAP_KEY = 'excerly.gcalMap';       // { 'YYYY-MM-DD': eventId } — למניעת כפילויות ולעדכון
   const SCOPE = 'https://www.googleapis.com/auth/calendar.events';
@@ -101,5 +101,6 @@
     return { added, removed };
   }
 
-  window.ExcerlyGCal = { clientId, setClientId, sync, getToken, configured: () => !!clientId() };
+  const hasOverride = () => { try { return !!localStorage.getItem(CID_KEY); } catch (e) { return false; } };
+  window.ExcerlyGCal = { clientId, setClientId, sync, getToken, configured: () => !!clientId(), hasOverride };
 })();
