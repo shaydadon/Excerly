@@ -238,6 +238,73 @@
   /* =========================================================
      לוח שנה
      ========================================================= */
+  /* ---------- גרירת אימון ביומן (drag & drop, מגע + עכבר) ----------
+     לחיצה ארוכה על אימון עתידי "מרימה" אותו, גוררים ליום פנוי ומשחררים.
+     נשמר כ-override פר-תאריך (לא משנה את התבנית השבועית). */
+  let dragSuppressClick = false;
+  function armDrag(cell) {
+    cell.addEventListener('pointerdown', (e) => {
+      if (e.button != null && e.button !== 0) return;
+      const startX = e.clientX, startY = e.clientY;
+      const fromDate = cell._date;
+      let armed = false, ghost = null, overCell = null, holdTimer = null;
+      const pid = e.pointerId;
+
+      const cleanup = () => {
+        if (holdTimer) clearTimeout(holdTimer);
+        if (ghost) ghost.remove();
+        if (overCell) overCell.classList.remove('drag-over', 'drag-bad');
+        cell.classList.remove('dragging');
+        document.body.style.overflow = '';
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        document.removeEventListener('pointercancel', onUp);
+      };
+      const startDrag = () => {
+        armed = true;
+        cell.classList.add('dragging');
+        document.body.style.overflow = 'hidden';
+        if (navigator.vibrate) { try { navigator.vibrate(15); } catch (_) {} }
+        ghost = el('div', 'drag-ghost', '🏋️');
+        document.body.appendChild(ghost);
+      };
+      const moveGhost = (x, y) => {
+        if (ghost) { ghost.style.left = x + 'px'; ghost.style.top = y + 'px'; }
+        const under = document.elementFromPoint(x, y);
+        const c = under && under.closest ? under.closest('.cal-cell') : null;
+        if (c !== overCell) {
+          if (overCell) overCell.classList.remove('drag-over', 'drag-bad');
+          overCell = (c && c !== cell && !c.classList.contains('empty')) ? c : null;
+          if (overCell) overCell.classList.add(overCell.classList.contains('gym') ? 'drag-bad' : 'drag-over');
+        }
+      };
+      const onMove = (ev) => {
+        if (pid != null && ev.pointerId !== pid) return;
+        const dx = ev.clientX - startX, dy = ev.clientY - startY;
+        if (!armed) {
+          if (Math.hypot(dx, dy) > 10) cleanup(); // תנועה לפני לחיצה ארוכה = גלילה/תזוזה → ביטול
+          return;
+        }
+        ev.preventDefault();
+        moveGhost(ev.clientX, ev.clientY);
+      };
+      const onUp = (ev) => {
+        if (pid != null && ev.pointerId !== pid) return;
+        const wasArmed = armed;
+        const target = overCell && !overCell.classList.contains('gym') ? overCell._date : null;
+        cleanup();
+        if (wasArmed) {
+          dragSuppressClick = true; setTimeout(() => { dragSuppressClick = false; }, 60);
+          if (target) { if (moveWorkout(fromDate, target)) { renderCalendar(); toast(t('moveDone')); } }
+        }
+      };
+      holdTimer = setTimeout(startDrag, 200); // לחיצה ארוכה מפעילה גרירה (טאפ רגיל פותח את היום)
+      document.addEventListener('pointermove', onMove, { passive: false });
+      document.addEventListener('pointerup', onUp);
+      document.addEventListener('pointercancel', onUp);
+    });
+  }
+
   function renderCalendar() {
     const y = viewDate.getFullYear();
     const mo = viewDate.getMonth();
@@ -262,15 +329,19 @@
       const gym = scheduledDay(date);
       if (gym) cell.classList.add('gym');
 
+      cell._date = date; // לגרירה/שחרור
       cell.appendChild(el('div', 'd-num', String(d)));
-      if (gym && !doneMap[key]) cell.appendChild(el('div', 'cell-gym', '🏋️'));
+      if (gym && !doneMap[key]) cell.appendChild(el('div', 'cell-gym', gym.moved ? '🏋️↔' : '🏋️'));
       const dot = el('div', 'dot');
       if (doneMap[key]) { dot.classList.add('done'); cell.appendChild(el('div', 'cell-check', '✓')); }
       else if (gym) dot.classList.add('gym');
       else if (prog.rest) dot.classList.add('rest');
       cell.appendChild(dot);
 
-      cell.addEventListener('click', () => openSheet(date));
+      // אימון עתידי שטרם בוצע — ניתן לגרירה להעברה ליום אחר
+      if (gym && !doneMap[key]) { cell.classList.add('draggable'); armDrag(cell); }
+
+      cell.addEventListener('click', () => { if (dragSuppressClick) return; openSheet(date); });
       grid.appendChild(cell);
     }
   }
@@ -310,17 +381,49 @@
     const diff = Math.floor((d - start) / 86400000);
     return Math.max(0, Math.floor(diff / 7));
   }
+  // האימון החוזר (שבועי) שמשובץ לתאריך לפי הזמינות — בלי לקחת בחשבון הזזות ידניות
+  function recurringIdxFor(date) {
+    const s = scheduleCfg();
+    if (!s || !s.plan) return null;
+    if (s.start && dateKey(date) < s.start) return null;
+    const idx = assignToMap(s.assign)[date.getDay()];
+    if (idx == null || !(s.plan.days && s.plan.days[idx])) return null;
+    return idx;
+  }
   function scheduledDay(date) {
     const s = scheduleCfg();
     if (!s || !s.plan) return null;
-    // לא לשבץ אימונים על תאריכים שלפני יום ההחלה (באג: הופיע גם אחורה בזמן)
-    if (s.start && dateKey(date) < s.start) return null;
-    const map = assignToMap(s.assign);
-    const idx = map[date.getDay()];
+    const key = dateKey(date);
+    const ov = s.overrides ? s.overrides[key] : undefined; // הזזה ידנית: -1 = הוסר, מספר = הועבר לכאן
+    let idx, moved = false;
+    if (ov === -1) return null;
+    if (typeof ov === 'number' && ov >= 0) { idx = ov; moved = true; }
+    else {
+      if (s.start && key < s.start) return null;
+      idx = assignToMap(s.assign)[date.getDay()];
+    }
     if (idx == null) return null;
     const day = s.plan.days && s.plan.days[idx];
     if (!day) return null;
-    return { plan: s.plan, dayIdx: idx, day, cfg: s, week: weekIndexFor(s.start, date) + 1 };
+    return { plan: s.plan, dayIdx: idx, day, cfg: s, week: weekIndexFor(s.start, date) + 1, moved };
+  }
+
+  // הזזת אימון בין תאריכים (drag & drop) — override פר-תאריך, בלי לשנות את התבנית השבועית
+  function moveWorkout(fromDate, toDate) {
+    const s = scheduleCfg();
+    if (!s || !s.plan) return false;
+    const sched = scheduledDay(fromDate);
+    if (!sched) return false;
+    if (scheduledDay(toDate)) { toast(t('moveOccupied')); return false; } // כבר יש אימון ביעד
+    const idx = sched.dayIdx;
+    s.overrides = s.overrides || {};
+    const fromKey = dateKey(fromDate), toKey = dateKey(toDate);
+    // הסרה מהמקור: אם יש אימון חוזר באותו יום — מסתירים; אחרת מוחקים את ה-override
+    if (recurringIdxFor(fromDate) != null) s.overrides[fromKey] = -1; else delete s.overrides[fromKey];
+    // הצבה ביעד: אם האימון החוזר של היעד ממילא זהה — אין צורך ב-override
+    if (recurringIdxFor(toDate) === idx) delete s.overrides[toKey]; else s.overrides[toKey] = idx;
+    save(STORE.schedule, s);
+    return true;
   }
 
   // התקדמות שבועית (double progression): מעלה חזרות בטווח, ואז מוסיף משקל
