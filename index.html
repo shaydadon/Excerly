@@ -84,9 +84,13 @@
     <section class="card" data-tab="me" id="gcal-card">
       <h2 class="card-title"><span class="ico">📅</span> <span data-i18n="gcalTitle">סנכרון ל-Google Calendar</span></h2>
       <p class="section-hint" data-i18n="gcalHint">דחפו את אימוני היומן ל-Google Calendar (6 שבועות קדימה) — כל אימון עם תזכורת מייל ופופאפ אוטומטית מ-Google.</p>
-      <div class="field">
+      <div class="field" id="gcal-client-row">
         <label for="gcal-client" data-i18n="gcalClientLabel">Google OAuth Client ID</label>
         <input id="gcal-client" type="text" placeholder="xxxx.apps.googleusercontent.com" autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="gcal-connected" id="gcal-connected" hidden>
+        <span data-i18n="gcalConnected">✅ מחובר ל-Google Calendar</span>
+        <button type="button" class="link-btn" id="gcal-change" data-i18n="gcalChange">שנה מזהה</button>
       </div>
       <button class="btn btn-primary btn-block" id="gcal-sync" data-i18n="gcalSyncBtn">📅 סנכרן אימונים ליומן</button>
       <p class="cloud-note" data-i18n="gcalNote">בפעם הראשונה Google יבקש אישור חד-פעמי. התזכורות נשלחות ע״י Google Calendar עצמו.</p>

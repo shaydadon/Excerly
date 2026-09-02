@@ -1900,14 +1900,23 @@
     }
     return items;
   }
+  function refreshGCalUI() {
+    const configured = window.ExcerlyGCal && ExcerlyGCal.configured();
+    const row = $('#gcal-client-row'), conn = $('#gcal-connected');
+    if (row) row.hidden = !!configured;   // מסתירים את שדה ה-Client ID אחרי שהוזן
+    if (conn) conn.hidden = !configured;
+  }
   function initGCal() {
-    const input = $('#gcal-client'), btn = $('#gcal-sync');
+    const input = $('#gcal-client'), btn = $('#gcal-sync'), change = $('#gcal-change');
     if (!input || !btn || !window.ExcerlyGCal) return;
     input.value = ExcerlyGCal.clientId();
+    refreshGCalUI();
+    if (change) change.addEventListener('click', () => { const row = $('#gcal-client-row'), conn = $('#gcal-connected'); if (row) row.hidden = false; if (conn) conn.hidden = true; input.focus(); });
     btn.addEventListener('click', async () => {
       const cid = input.value.trim();
       if (!cid) { toast(t('gcalNeedId')); return; }
       ExcerlyGCal.setClientId(cid);
+      refreshGCalUI();
       const items = gcalItems();
       if (!items.length) { toast(t('gcalNoWorkouts')); return; }
       const old = btn.textContent; btn.disabled = true; btn.textContent = t('gcalSyncing');
@@ -1915,7 +1924,8 @@
         const r = await ExcerlyGCal.sync(items);
         toast(t('gcalDone', { n: r.added }));
       } catch (e) {
-        toast(t('gcalErr'));
+        try { console.warn('[Excerly] GCal sync failed:', e && e.message); } catch (_) {}
+        toast(t('gcalErr') + (e && e.message ? ' (' + e.message + ')' : ''));
       } finally { btn.disabled = false; btn.textContent = old; }
     });
   }

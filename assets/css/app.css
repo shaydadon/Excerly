@@ -192,6 +192,8 @@ body {
 
 /* חשבון ענן */
 .cloud-card .cloud-note { margin: 14px 0 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+.gcal-connected { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; font-size: 13.5px; color: var(--accent); }
+.link-btn { background: none; border: none; color: var(--accent-2); font-size: 13px; cursor: pointer; text-decoration: underline; padding: 4px; }
 .btn-google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;
   background: #fff; color: #1f2328; border: 1px solid var(--line); font-weight: 700; }
 .btn-google:hover { filter: brightness(.97); }
