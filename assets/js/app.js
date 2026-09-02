@@ -247,7 +247,7 @@
       if (e.button != null && e.button !== 0) return;
       const startX = e.clientX, startY = e.clientY;
       const fromDate = cell._date;
-      let armed = false, ghost = null, overCell = null, holdTimer = null;
+      let armed = false, ghost = null, overCell = null, holdTimer = null, lastFlip = 0;
       const pid = e.pointerId;
 
       const cleanup = () => {
@@ -271,6 +271,18 @@
       const moveGhost = (x, y) => {
         if (ghost) { ghost.style.left = x + 'px'; ghost.style.top = y + 'px'; }
         const under = document.elementFromPoint(x, y);
+        // גרירה מעל חצי הניווט → מעבר חודש תוך כדי גרירה (עם השהיה כדי לא לדלג מהר מדי)
+        const navNext = under && under.closest ? under.closest('#cal-next') : null;
+        const navPrev = under && under.closest ? under.closest('#cal-prev') : null;
+        if ((navNext || navPrev) && Date.now() - lastFlip > 550) {
+          lastFlip = Date.now();
+          (navNext || navPrev).classList.add('nav-hot');
+          setTimeout(() => (navNext || navPrev).classList.remove('nav-hot'), 300);
+          viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + (navNext ? 1 : -1), 1);
+          if (overCell) { overCell.classList.remove('drag-over', 'drag-bad'); overCell = null; }
+          renderCalendar();
+          return;
+        }
         const c = under && under.closest ? under.closest('.cal-cell') : null;
         if (c !== overCell) {
           if (overCell) overCell.classList.remove('drag-over', 'drag-bad');

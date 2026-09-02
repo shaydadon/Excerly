@@ -501,6 +501,7 @@ textarea:focus { border-color: var(--accent); }
 .cal-cell.dragging { opacity: .4; }
 .cal-cell.drag-over { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; background: color-mix(in srgb, var(--accent) 16%, transparent); }
 .cal-cell.drag-bad { border-color: #d9534f; box-shadow: 0 0 0 2px #d9534f inset; }
+#cal-prev.nav-hot, #cal-next.nav-hot { background: var(--accent); color: #fff; transform: scale(1.12); }
 .drag-ghost {
   position: fixed; z-index: 9999; left: 0; top: 0; transform: translate(-50%, -50%);
   width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
