@@ -7,7 +7,10 @@
 (function () {
   'use strict';
 
-  const CID_KEY = 'excerly.gcalClient';   // Google OAuth Client ID (נשמר מקומית)
+  // Client ID מוטמע (ברירת מחדל למוצר) — לא סוד, גלוי ממילא בדף. כשמוגדר,
+  // הלקוח לא רואה שדה כלל, רק כפתור סנכרון. אפשר לדרוס דרך ההגדרות (localStorage).
+  const DEFAULT_CLIENT_ID = '';
+  const CID_KEY = 'excerly.gcalClient';   // Google OAuth Client ID (דריסה מקומית אופציונלית)
   const MAP_KEY = 'excerly.gcalMap';       // { 'YYYY-MM-DD': eventId } — למניעת כפילויות ולעדכון
   const SCOPE = 'https://www.googleapis.com/auth/calendar.events';
   const DEFAULT_HOUR = 18;                  // שעת ברירת מחדל לאירוע אימון
@@ -15,7 +18,7 @@
 
   let token = null, tokenExp = 0, tokenClient = null;
 
-  const clientId = () => { try { return localStorage.getItem(CID_KEY) || ''; } catch (e) { return ''; } };
+  const clientId = () => { try { return localStorage.getItem(CID_KEY) || DEFAULT_CLIENT_ID; } catch (e) { return DEFAULT_CLIENT_ID; } };
   const setClientId = (v) => { try { localStorage.setItem(CID_KEY, v || ''); } catch (e) {} };
   const loadMap = () => { try { return JSON.parse(localStorage.getItem(MAP_KEY) || '{}'); } catch (e) { return {}; } };
   const saveMap = (m) => { try { localStorage.setItem(MAP_KEY, JSON.stringify(m)); } catch (e) {} };
