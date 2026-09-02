@@ -1861,6 +1861,7 @@
       renderCalendar();
     });
     $('#today-btn').addEventListener('click', () => openSheet(new Date()));
+    initGCal();
 
     initProfile();
     initNutrition();
@@ -1880,6 +1881,43 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
     }
+  }
+
+  /* ---------- סנכרון ל-Google Calendar ---------- */
+  function gcalItems() {
+    const items = [];
+    const base = new Date(); base.setHours(0, 0, 0, 0);
+    for (let i = 0; i < 42; i++) {
+      const date = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i);
+      const g = scheduledDay(date);
+      if (!g) continue;
+      const name = g.day.name || (g.plan && g.plan.title) || t('gymDayChip');
+      const desc = (g.day.exercises || []).map(e => {
+        const nm = e && e.name ? (typeof e.name === 'string' ? e.name : L(e.name)) : '';
+        return nm ? '• ' + nm : '';
+      }).filter(Boolean).join('\n');
+      items.push({ key: dateKey(date), date, title: t('gcalEventTitle', { name }), description: desc });
+    }
+    return items;
+  }
+  function initGCal() {
+    const input = $('#gcal-client'), btn = $('#gcal-sync');
+    if (!input || !btn || !window.ExcerlyGCal) return;
+    input.value = ExcerlyGCal.clientId();
+    btn.addEventListener('click', async () => {
+      const cid = input.value.trim();
+      if (!cid) { toast(t('gcalNeedId')); return; }
+      ExcerlyGCal.setClientId(cid);
+      const items = gcalItems();
+      if (!items.length) { toast(t('gcalNoWorkouts')); return; }
+      const old = btn.textContent; btn.disabled = true; btn.textContent = t('gcalSyncing');
+      try {
+        const r = await ExcerlyGCal.sync(items);
+        toast(t('gcalDone', { n: r.added }));
+      } catch (e) {
+        toast(t('gcalErr'));
+      } finally { btn.disabled = false; btn.textContent = old; }
+    });
   }
 
   document.addEventListener('DOMContentLoaded', init);
