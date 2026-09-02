@@ -7,6 +7,11 @@ compatibility_date = "2024-11-01"
 # לא כאן: wrangler secret put ANTHROPIC_API_KEY
 [vars]
 MODEL = "claude-opus-5"
+# מכסות AI לכל משתמש. ה-URL וה-anon ציבוריים (מופיעים ממילא בקוד הלקוח).
+# את ה-service_role מוסיפים כסוד, לא כאן:  wrangler secret put SUPABASE_SERVICE_ROLE
+SUPABASE_URL = "https://egznewpwbcnhkzhmpckk.supabase.co"
+SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnem5ld3B3YmNuaGt6aG1wY2trIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxODg2MTQsImV4cCI6MjEwMzc2NDYxNH0.NXvgGh9BhLwlzyhKo1SZWmaVsyqutd1-PUpW1hR8oKI"
+AI_DAILY_LIMIT = "25"
 
 # הגבלת קצב אמינה דרך Durable Object (12 בקשות ב-60 שניות לכל IP).
 [[durable_objects.bindings]]
