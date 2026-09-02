@@ -1230,6 +1230,18 @@
     return false;
   }
 
+  // מציג כמה בקשות AI נותרו היום (מגיע מהפרוקסי לאחר כל קריאה מוצלחת)
+  function updateAiQuota() {
+    const box = $('#ai-quota');
+    if (!box) return;
+    const q = window.ExcerlyCloud && window.ExcerlyCloud.quota;
+    if (!q || typeof q.used !== 'number' || typeof q.limit !== 'number') { box.hidden = true; return; }
+    const left = Math.max(0, q.limit - q.used);
+    box.textContent = '🤖 ' + t('aiQuotaLeft', { n: left });
+    box.classList.toggle('low', left <= 3);
+    box.hidden = false;
+  }
+
   async function calcFood() {
     const target = renderNutriTarget();
     if (!target) { toast(t('toastFillProfile')); return; }
@@ -1862,6 +1874,8 @@
     });
     $('#today-btn').addEventListener('click', () => openSheet(new Date()));
     initGCal();
+    document.addEventListener('excerly:quota', updateAiQuota);
+    updateAiQuota();
 
     initProfile();
     initNutrition();

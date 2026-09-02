@@ -140,7 +140,7 @@
     if (res.status === 401 && data && data.error === 'login_required') { const err = new Error('login'); err.code = 'login'; throw err; }
     if (!res.ok) throw new Error('proxy failed: ' + res.status);
     if (data && data.error) throw new Error('proxy error: ' + data.error);
-    if (data && data._quota && global.ExcerlyCloud) global.ExcerlyCloud.quota = data._quota;
+    if (data && data._quota && global.ExcerlyCloud) { global.ExcerlyCloud.quota = data._quota; try { document.dispatchEvent(new CustomEvent('excerly:quota')); } catch (e) {} }
     return data;
   }
   async function planViaProxy(p, url) {

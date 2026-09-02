@@ -347,7 +347,7 @@
     if (!res.ok) throw new Error('proxy failed: ' + res.status);
     if (data && data.error) throw new Error('proxy error: ' + data.error);
     // עדכון מצב המכסה לתצוגה
-    if (data && data._quota && global.ExcerlyCloud) global.ExcerlyCloud.quota = data._quota;
+    if (data && data._quota && global.ExcerlyCloud) { global.ExcerlyCloud.quota = data._quota; try { document.dispatchEvent(new CustomEvent('excerly:quota')); } catch (e) {} }
     return data;
   }
   async function estimateViaProxy(text, url) {
