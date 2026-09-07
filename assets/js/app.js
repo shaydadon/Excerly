@@ -1037,6 +1037,7 @@
 
   /* ---------- ניהול הארוחות של היום (מקור אמת אחד) ---------- */
   let estimateItems = [];
+  let photoReqId = 0; // מזהה בקשת-תמונה נוכחית; סגירה מגדילה אותו ומבטלת תוצאה שמגיעה באיחור
   const uid = () => 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
   // השלמת מקרו לארוחות ישנות שנשמרו לפני התכונה (לפי שם + קלוריות)
@@ -1342,12 +1343,14 @@
       $('#ai-settings').open = true;
       return;
     }
+    const myReq = ++photoReqId;
     let dataUrl;
     try { dataUrl = await fileToResizedDataURL(file); }
     catch (e) { toast(t('toastImgRead')); return; }
     const prev = $('#photo-preview');
     prev.hidden = false;
-    prev.innerHTML = `<img src="${dataUrl}" alt="meal" />`;
+    prev.innerHTML = `<button class="photo-clear" id="photo-clear" aria-label="${t('photoClearAria')}" title="${t('photoClearAria')}">✕</button><img src="${dataUrl}" alt="meal" />`;
+    $('#photo-clear', prev).addEventListener('click', clearPhotoResult);
 
     const image = parseDataUrl(dataUrl);
     setPhotoBusy(true);
@@ -1362,7 +1365,18 @@
       return;
     }
     setPhotoBusy(false);
+    if (myReq !== photoReqId) return; // המשתמש הסיר את התמונה בזמן הניתוח
     renderFoodResult(res, target);
+  }
+
+  // הסרת התמונה והתוצאה שלה — התמונה והקלוריות נעלמות
+  function clearPhotoResult() {
+    photoReqId++;
+    const prev = $('#photo-preview');
+    if (prev) { prev.hidden = true; prev.innerHTML = ''; }
+    const box = $('#nutri-result');
+    if (box) { box.classList.remove('show'); box.innerHTML = ''; }
+    estimateItems = [];
   }
   // מצב "עסוק" לשני כפתורי התמונה (מצלמה + גלריה)
   function setPhotoBusy(busy) {
