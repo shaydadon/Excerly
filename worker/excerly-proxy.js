@@ -59,13 +59,26 @@ function memRateLimited(ip) {
   return arr.length > RL_LIMIT;
 }
 
+// מילון נתחי בשר בסלנג קצבים/על-האש ישראלי — עוזר ל-Claude לזהות ולאמוד מונחים
+// שלרוב אינם מופיעים במאגר צמרת (אסאדו, פיקניה, שפונדרה וכו').
+const CUTS_GLOSSARY =
+  ' מילון נתחי בשר ישראליים נפוצים (זהה אותם גם כשמופיעים אחרי המילה "נתח"): ' +
+  'אסאדו/שפונדרה = צלעות בקר שמנות (~320 קק"ל ל-100 גרם); פיקניה = כובע השייטל (~215); ' +
+  'אנטריקוט/ריב איי (~290); פילה = פילה בקר רזה (~200); סינטה = סירלוין (~230); ' +
+  'דנוור/פלאנק/בריסקט/חזה בקר/אוסובוקו/כתף בקר/שריר = נתחי בקר (~230-280); כבש/טלה (~290).';
+// תוספת למסלול הכלי (צמרת): כיצד לחפש את הנתח במאגר
+const CUTS_GLOSSARY_TOOL = CUTS_GLOSSARY +
+  ' בקריאה ל-lookup_food חפש את הנתח הכללי (למשל "בשר בקר צלעות", "בשר בקר שייטל"); ' +
+  'אם אין התאמה טובה סמן source=estimate והשתמש בערכים שלמעלה.';
+
 const ESTIMATE_SYSTEM =
   'אתה מנתח תזונה מדויק. קבל תיאור חופשי (בעברית או בכל שפה) של מה שאדם אכל, ' +
   'כולל כמויות לא פורמליות כמו "קופסת טונה", "3 כפות מיונז", "2 לחמניות", "צלחת פסטה". ' +
   'הערך בצורה מציאותית את סך הקלוריות לפי מנות נפוצות (העדף אומדן ישראלי). ' +
   'החזר JSON בלבד, ללא טקסט לפני או אחרי, במבנה: ' +
   '{"total": number, "items": [{"name": string, "kcal": number, "carbs": number, "protein": number, "fat": number}], "note": string}. ' +
-  'carbs, protein, fat הם גרמים לאותו פריט. name בעברית, note הוא משפט קצר בעברית. אם פריט לא ברור, שערך בזהירות וציין זאת ב-note.';
+  'carbs, protein, fat הם גרמים לאותו פריט. name בעברית, note הוא משפט קצר בעברית. אם פריט לא ברור, שערך בזהירות וציין זאת ב-note.' +
+  CUTS_GLOSSARY;
 
 const MENU_SYSTEM =
   'אתה תזונאי. בנה תפריט יומי מגוון ומאוזן בעברית ליעד קלוריות נתון: ' +
@@ -90,7 +103,8 @@ const IMAGE_SYSTEM =
   'בצורה מציאותית לפי מנות נפוצות (העדף אומדן ישראלי), תוך התחשבות בגודל המנה הנראה. ' +
   'החזר JSON בלבד, ללא טקסט נוסף: ' +
   '{"total": number, "items": [{"name": string, "kcal": number, "carbs": number, "protein": number, "fat": number}], "note": string}. ' +
-  'carbs, protein, fat הם גרמים לאותו פריט. name בעברית, note משפט קצר בעברית. אם התמונה אינה של אוכל או אינה ברורה, החזר total=0 וציין זאת ב-note.';
+  'carbs, protein, fat הם גרמים לאותו פריט. name בעברית, note משפט קצר בעברית. אם התמונה אינה של אוכל או אינה ברורה, החזר total=0 וציין זאת ב-note.' +
+  CUTS_GLOSSARY;
 
 // content יכול להיות מחרוזת (טקסט) או מערך בלוקים (למשל תמונה + טקסט)
 async function callAnthropic(env, system, content, maxTokens) {
@@ -184,12 +198,14 @@ const ESTIMATE_TOOL_SYSTEM =
   'אתה מנתח תזונה מדויק המשתמש במאגר התזונה הלאומי (צמרת) של משרד הבריאות. פרק את תיאור הארוחה למרכיבים בודדים, ולכל מרכיב הערך כמות בגרמים לפי מנות נפוצות (העדף אומדן ישראלי). ' +
   'לכל מרכיב קרא ל-lookup_food ובחר את ה-code המתאים ביותר מהתוצאות. אם אין התאמה טובה, סמן source=estimate וספק בעצמך kcal,carbs,protein,fat. ' +
   'בסיום החזר JSON בלבד, ללא טקסט לפני או אחרי: {"items":[{"name":string,"code":number|null,"grams":number,"source":"tzameret"|"estimate","kcal":number,"carbs":number,"protein":number,"fat":number}],"note":string}. ' +
-  'עבור source=tzameret אין צורך לחשב מאקרו (השרת יחשב מה-code והגרמים); עבור source=estimate ספק את הערכים. name בעברית, note משפט קצר.';
+  'עבור source=tzameret אין צורך לחשב מאקרו (השרת יחשב מה-code והגרמים); עבור source=estimate ספק את הערכים. name בעברית, note משפט קצר.' +
+  CUTS_GLOSSARY_TOOL;
 const IMAGE_TOOL_SYSTEM =
   'אתה מנתח תזונה מדויק המשתמש במאגר התזונה הלאומי (צמרת) של משרד הבריאות. קיבלת תמונה של ארוחה. זהה את הפריטים והערך לכל אחד כמות בגרמים לפי הנראה בתמונה. ' +
   'לכל פריט קרא ל-lookup_food ובחר את ה-code המתאים ביותר. אם אין התאמה טובה, סמן source=estimate וספק בעצמך kcal,carbs,protein,fat. ' +
   'בסיום החזר JSON בלבד: {"items":[{"name":string,"code":number|null,"grams":number,"source":"tzameret"|"estimate","kcal":number,"carbs":number,"protein":number,"fat":number}],"note":string}. ' +
-  'עבור source=tzameret אין צורך לחשב מאקרו; עבור source=estimate ספק ערכים. אם אינה תמונת אוכל, החזר items=[] ו-note מתאים.';
+  'עבור source=tzameret אין צורך לחשב מאקרו; עבור source=estimate ספק ערכים. אם אינה תמונת אוכל, החזר items=[] ו-note מתאים.' +
+  CUTS_GLOSSARY_TOOL;
 
 async function callRaw(env, system, messages, tools, maxTokens) {
   const model = env.MODEL || 'claude-opus-5';
