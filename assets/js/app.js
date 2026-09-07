@@ -1203,14 +1203,26 @@
       kcal: Math.round(i.kcal || 0),
       carbs: Math.round(i.carbs || 0),
       protein: Math.round(i.protein || 0),
-      fat: Math.round(i.fat || 0)
+      fat: Math.round(i.fat || 0),
+      grams: (i.grams != null && isFinite(i.grams)) ? Math.round(i.grams) : null,
+      source: i.source || null
     }));
     const kcal = t('goalUnit');
     const sumKcal = () => estimateItems.reduce((s, i) => s + (i.kcal || 0), 0);
+    const itemMeta = (i) => {
+      const bits = [];
+      if (i.grams != null) bits.push(`<span class="ni-grams">${i.grams} ${t('grams')}</span>`);
+      if (i.source === 'tzameret') bits.push(`<span class="ni-src db" title="${t('srcTzameret')}">${t('srcItemDb')}</span>`);
+      else if (i.source === 'estimate') bits.push(`<span class="ni-src est">${t('srcItemEst')}</span>`);
+      return bits.length ? `<div class="ni-meta">${bits.join('')}</div>` : '';
+    };
     const itemsHtml = estimateItems.length
       ? `<div class="nutri-fixhint">${t('fixHint')}</div><ul class="nutri-items add-list edit">${estimateItems.map((i, idx) => `<li>
           <button class="add-item" data-idx="${idx}" aria-label="${t('addMealAria')}" title="${t('addMealAria')}">＋</button>
-          <input class="ni-name-edit" data-idx="${idx}" value="${escAttr(i.name)}" aria-label="${t('editMealAria')}" />
+          <div class="ni-main">
+            <input class="ni-name-edit" data-idx="${idx}" value="${escAttr(i.name)}" aria-label="${t('editMealAria')}" />
+            ${itemMeta(i)}
+          </div>
           <span class="ni-kcal-edit"><input class="ni-kcal-input" type="number" min="0" inputmode="numeric" data-idx="${idx}" value="${i.kcal}" aria-label="${t('editMealAria')}" /><span class="ni-kcal-unit">${kcal}</span></span>
         </li>`).join('')}</ul>`
       : `<div class="nutri-empty">${t('itemsEmpty')}</div>`;
@@ -1228,7 +1240,7 @@
         ${estimateItems.length ? `<button class="btn btn-primary est-addall" id="est-addall">${t('addAll')}</button>` : ''}
       </div>
       ${macroLine}
-      <div class="nutri-src">${res.source === 'ai' ? t('srcAi') : t('srcLocal')}</div>
+      <div class="nutri-src">${({ tzameret: t('srcTzameret'), mixed: t('srcMixed'), estimate: t('srcAi'), ai: t('srcAi'), local: t('srcLocal') })[res.source] || t('srcLocal')}</div>
       ${res.note ? `<div class="nutri-note">${res.note}</div>` : ''}
       ${itemsHtml}
       ${unmatched}`;

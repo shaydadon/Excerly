@@ -123,6 +123,143 @@ async function callAnthropic(env, system, content, maxTokens) {
 }
 
 /* =============================================================
+   מאגר התזונה הלאומי (צמרת) — פירוק ארוחה למרכיבים והרכב מדויק
+   הכלי lookup_food מחפש מצרכים בתמונת-מצב של מאגר משרד הבריאות,
+   ו-Claude בוחר לכל מרכיב את הקוד והכמות; השרת מחשב את המאקרו מהקוד.
+   ============================================================= */
+const TZ_TTL_MS = 24 * 60 * 60 * 1000;
+let TZ = null, TZ_AT = 0;
+
+const numOrNull = (v) => {
+  if (v === null || v === undefined || v === '') return null;
+  const n = Number(v); return Number.isFinite(n) ? n : null;
+};
+// נורמליזציה לחיפוש עברי/אנגלי: הסרת ניקוד, איחוד אותיות סופיות, פיסוק, אותיות קטנות
+function normHe(s) {
+  return String(s || '')
+    .replace(/[֑-ׇ]/g, '')
+    .replace(/["'`.,()\/\-]/g, ' ')
+    .replace(/ך/g, 'כ').replace(/ם/g, 'מ').replace(/ן/g, 'נ').replace(/ף/g, 'פ').replace(/ץ/g, 'צ')
+    .replace(/\s+/g, ' ').trim().toLowerCase();
+}
+async function loadTz(env) {
+  if (TZ && Date.now() - TZ_AT < TZ_TTL_MS) return TZ;
+  const url = (env && env.TZAMERET_URL) || 'https://shaydadon.github.io/Excerly/assets/data/tzameret.json';
+  try {
+    const r = await fetch(url, { cf: { cacheTtl: 86400, cacheEverything: true } });
+    if (!r.ok) throw new Error('tz http ' + r.status);
+    const j = await r.json();
+    const foods = (j.foods || []).map(f => (f._s = normHe(f.n) + ' ' + (f.e ? f.e.toLowerCase() : ''), f));
+    const byCode = new Map(foods.map(f => [f.c, f]));
+    TZ = { foods, byCode }; TZ_AT = Date.now();
+    return TZ;
+  } catch (e) { return TZ; /* stale (or null on first failure) */ }
+}
+function searchFood(tz, query, max) {
+  if (!tz) return [];
+  const q = normHe(query);
+  const toks = q.split(' ').filter(w => w.length >= 2);
+  if (!toks.length) return [];
+  const scored = [];
+  for (const f of tz.foods) {
+    let sc = 0;
+    for (const w of toks) if (f._s.indexOf(w) !== -1) sc++;
+    if (sc > 0) {
+      if (f._s.indexOf(toks[0]) === 0) sc += 0.5;      // מתחיל במונח העיקרי
+      scored.push([sc - Math.min(f.n.length, 80) / 400, f]); // העדפה לשם קצר/ספציפי
+    }
+  }
+  scored.sort((a, b) => b[0] - a[0]);
+  return scored.slice(0, max || 6).map(([, f]) => ({
+    code: f.c, name: f.n, english: f.e || undefined,
+    per100g: { kcal: f.kcal, carb: f.carb, prot: f.prot, fat: f.fat, sugars: f.sug, fiber: f.fib, sodium: f.na }
+  }));
+}
+const LOOKUP_TOOL = {
+  name: 'lookup_food',
+  description: 'חיפוש מצרך במאגר התזונה הלאומי (צמרת) של משרד הבריאות. מחזיר מצרכים מתאימים עם הרכב תזונתי ל-100 גרם. יש לקרוא לכלי עבור כל מרכיב במנה ולבחור את הקוד המתאים ביותר.',
+  input_schema: { type: 'object', properties: { query: { type: 'string', description: 'שם המרכיב לחיפוש בעברית (למשל: "לחם מלא", "חזה עוף", "תפוח עץ")' } }, required: ['query'] }
+};
+const ESTIMATE_TOOL_SYSTEM =
+  'אתה מנתח תזונה מדויק המשתמש במאגר התזונה הלאומי (צמרת) של משרד הבריאות. פרק את תיאור הארוחה למרכיבים בודדים, ולכל מרכיב הערך כמות בגרמים לפי מנות נפוצות (העדף אומדן ישראלי). ' +
+  'לכל מרכיב קרא ל-lookup_food ובחר את ה-code המתאים ביותר מהתוצאות. אם אין התאמה טובה, סמן source=estimate וספק בעצמך kcal,carbs,protein,fat. ' +
+  'בסיום החזר JSON בלבד, ללא טקסט לפני או אחרי: {"items":[{"name":string,"code":number|null,"grams":number,"source":"tzameret"|"estimate","kcal":number,"carbs":number,"protein":number,"fat":number}],"note":string}. ' +
+  'עבור source=tzameret אין צורך לחשב מאקרו (השרת יחשב מה-code והגרמים); עבור source=estimate ספק את הערכים. name בעברית, note משפט קצר.';
+const IMAGE_TOOL_SYSTEM =
+  'אתה מנתח תזונה מדויק המשתמש במאגר התזונה הלאומי (צמרת) של משרד הבריאות. קיבלת תמונה של ארוחה. זהה את הפריטים והערך לכל אחד כמות בגרמים לפי הנראה בתמונה. ' +
+  'לכל פריט קרא ל-lookup_food ובחר את ה-code המתאים ביותר. אם אין התאמה טובה, סמן source=estimate וספק בעצמך kcal,carbs,protein,fat. ' +
+  'בסיום החזר JSON בלבד: {"items":[{"name":string,"code":number|null,"grams":number,"source":"tzameret"|"estimate","kcal":number,"carbs":number,"protein":number,"fat":number}],"note":string}. ' +
+  'עבור source=tzameret אין צורך לחשב מאקרו; עבור source=estimate ספק ערכים. אם אינה תמונת אוכל, החזר items=[] ו-note מתאים.';
+
+async function callRaw(env, system, messages, tools, maxTokens) {
+  const model = env.MODEL || 'claude-opus-5';
+  const body = { model, max_tokens: maxTokens, output_config: { effort: 'low' }, system, messages };
+  if (tools) body.tools = tools;
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify(body)
+  });
+  const raw = await res.text();
+  if (!res.ok) return { error: true, status: res.status, detail: raw.slice(0, 400) };
+  try { return { error: false, data: JSON.parse(raw) }; }
+  catch (e) { return { error: true, status: 502, detail: 'invalid API JSON' }; }
+}
+// לולאת שימוש-בכלי: Claude מחפש כל מרכיב במאגר עד שמחזיר JSON סופי
+async function toolLoop(env, system, userContent, tz) {
+  const messages = [{ role: 'user', content: userContent }];
+  for (let step = 0; step < 6; step++) {
+    const r = await callRaw(env, system, messages, [LOOKUP_TOOL], 1500);
+    if (r.error) return r;
+    const content = r.data.content || [];
+    messages.push({ role: 'assistant', content });
+    const toolUses = content.filter(b => b.type === 'tool_use');
+    if (!toolUses.length) {
+      const text = content.filter(b => b.type === 'text').map(b => b.text).join('');
+      const m = text.match(/\{[\s\S]*\}/);
+      if (!m) return { error: true, status: 502, detail: 'no JSON in model output' };
+      try { return { error: false, parsed: JSON.parse(m[0]) }; }
+      catch (e) { return { error: true, status: 502, detail: 'invalid JSON from model' }; }
+    }
+    messages.push({
+      role: 'user',
+      content: toolUses.map(tu => ({
+        type: 'tool_result', tool_use_id: tu.id,
+        content: JSON.stringify(searchFood(tz, (tu.input && tu.input.query) || '', 6))
+      }))
+    });
+  }
+  return { error: true, status: 504, detail: 'tool loop exceeded' };
+}
+// חישוב המאקרו הסופי: לפריטי צמרת מחושב מהקוד×גרמים; לפריטי הערכה נלקח כפי שהוא
+function finalizeItems(parsed, tz) {
+  const items = [];
+  for (const it of (parsed.items || [])) {
+    const grams = numOrNull(it.grams);
+    const code = numOrNull(it.code);
+    const dbf = (it.source === 'tzameret' && code != null && tz) ? tz.byCode.get(code) : null;
+    if (dbf && grams) {
+      const k = grams / 100;
+      items.push({
+        name: it.name || dbf.n, grams: Math.round(grams), code: dbf.c, source: 'tzameret',
+        kcal: Math.round((dbf.kcal || 0) * k), carbs: Math.round((dbf.carb || 0) * k),
+        protein: Math.round((dbf.prot || 0) * k), fat: Math.round((dbf.fat || 0) * k)
+      });
+    } else {
+      items.push({
+        name: it.name || '', grams: grams ? Math.round(grams) : undefined, source: 'estimate',
+        kcal: Math.round(numOrNull(it.kcal) || 0), carbs: Math.round(numOrNull(it.carbs) || 0),
+        protein: Math.round(numOrNull(it.protein) || 0), fat: Math.round(numOrNull(it.fat) || 0)
+      });
+    }
+  }
+  const total = items.reduce((s, i) => s + (i.kcal || 0), 0);
+  const anyDb = items.some(i => i.source === 'tzameret');
+  const allDb = items.length && items.every(i => i.source === 'tzameret');
+  return { total, items, note: parsed.note || '', source: allDb ? 'tzameret' : (anyDb ? 'mixed' : 'estimate') };
+}
+
+/* =============================================================
    מכסות AI לכל משתמש (בקרת עלויות)
    מזהים את המשתמש דרך ה-JWT של Supabase, סופרים שימוש יומי בטבלה,
    וחוסמים מעל המכסה. משתמש עם מפתח אישי (BYOK) לא עובר דרך כאן כלל.
@@ -210,7 +347,14 @@ export default {
     if (body.action === 'estimate') {
       const text = String(body.text || '').slice(0, 2000).trim();
       if (!text) return json({ error: 'missing text' }, 400, origin);
-      out = await callAnthropic(env, withLang(ESTIMATE_SYSTEM), text, 1024);
+      const tz = await loadTz(env);
+      if (tz) {
+        const r = await toolLoop(env, withLang(ESTIMATE_TOOL_SYSTEM), text, tz);
+        out = r.error ? await callAnthropic(env, withLang(ESTIMATE_SYSTEM), text, 1024)
+                      : { error: false, parsed: finalizeItems(r.parsed, tz) };
+      } else {
+        out = await callAnthropic(env, withLang(ESTIMATE_SYSTEM), text, 1024);
+      }
     } else if (body.action === 'menu') {
       const target = Math.max(800, Math.min(6000, parseInt(body.target, 10) || 2000));
       const user = 'Daily goal: ' + target + ' kcal. Build me a suitable daily menu.';
@@ -236,9 +380,16 @@ export default {
       if (!img || !img.data || !img.media_type) return json({ error: 'missing image' }, 400, origin);
       const content = [
         { type: 'image', source: { type: 'base64', media_type: img.media_type, data: img.data } },
-        { type: 'text', text: 'This is a photo of my meal. Identify the dishes and estimate the total calories.' }
+        { type: 'text', text: 'This is a photo of my meal. Identify the items and estimate calories using the food database.' }
       ];
-      out = await callAnthropic(env, withLang(IMAGE_SYSTEM), content, 1024);
+      const tz = await loadTz(env);
+      if (tz) {
+        const r = await toolLoop(env, withLang(IMAGE_TOOL_SYSTEM), content, tz);
+        out = r.error ? await callAnthropic(env, withLang(IMAGE_SYSTEM), content, 1024)
+                      : { error: false, parsed: finalizeItems(r.parsed, tz) };
+      } else {
+        out = await callAnthropic(env, withLang(IMAGE_SYSTEM), content, 1024);
+      }
     } else {
       return json({ error: 'unknown action' }, 400, origin);
     }

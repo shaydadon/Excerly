@@ -515,6 +515,12 @@ textarea:focus { border-color: var(--accent); }
 .ni-kcal-input::-webkit-outer-spin-button,
 .ni-kcal-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .ni-kcal-unit { color: var(--muted); font-size: 11.5px; }
+.ni-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ni-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ni-grams { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.ni-src { font-size: 10px; font-weight: 700; letter-spacing: .02em; padding: 1px 6px; border-radius: 999px; }
+.ni-src.db { color: var(--ok); background: color-mix(in srgb, var(--ok) 16%, transparent); }
+.ni-src.est { color: var(--muted); background: var(--card-2); }
 .dm-edit {
   flex: none; width: 28px; height: 28px; border-radius: 8px;
   border: 1px solid var(--line); background: var(--card);
