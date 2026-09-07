@@ -1,0 +1,21 @@
+# Excerly — local preview in Docker.
+# Static PWA served by nginx with the project folder LIVE-MOUNTED (read-only).
+# Edit any file on disk, refresh the browser — no rebuild needed.
+#
+#   Start:   docker compose up -d
+#   View:    http://localhost:8080
+#   Logs:    docker compose logs -f
+#   Stop:    docker compose down
+#
+services:
+  web:
+    image: nginx:alpine
+    container_name: excerly-web
+    ports:
+      - "8080:80"
+    volumes:
+      # The whole project, read-only, served as the web root (live edits reflect on refresh)
+      - ./:/usr/share/nginx/html:ro
+      # Dev nginx config (no-cache headers, manifest MIME, hides non-web files)
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: unless-stopped

@@ -438,9 +438,9 @@
 
   function verdict(total, target) {
     const tol = Math.max(100, Math.round(target * 0.05));
-    if (total > target + tol) return { key: 'over', delta: total - target, color: '#e74c3c' };
-    if (total >= target - tol) return { key: 'met', delta: 0, color: '#2ecc71' };
-    return { key: 'under', delta: target - total, color: '#4aa3ff' };
+    if (total > target + tol) return { key: 'over', delta: total - target, color: 'var(--danger)' };
+    if (total >= target - tol) return { key: 'met', delta: 0, color: 'var(--ok)' };
+    return { key: 'under', delta: target - total, color: 'var(--info)' };
   }
 
   global.ExcerlyNutrition = {

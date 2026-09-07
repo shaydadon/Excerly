@@ -3,51 +3,93 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#17181c" />
 <title>Excerly — מדיניות פרטיות / Privacy Policy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Heebo:wght@400;500;700;800&display=swap" />
 <style>
-  :root { color-scheme: light dark; }
-  body { margin: 0; background: #0f1417; color: #e7edf0; font: 15px/1.7 -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
-  .wrap { max-width: 760px; margin: 0 auto; padding: 28px 20px 60px; }
-  h1 { font-size: 24px; margin: 0 0 4px; }
-  h2 { font-size: 18px; margin: 28px 0 8px; color: #6ad0b3; }
-  .muted { color: #9fb0b8; font-size: 13px; }
-  a { color: #6ad0b3; }
-  .en { direction: ltr; text-align: left; border-top: 1px solid #26323a; margin-top: 40px; padding-top: 24px; }
+  :root {
+    --bg: #17181c; --card-2: #24262c; --line: #34363d;
+    --text: #ecebe4; --muted: #9a9ba1; --accent: #d8a24a; --rule: #565863;
+    --serif: "Frank Ruhl Libre", Georgia, "Times New Roman", serif;
+    --sans: "Heebo", "Assistant", "Rubik", system-ui, -apple-system, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.7 var(--sans); }
+  ::selection { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 24px 20px 60px; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding-bottom: 14px; margin-bottom: 20px; border-bottom: 1.5px solid var(--line); position: relative; }
+  .topbar::after { content: ""; position: absolute; bottom: -1.5px; inset-inline-start: 0; width: 48px; height: 1.5px; background: var(--accent); }
+  .brand { font-family: var(--sans); font-weight: 800; letter-spacing: .14em; text-transform: uppercase; font-size: 16px; }
+  .lang-switch { display: inline-flex; gap: 2px; background: var(--card-2); border: 1px solid var(--line); border-radius: 6px; padding: 2px; }
+  .lang-switch button { border: none; background: none; color: var(--muted); font-family: var(--sans);
+    font-size: 12px; font-weight: 700; letter-spacing: .04em; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+  .lang-switch button.on { background: var(--accent); color: #1a1710; }
+  .back-link { display: inline-flex; align-items: center; gap: 7px; text-decoration: none;
+    color: var(--text); background: transparent; border: 1px solid var(--rule);
+    border-radius: 6px; padding: 6px 12px; font: 700 13px var(--sans); letter-spacing: .01em; transition: background .15s, border-color .15s, color .15s; }
+  .back-link:hover { background: var(--card-2); border-color: var(--accent); color: var(--accent); }
+  .back-link .bk-arrow { color: var(--accent); font-weight: 800; }
+
+  h1 { font-family: var(--serif); font-weight: 900; font-size: 26px; letter-spacing: -0.02em; margin: 0 0 4px; }
+  h2 { font-family: var(--serif); font-weight: 700; font-size: 19px; margin: 30px 0 8px; color: var(--text); }
+  .muted { color: var(--muted); font-size: 13px; }
+  a { color: var(--accent); text-underline-offset: 2px; }
   ul { padding-inline-start: 20px; }
-  code { background: #1b242a; padding: 1px 5px; border-radius: 5px; font-size: 13px; }
+  li { margin: 4px 0; }
+  code { background: var(--card-2); border: 1px solid var(--line); padding: 1px 5px; border-radius: 5px; font-size: 13px; }
+  .lang-block[hidden] { display: none; }
+  .lang-block.en { direction: ltr; text-align: left; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Excerly — מדיניות פרטיות</h1>
-  <p class="muted">עודכן לאחרונה: 2 בספטמבר 2026</p>
+  <div class="topbar">
+    <a class="back-link" href="index.html" id="back-link">
+      <span class="bk-arrow" aria-hidden="true">→</span>
+      <span data-back>חזרה לאפליקציה</span>
+    </a>
+    <div class="lang-switch" id="lang-switch">
+      <button data-lang="he">עברית</button>
+      <button data-lang="en">EN</button>
+    </div>
+  </div>
 
-  <p>Excerly היא אפליקציית כושר ותזונה ביתית. מדיניות זו מסבירה אילו נתונים אנו אוספים, כיצד נעשה בהם שימוש, ובפרט כיצד אנו משתמשים בנתוני Google שלך.</p>
+  <div class="lang-block" lang="he" dir="rtl">
+    <h1>מדיניות פרטיות</h1>
+    <p class="muted">עודכן לאחרונה: 2 בספטמבר 2026</p>
 
-  <h2>אילו נתונים נאספים</h2>
-  <ul>
-    <li><b>נתוני האפליקציה שלך</b> (פרופיל, אימונים, יומן, יומן תזונה) — נשמרים במכשיר שלך, ובאופן אופציונלי מגובים בענן (Supabase) אם התחברת עם חשבון.</li>
-    <li><b>פרטי חשבון Google בסיסיים</b> (שם, כתובת אימייל) — רק אם בחרת להתחבר עם Google, לצורך זיהוי וסנכרון החשבון שלך.</li>
-    <li><b>יומן Google</b> — רק אם בחרת לסנכרן אימונים ליומן, בהיקף ההרשאה <code>calendar.events</code>.</li>
-  </ul>
+    <p>Excerly היא אפליקציית כושר ותזונה ביתית. מדיניות זו מסבירה אילו נתונים אנו אוספים, כיצד נעשה בהם שימוש, ובפרט כיצד אנו משתמשים בנתוני Google שלך.</p>
 
-  <h2>שימוש בנתוני Google (Google Calendar)</h2>
-  <p>כאשר אתה מפעיל את "סנכרון ל-Google Calendar", האפליקציה יוצרת ומעדכנת <b>אירועי אימון</b> ביומן שלך, כל אחד עם תזכורת. אנו ניגשים אך ורק לאירועים שהאפליקציה עצמה יצרה. איננו קוראים, אוספים או מאחסנים אירועים אחרים ביומן שלך, ואיננו מעבירים נתוני יומן לשום שרת שלנו — הבקשות נשלחות ישירות מהדפדפן שלך אל Google.</p>
+    <h2>אילו נתונים נאספים</h2>
+    <ul>
+      <li><b>נתוני האפליקציה שלך</b> (פרופיל, אימונים, יומן, יומן תזונה) — נשמרים במכשיר שלך, ובאופן אופציונלי מגובים בענן (Supabase) אם התחברת עם חשבון.</li>
+      <li><b>פרטי חשבון Google בסיסיים</b> (שם, כתובת אימייל) — רק אם בחרת להתחבר עם Google, לצורך זיהוי וסנכרון החשבון שלך.</li>
+      <li><b>יומן Google</b> — רק אם בחרת לסנכרן אימונים ליומן, בהיקף ההרשאה <code>calendar.events</code>.</li>
+    </ul>
 
-  <h2>שיתוף מידע</h2>
-  <p>איננו מוכרים, משכירים או משתפים את נתוני Google שלך עם צדדים שלישיים. אין שימוש בנתוני Google לפרסום.</p>
+    <h2>שימוש בנתוני Google (Google Calendar)</h2>
+    <p>כאשר אתה מפעיל את "סנכרון ל-Google Calendar", האפליקציה יוצרת ומעדכנת <b>אירועי אימון</b> ביומן שלך, כל אחד עם תזכורת. אנו ניגשים אך ורק לאירועים שהאפליקציה עצמה יצרה. איננו קוראים, אוספים או מאחסנים אירועים אחרים ביומן שלך, ואיננו מעבירים נתוני יומן לשום שרת שלנו — הבקשות נשלחות ישירות מהדפדפן שלך אל Google.</p>
 
-  <h2>Limited Use</h2>
-  <p>השימוש של Excerly במידע שמתקבל מ-Google APIs, והעברתו, תואמים ל-<a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API Services User Data Policy</a>, לרבות דרישות ה-Limited Use.</p>
+    <h2>שיתוף מידע</h2>
+    <p>איננו מוכרים, משכירים או משתפים את נתוני Google שלך עם צדדים שלישיים. אין שימוש בנתוני Google לפרסום.</p>
 
-  <h2>אחסון ומחיקה</h2>
-  <p>רוב הנתונים נשמרים במכשיר שלך ותוכל למחוק אותם בכל עת מתוך האפליקציה. הרשאת היומן ניתנת לביטול בכל רגע דרך <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">הגדרות ההרשאות בחשבון Google שלך</a>.</p>
+    <h2>Limited Use</h2>
+    <p>השימוש של Excerly במידע שמתקבל מ-Google APIs, והעברתו, תואמים ל-<a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API Services User Data Policy</a>, לרבות דרישות ה-Limited Use.</p>
 
-  <h2>יצירת קשר</h2>
-  <p>לשאלות בנושא פרטיות: <a href="mailto:shaydadon@gmail.com">shaydadon@gmail.com</a></p>
+    <h2>אחסון ומחיקה</h2>
+    <p>רוב הנתונים נשמרים במכשיר שלך ותוכל למחוק אותם בכל עת מתוך האפליקציה. הרשאת היומן ניתנת לביטול בכל רגע דרך <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">הגדרות ההרשאות בחשבון Google שלך</a>.</p>
 
-  <div class="en" lang="en">
-    <h1>Excerly — Privacy Policy</h1>
+    <h2>יצירת קשר</h2>
+    <p>לשאלות בנושא פרטיות: <a href="mailto:shaydadon@gmail.com">shaydadon@gmail.com</a></p>
+  </div>
+
+  <div class="lang-block en" lang="en" dir="ltr" hidden>
+    <h1>Privacy Policy</h1>
     <p class="muted">Last updated: September 2, 2026</p>
     <p>Excerly is a home fitness &amp; nutrition app. This policy explains what data we collect, how we use it, and specifically how we handle your Google data.</p>
 
@@ -74,5 +116,34 @@
     <p>Privacy questions: <a href="mailto:shaydadon@gmail.com">shaydadon@gmail.com</a></p>
   </div>
 </div>
+
+<script>
+  (function () {
+    var KEY = 'excerly.lang';
+    function stored() {
+      try { var v = localStorage.getItem(KEY); if (v === 'he' || v === 'en') return v; } catch (e) {}
+      return (navigator.language || 'he').toLowerCase().indexOf('he') === 0 ? 'he' : 'en';
+    }
+    function setLang(l, persist) {
+      document.documentElement.lang = l;
+      document.documentElement.dir = l === 'he' ? 'rtl' : 'ltr';
+      document.querySelectorAll('.lang-block').forEach(function (b) {
+        b.hidden = (b.getAttribute('lang') !== l);
+      });
+      document.querySelectorAll('#lang-switch button').forEach(function (btn) {
+        btn.classList.toggle('on', btn.getAttribute('data-lang') === l);
+      });
+      var bl = document.querySelector('#back-link [data-back]');
+      if (bl) bl.textContent = (l === 'he' ? 'חזרה לאפליקציה' : 'Back to app');
+      var ar = document.querySelector('#back-link .bk-arrow');
+      if (ar) ar.textContent = (l === 'he' ? '→' : '←');
+      if (persist) { try { localStorage.setItem(KEY, l); } catch (e) {} }
+    }
+    document.querySelectorAll('#lang-switch button').forEach(function (btn) {
+      btn.addEventListener('click', function () { setLang(btn.getAttribute('data-lang'), true); });
+    });
+    setLang(stored(), false);
+  })();
+</script>
 </body>
 </html>

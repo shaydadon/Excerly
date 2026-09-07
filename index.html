@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0e1116" />
+  <meta name="theme-color" content="#17181c" />
   <meta name="description" content="Excerly – home fitness journal with animated stretches, daily reminders, AI calorie tracking, and a BMI calculator." />
   <title>Excerly</title>
   <link rel="manifest" href="manifest.webmanifest" />
@@ -13,23 +13,30 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Excerly" />
   <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Heebo:wght@400;500;700;800&display=swap" />
   <link rel="stylesheet" href="assets/css/app.css" />
+  <script>try{if(localStorage.getItem('excerly.skin')==='classic')document.documentElement.setAttribute('data-skin','classic');}catch(e){}</script>
 </head>
 <body>
   <div class="app">
     <!-- כותרת -->
     <header class="app-header">
       <div class="logo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#06231c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M6.5 6.5l11 11M4 9l-1 1 2 2m16-4l1 1-2 2M9 20l-1 1-2-2m12 0l-1 1-2-2"/>
-          <rect x="4" y="8" width="4" height="8" rx="1.4"/>
-          <rect x="16" y="8" width="4" height="8" rx="1.4"/>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <rect x="2.6" y="7.5" width="3.2" height="9" rx="1.3"/>
+          <rect x="6.2" y="5.6" width="2.6" height="12.8" rx="1.2"/>
+          <rect x="15.2" y="5.6" width="2.6" height="12.8" rx="1.2"/>
+          <rect x="18.2" y="7.5" width="3.2" height="9" rx="1.3"/>
+          <rect x="8.6" y="10.7" width="6.8" height="2.6" rx="1.3"/>
         </svg>
       </div>
       <div class="app-headtext">
         <div class="app-title">Excerly</div>
-        <div class="app-sub" data-i18n="appSub">יומן המתיחות והכושר הביתי שלך</div>
+        <div class="app-sub" data-i18n="appSub">אימונים ותזונה חכמים בעזרת AI</div>
       </div>
+      <button class="skin-toggle" id="skin-toggle" aria-label="החלף עיצוב" title="החלף עיצוב">◐</button>
       <div class="lang-switch" id="lang-switch">
         <button data-lang="he">עברית</button>
         <button data-lang="en">EN</button>
@@ -44,24 +51,29 @@
       <button class="ib-close" id="ib-close" aria-label="✕">✕</button>
     </div>
 
-    <!-- סיכום התקדמות -->
-    <section class="card" data-tab="home">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-        <div style="display:flex;align-items:center;gap:14px;min-width:0">
-          <img id="hero-fig" class="hero-fig" alt="" hidden />
-          <div>
-            <div style="font-size:13px;color:var(--muted);font-weight:600" data-i18n="streakTitle">רצף אימונים 🔥</div>
-            <div style="font-size:26px;font-weight:800"><span id="streak-num">0</span> <span data-i18n="daysWord">ימים</span></div>
-            <div style="font-size:12.5px;color:var(--muted);margin-top:2px"><span data-i18n="totalDone">סה״כ אימונים שהושלמו: </span><b id="total-num">0</b></div>
-          </div>
+    <!-- מסמך היום (בית) -->
+    <section class="card today-card" data-tab="home">
+      <div class="today-head">
+        <div>
+          <div class="today-weekday" id="today-weekday"></div>
+          <div class="today-date" id="today-date"></div>
         </div>
-        <button class="btn btn-primary" id="today-btn" data-i18n="todayBtn">האימון של היום ←</button>
+        <img id="hero-fig" class="hero-fig" alt="" hidden />
       </div>
+      <div class="today-rule"></div>
+      <div class="today-meta">
+        <div class="streak-block">
+          <div class="streak-lbl" data-i18n="streakTitle">רצף אימונים 🔥</div>
+          <div class="streak-stamp"><span class="streak-num" id="streak-num">0</span> <span class="streak-days" data-i18n="daysWord">ימים</span></div>
+        </div>
+        <div class="today-total"><span data-i18n="totalDone">סה״כ אימונים שהושלמו: </span><b id="total-num">0</b></div>
+      </div>
+      <button class="btn btn-primary today-start" id="today-btn" data-i18n="todayBtn">האימון של היום ←</button>
     </section>
 
     <!-- חשבון: גיבוי וסנכרון בענן -->
     <section class="card cloud-card" data-tab="me" id="cloud-card">
-      <h2 class="card-title"><span class="ico">☁️</span> <span data-i18n="accountTitle">החשבון שלי — גיבוי וסנכרון</span></h2>
+      <h2 class="card-title"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18h9.5a3.5 3.5 0 0 0 .5-6.96A5 5 0 0 0 7.2 9.2 3.9 3.9 0 0 0 7 18z"/></svg></span> <span data-i18n="accountTitle">החשבון שלי — גיבוי וסנכרון</span></h2>
       <p class="section-hint" data-i18n="accountHint">התחברו כדי לשמור את כל הנתונים בענן ולסנכרן בין הטלפון, הטאבלט והמחשב. בלי התחברות — הכול נשמר במכשיר הזה בלבד.</p>
 
       <div id="cloud-signed-out" hidden>
@@ -83,7 +95,7 @@
 
     <!-- Google Calendar: דחיפת אימונים ליומן Google עם תזכורת מייל -->
     <section class="card" data-tab="me" id="gcal-card">
-      <h2 class="card-title"><span class="ico">📅</span> <span data-i18n="gcalTitle">סנכרון ל-Google Calendar</span></h2>
+      <h2 class="card-title"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 3v3M16 3v3"/></svg></span> <span data-i18n="gcalTitle">סנכרון ל-Google Calendar</span></h2>
       <p class="section-hint" data-i18n="gcalHint">דחפו את אימוני היומן ל-Google Calendar (6 שבועות קדימה) — כל אימון עם תזכורת מייל ופופאפ אוטומטית מ-Google.</p>
       <div class="field" id="gcal-client-row">
         <label for="gcal-client" data-i18n="gcalClientLabel">Google OAuth Client ID</label>
@@ -95,12 +107,11 @@
       </div>
       <button class="btn btn-primary btn-block" id="gcal-sync" data-i18n="gcalSyncBtn">📅 סנכרן אימונים ליומן</button>
       <p class="cloud-note" data-i18n="gcalNote">בפעם הראשונה Google יבקש אישור חד-פעמי. התזכורות נשלחות ע״י Google Calendar עצמו.</p>
-      <p class="cloud-note"><a href="privacy.html" target="_blank" rel="noopener">מדיניות פרטיות · Privacy Policy</a></p>
     </section>
 
     <!-- פרופיל + BMI -->
     <section class="card" data-tab="me">
-      <h2 class="card-title"><span class="ico">⚖️</span> <span data-i18n="profileTitle">פרופיל בריאות ו-BMI</span></h2>
+      <h2 class="card-title"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/></svg></span> <span data-i18n="profileTitle">פרופיל בריאות ו-BMI</span></h2>
       <p class="section-hint" data-i18n="profileHint">מלאו את הפרטים לחישוב מדד מסת גוף, קלוריות יומיות והמלצות תזונה.</p>
       <form id="profile-form">
         <div class="profile-grid">
@@ -142,7 +153,7 @@
 
     <!-- תוכנית אימון אישית לחדר כושר (AI) -->
     <section class="card" data-tab="workouts">
-      <h2 class="card-title"><span class="ico">🏋️</span> <span data-i18n="planTitle">תוכנית אימון אישית</span> <span class="ai-badge" id="plan-ai-badge" data-i18n="aiActive" hidden>✨ AI פעיל</span></h2>
+      <h2 class="card-title"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6M6.5 7.5v9M17.5 7.5v9M20 9v6M6.5 12h11"/></svg></span> <span data-i18n="planTitle">תוכנית אימון אישית</span> <span class="ai-badge" id="plan-ai-badge" data-i18n="aiActive" hidden>✨ AI פעיל</span></h2>
       <p class="section-hint" data-i18n="planHint">בנו תוכנית אימון אישית לחדר כושר לפי המטרה, מספר הימים והרמה שלכם.</p>
       <div class="profile-grid">
         <div class="field">
@@ -224,7 +235,7 @@
 
     <!-- מעקב תזונה יומי -->
     <section class="card" data-tab="nutrition">
-      <h2 class="card-title"><span class="ico">🍎</span> <span data-i18n="nutriTitle">מעקב תזונה יומי</span> <span class="ai-badge" id="ai-badge" data-i18n="aiActive" hidden>✨ AI פעיל</span></h2>
+      <h2 class="card-title"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8.2c1.2-2.2 3.8-2.4 5.3-.8 1.7 1.8 1.4 5.3 0 8-1 1.9-2.2 3.6-3.8 3.6-.9 0-1.2-.5-1.8-.5s-.9.5-1.8.5c-1.6 0-2.8-1.7-3.8-3.6-1.4-2.7-1.7-6.2 0-8C8.9 5.8 11 6 12 8.2z"/><path d="M12 8V5.4c0-1 .8-1.9 2-2.1"/></svg></span> <span data-i18n="nutriTitle">מעקב תזונה יומי</span> <span class="ai-badge" id="ai-badge" data-i18n="aiActive" hidden>✨ AI פעיל</span></h2>
       <p class="section-hint" id="nutri-hint" data-i18n="nutriHint">כתבו בטקסט חופשי מה אכלתם — Claude יבין ויעריך את הקלוריות, ויראה אם עמדתם ביעד.</p>
 
       <div class="nutri-target" id="nutri-target"></div>
@@ -275,7 +286,7 @@
 
     <!-- לוח שנה -->
     <section class="card" data-tab="home">
-      <h2 class="card-title"><span class="ico">📅</span> <span data-i18n="calTitle">יומן האימונים</span></h2>
+      <h2 class="card-title"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 3v3M16 3v3"/></svg></span> <span data-i18n="calTitle">יומן האימונים</span></h2>
       <div class="cal-head">
         <div class="cal-month" id="cal-month"></div>
         <div class="cal-nav">
@@ -294,7 +305,7 @@
 
     <!-- היסטוריה ומגמות -->
     <section class="card" data-tab="me">
-      <h2 class="card-title"><span class="ico">📊</span> <span data-i18n="histTitle">היסטוריה ומגמות</span></h2>
+      <h2 class="card-title"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 20.5h17"/><path d="M6.5 20.5V12M12 20.5V4.5M17.5 20.5v-6"/></svg></span> <span data-i18n="histTitle">היסטוריה ומגמות</span></h2>
       <div class="hist-stats" id="hist-stats"></div>
       <div class="hist-range" id="hist-range" role="tablist">
         <button class="on" data-range="7" data-i18n="range7">7 ימים</button>
@@ -314,7 +325,7 @@
 
     <!-- תזכורות -->
     <section class="card" data-tab="me">
-      <h2 class="card-title"><span class="ico">⏰</span> <span data-i18n="reminderTitle">תזכורת יומית</span></h2>
+      <h2 class="card-title"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13.5" r="7"/><path d="M12 10v3.5l2.3 1.6"/><path d="M4.5 4.2 2 6.7M19.5 4.2 22 6.7"/></svg></span> <span data-i18n="reminderTitle">תזכורת יומית</span></h2>
       <div class="reminder-row">
         <div class="time-input">
           <label for="reminder-time" style="color:var(--muted);font-size:13px;font-weight:600" data-i18n="reminderTimeLabel">שעת התזכורת</label>
@@ -328,7 +339,8 @@
       <p class="reminder-status" id="reminder-status"></p>
     </section>
 
-    <footer class="app-footer" data-i18n="footer">Excerly · אפליקציית כושר ביתי · הנתונים נשמרים במכשיר שלך בלבד</footer>
+    <footer class="app-footer" data-i18n="footer">Excerly — עוזר ה-AI האישי שלך לכושר ותזונה</footer>
+    <div class="app-footer-privacy"><a href="privacy.html" target="_blank" rel="noopener">מדיניות פרטיות · Privacy Policy</a></div>
   </div>
 
   <!-- ניווט תחתון -->
@@ -346,6 +358,16 @@
   <!-- נגן אימון מודרך -->
   <div class="player" id="player" role="dialog" aria-modal="true" hidden></div>
 
+  <!-- מצלמה בתוך האפליקציה (ללא יציאה מהמסך, כדי לא לאבד את המסך/התמונה) -->
+  <div class="cam" id="cam" role="dialog" aria-modal="true" hidden>
+    <video id="cam-video" playsinline autoplay muted></video>
+    <div class="cam-bar">
+      <button class="cam-side" id="cam-cancel" aria-label="ביטול">✕</button>
+      <button class="cam-shot" id="cam-shot" aria-label="צלם"></button>
+      <button class="cam-side" id="cam-flip" aria-label="החלף מצלמה">⟲</button>
+    </div>
+  </div>
+
   <script src="assets/js/i18n.js"></script>
   <script src="assets/js/data.js"></script>
   <script src="assets/js/animations.js"></script>
@@ -355,5 +377,26 @@
   <script src="assets/js/app.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="assets/js/cloud.js"></script>
+
+  <!-- Today masthead date (localized, follows the language toggle) -->
+  <script>
+    (function () {
+      function renderToday() {
+        var lang = document.documentElement.lang || 'he';
+        var loc = lang === 'he' ? 'he-IL' : 'en-US';
+        var now = new Date();
+        var wd = document.getElementById('today-weekday');
+        var dt = document.getElementById('today-date');
+        try {
+          if (wd) wd.textContent = new Intl.DateTimeFormat(loc, { weekday: 'long' }).format(now);
+          if (dt) dt.textContent = new Intl.DateTimeFormat(loc, { day: 'numeric', month: 'long' }).format(now);
+        } catch (e) {}
+      }
+      renderToday();
+      try {
+        new MutationObserver(renderToday).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+      } catch (e) {}
+    })();
+  </script>
 </body>
 </html>

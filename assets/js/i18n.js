@@ -6,7 +6,8 @@
 
   const DICT = {
     he: {
-      appSub: 'יומן המתיחות והכושר הביתי שלך',
+      appSub: 'אימונים ותזונה חכמים בעזרת AI',
+      skinToggleAria: 'החלף עיצוב', skinAlmanac: 'עיצוב: מודרני', skinClassic: 'עיצוב: קלאסי',
       tabHome: 'בית', tabWorkouts: 'אימונים', tabNutrition: 'תזונה', tabMe: 'אני',
       installCta: 'התקינו את Excerly כאפליקציה במסך הבית', installBtn: 'התקן',
       installIos: 'להתקנה: לחצו על שיתוף ⬆️ ואז "הוסף למסך הבית" (בדפדפן Safari).',
@@ -99,6 +100,7 @@
       menuBtn: '🍽️ בנה לי תפריט יומי', menuBtnBusy: 'Claude בונה…',
       photoBtn: '📷 חשב לפי תמונה של הארוחה', photoBtnBusy: 'Claude מנתח את התמונה…',
       cameraBtn: '📷 צלם ארוחה', galleryBtn: '🖼️ מהגלריה',
+      camShotAria: 'צלם', camCancelAria: 'ביטול', camFlipAria: 'החלף מצלמה', camDenied: 'אין גישה למצלמה — נסו מהגלריה',
       vOver: 'חרגת מהיעד', vMet: 'עמדת ביעד! 🎯', vUnder: 'מתחת ליעד',
       dOver: 'חרגת ב-{n} קק"ל', dUnder: 'נותרו לך {n} קק"ל להיום', dMet: 'נשארת בטווח היעד',
       ofTarget: '{a} מתוך {b} קק"ל · {d}',
@@ -109,6 +111,10 @@
       addMealAria: 'הוסף מנה ליום',
       dayMealsTitle: '🍽️ הארוחות של היום',
       removeMealAria: 'הסר מנה',
+      editMealAria: 'ערוך פריט',
+      saveMealAria: 'שמור',
+      fixHint: 'מצאתם טעות? ערכו את השם או הקלוריות לפני ההוספה.',
+      editDayHint: 'לחצו על ✎ כדי לתקן פריט.',
       mealLabel: 'ארוחה',
       toastAdded: 'נוסף ליום ✓', toastRemoved: 'הוסר מהיום ✓',
       itemsEmpty: 'לא זיהיתי פריטי מזון. נסו לפרט יותר, למשל "2 ביצים, פרוסת לחם, תפוח".',
@@ -161,7 +167,7 @@
       notifRest: 'היום מנוחה פעילה 🧘 קחו כמה דקות למתיחות רגועות.',
       notifWorkout: 'הגיע הזמן לאימון "{title}" 💪 {n} תרגילים מחכים לך.',
 
-      footer: 'Excerly · אפליקציית כושר ביתי · הנתונים נשמרים במכשיר שלך בלבד',
+      footer: 'Excerly — עוזר ה-AI האישי שלך לכושר ותזונה',
 
       // דינמי (workout sheet / toasts)
       dayLabel: 'יום {day}, {d} ב{month}',
@@ -195,7 +201,8 @@
     },
 
     en: {
-      appSub: 'Your home stretching & fitness journal',
+      appSub: 'Smart workouts & nutrition with AI',
+      skinToggleAria: 'Switch design', skinAlmanac: 'Design: Modern', skinClassic: 'Design: Classic',
       tabHome: 'Home', tabWorkouts: 'Workouts', tabNutrition: 'Nutrition', tabMe: 'Me',
       installCta: 'Install Excerly as an app on your home screen', installBtn: 'Install',
       installIos: 'To install: tap Share ⬆️ then "Add to Home Screen" (in Safari).',
@@ -288,6 +295,7 @@
       menuBtn: '🍽️ Build me a daily menu', menuBtnBusy: 'Claude is building…',
       photoBtn: '📷 Calculate from a meal photo', photoBtnBusy: 'Claude is analyzing the photo…',
       cameraBtn: '📷 Take a photo', galleryBtn: '🖼️ From gallery',
+      camShotAria: 'Capture', camCancelAria: 'Cancel', camFlipAria: 'Switch camera', camDenied: 'No camera access — try the gallery',
       vOver: 'Over your goal', vMet: 'On target! 🎯', vUnder: 'Below your goal',
       dOver: '{n} kcal over', dUnder: '{n} kcal left for today', dMet: 'Within your target range',
       ofTarget: '{a} of {b} kcal · {d}',
@@ -298,6 +306,10 @@
       addMealAria: 'Add dish to today',
       dayMealsTitle: "🍽️ Today's meals",
       removeMealAria: 'Remove dish',
+      editMealAria: 'Edit item',
+      saveMealAria: 'Save',
+      fixHint: 'Found a mistake? Edit the name or calories before adding.',
+      editDayHint: 'Tap ✎ to correct an item.',
       mealLabel: 'Meal',
       toastAdded: 'Added ✓', toastRemoved: 'Removed ✓',
       itemsEmpty: "I couldn't identify any foods. Try to be more specific, e.g. \"2 eggs, a slice of bread, an apple\".",
@@ -350,7 +362,7 @@
       notifRest: "Today is active rest 🧘 Take a few minutes for some gentle stretching.",
       notifWorkout: 'Time for your "{title}" workout 💪 {n} exercises are waiting.',
 
-      footer: 'Excerly · home fitness app · your data is stored on your device only',
+      footer: 'Excerly — Your personal AI coach for fitness & nutrition',
 
       dayLabel: '{day}, {month} {d}',
       dayLabelEn: '',

@@ -215,10 +215,10 @@
 
   // מחזיר מפתח קטגוריה + צבע; התוויות והטקסטים מגיעים מ-i18n
   function bmiCategory(bmi) {
-    if (bmi < 18.5) return { key: 'under', color: '#4aa3ff' };
-    if (bmi < 25) return { key: 'normal', color: '#2ecc71' };
-    if (bmi < 30) return { key: 'over', color: '#f39c12' };
-    return { key: 'obese', color: '#e74c3c' };
+    if (bmi < 18.5) return { key: 'under', color: 'var(--info)' };
+    if (bmi < 25) return { key: 'normal', color: 'var(--ok)' };
+    if (bmi < 30) return { key: 'over', color: 'var(--accent-warm)' };
+    return { key: 'obese', color: 'var(--danger)' };
   }
 
   function calcBMR({ weightKg, heightCm, age, gender }) {

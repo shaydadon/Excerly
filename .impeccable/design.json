@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-06T00:00:00Z",
+  "title": "Design System: Excerly",
+  "extensions": {
+    "colorMeta": {
+      "accent": { "role": "primary", "displayName": "Signal Teal", "canonical": "#35d0a5", "tonalRamp": ["#08211a", "#0f5645", "#12735b", "#1a9a79", "#22c299", "#35d0a5", "#7fe0c6", "#d4f6ec"] },
+      "accent-2": { "role": "secondary", "displayName": "Azure", "canonical": "#4aa3ff", "tonalRamp": ["#08213f", "#0e3a6e", "#12559e", "#1a72cf", "#2f8bf0", "#4aa3ff", "#8cc4ff", "#d6e9ff"] },
+      "accent-warm": { "role": "tertiary", "displayName": "Amber", "canonical": "#ffb454", "tonalRamp": ["#3a2405", "#5e3d0c", "#8a5c12", "#b57d1c", "#e0982e", "#ffb454", "#ffcd8a", "#ffe9cc"] },
+      "danger": { "role": "semantic", "displayName": "Coral Red", "canonical": "#ef5f6b", "tonalRamp": ["#3a0d12", "#5e161e", "#8a2029", "#b52c37", "#e0424f", "#ef5f6b", "#f6929a", "#fcd5d9"] },
+      "bg": { "role": "neutral", "displayName": "Midnight Ink", "canonical": "#0e1116", "tonalRamp": ["#0e1116", "#161b22", "#1b2230", "#222c3c", "#2b3648", "#5b6b80", "#9aa7b8", "#eaf0f7"] },
+      "bg-soft": { "role": "neutral", "displayName": "Deep Slate", "canonical": "#161b22" },
+      "card": { "role": "neutral", "displayName": "Panel Navy", "canonical": "#1b2230" },
+      "card-2": { "role": "neutral", "displayName": "Raised Navy", "canonical": "#222c3c" },
+      "line": { "role": "neutral", "displayName": "Hairline Steel", "canonical": "#2b3648" },
+      "text": { "role": "neutral", "displayName": "Cloud White", "canonical": "#eaf0f7" },
+      "muted": { "role": "neutral", "displayName": "Muted Steel", "canonical": "#9aa7b8" },
+      "accent-ink": { "role": "neutral", "displayName": "Deep Teal Ink", "canonical": "#06231c" },
+      "fig": { "role": "neutral", "displayName": "Figure Silver", "canonical": "#cdd8e6" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display / Metric", "purpose": "Guided-player countdown and hero numbers; always tabular-nums." },
+      "headline": { "displayName": "Headline", "purpose": "Screen and sheet titles." },
+      "title": { "displayName": "Title", "purpose": "Card and section headers." },
+      "body": { "displayName": "Body", "purpose": "Inputs, instructions, list rows." },
+      "label": { "displayName": "Label", "purpose": "Tabs, field labels, chips, badges, captions." }
+    },
+    "shadows": [
+      { "name": "card", "value": "0 14px 40px rgba(0,0,0,0.45)", "purpose": "Default card lift and toast; the --shadow token (dark theme)." },
+      { "name": "tabbar", "value": "0 -6px 24px rgba(0,0,0,0.16)", "purpose": "Upward separation for the frosted bottom tab bar." },
+      { "name": "logo-glow", "value": "0 8px 20px rgba(53,208,165,0.35)", "purpose": "Teal glow under the app logo tile." },
+      { "name": "state-ring-inset", "value": "0 0 0 1px #35d0a5 inset", "purpose": "Inset teal ring for today / selected / focus state — used instead of a colored drop shadow." }
+    ],
+    "motion": [
+      { "name": "tap-press", "value": "transform: scale(0.94–0.97); transition: transform 0.08s", "purpose": "Press feedback on every interactive control." },
+      { "name": "sheet-ease", "value": "cubic-bezier(0.22, 1, 0.36, 1) 0.32s", "purpose": "Bottom-sheet slide up/down." },
+      { "name": "tab-in", "value": "cubic-bezier(0.22, 0.61, 0.36, 1) 0.28s", "purpose": "Card fade/slide-up on tab switch." },
+      { "name": "work-pulse", "value": "2.4s ease-in-out infinite", "purpose": "Pulsing highlight on the muscle work-zone in exercise figures." },
+      { "name": "reduced-motion", "value": "@media (prefers-reduced-motion: reduce) { animation: none }", "purpose": "All decorative animation is disabled under reduced-motion." }
+    ],
+    "breakpoints": [
+      { "name": "container", "value": "620px" },
+      { "name": "sm", "value": "460px" },
+      { "name": "xs", "value": "360px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single main action per view; teal→azure gradient.",
+      "html": "<button class=\"ds-btn-primary\">חשב / Calculate</button>",
+      "css": ".ds-btn-primary { background: linear-gradient(135deg, #35d0a5, #4aa3ff); color: #06231c; padding: 12px 16px; border: none; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; transition: transform 0.08s, filter 0.15s; } .ds-btn-primary:hover { filter: brightness(1.05); } .ds-btn-primary:active { transform: scale(0.97); }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary action on a raised navy surface.",
+      "html": "<button class=\"ds-btn-ghost\">איפוס / Reset</button>",
+      "css": ".ds-btn-ghost { background: #222c3c; color: #eaf0f7; border: 1px solid #2b3648; border-radius: 12px; padding: 12px 16px; font-weight: 700; font-size: 15px; cursor: pointer; transition: transform 0.08s; } .ds-btn-ghost:active { transform: scale(0.97); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Field on raised navy; focus shifts the border to teal, no glow.",
+      "html": "<input class=\"ds-input\" placeholder=\"72\" />",
+      "css": ".ds-input { background: #222c3c; border: 1px solid #2b3648; color: #eaf0f7; border-radius: 12px; padding: 11px 12px; font-size: 15px; outline: none; transition: border-color 0.15s; } .ds-input::placeholder { color: #9aa7b8; } .ds-input:focus { border-color: #35d0a5; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Default content surface: panel navy, hairline border, ambient lift.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-title\">מחשבון BMI</div><div class=\"ds-card-body\">הזינו גיל, משקל וגובה כדי לחשב.</div></div>",
+      "css": ".ds-card { background: #1b2230; border: 1px solid #2b3648; border-radius: 18px; padding: 16px; box-shadow: 0 14px 40px rgba(0,0,0,0.45); color: #eaf0f7; } .ds-card-title { font-size: 16px; font-weight: 800; margin-bottom: 12px; } .ds-card-body { font-size: 14px; line-height: 1.55; color: #9aa7b8; }"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Pill metadata tag; muted by default, semantic tints recolor text only.",
+      "html": "<span class=\"ds-chip\">⏱️ 30 שנ׳</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 5px; background: #222c3c; border: 1px solid #2b3648; color: #9aa7b8; padding: 5px 11px; border-radius: 999px; font-size: 12px; font-weight: 600; }"
+    },
+    {
+      "name": "Bottom Tab Bar",
+      "kind": "nav",
+      "refersTo": "tab-active",
+      "description": "Fixed bottom navigation; active tab gets teal text on a teal tint.",
+      "html": "<nav class=\"ds-tabbar\"><button class=\"ds-tab on\"><span class=\"ds-ti\">📅</span>יומן</button><button class=\"ds-tab\"><span class=\"ds-ti\">🏃</span>אימון</button><button class=\"ds-tab\"><span class=\"ds-ti\">🍎</span>תזונה</button></nav>",
+      "css": ".ds-tabbar { display: flex; gap: 4px; background: #1b2230; border: 1px solid #2b3648; border-radius: 16px; padding: 6px 8px; } .ds-tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: none; color: #9aa7b8; font-size: 11px; font-weight: 700; padding: 7px 4px; border-radius: 14px; cursor: pointer; transition: color 0.15s, background 0.15s; } .ds-tab .ds-ti { font-size: 21px; line-height: 1; } .ds-tab.on { color: #35d0a5; background: color-mix(in srgb, #35d0a5 12%, transparent); } .ds-tab:active { transform: scale(0.94); }"
+    },
+    {
+      "name": "Calendar Cell",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Signature square day cell; today wears an inset teal ring, status shown by a dot.",
+      "html": "<div class=\"ds-cell today\"><span class=\"ds-dnum\">6</span><span class=\"ds-dot\"></span></div>",
+      "css": ".ds-cell { position: relative; width: 56px; height: 56px; border-radius: 12px; background: #222c3c; border: 1px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; color: #eaf0f7; } .ds-cell.today { border-color: #35d0a5; box-shadow: 0 0 0 1px #35d0a5 inset; } .ds-cell.today .ds-dnum { color: #35d0a5; } .ds-dnum { font-size: 15px; font-weight: 700; } .ds-dot { width: 6px; height: 6px; border-radius: 50%; background: #35d0a5; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Dashboard",
+    "overview": "Excerly is a personal health console you can read in a glance. It is dark by default, built as a single thumb-width column, and it earns trust through precision rather than personality: numbers are legible, states are unambiguous, and color is spent carefully. Every screen is a surface for a task, so the interface stays quiet and lets the data speak. The palette is a cool, dark neutral base carrying one primary voice — Signal Teal — with Azure and Amber reserved for information and attention. Content surfaces sit flat on tonal layers; only true overlays and the single primary action lift off the page.",
+    "keyCharacteristics": [
+      "Dark-first, cool-neutral, single-column mobile console (max 620px).",
+      "One saturated accent (Signal Teal) carries the primary/interactive meaning.",
+      "Tabular, high-weight numerals for every metric.",
+      "Flat at rest, lifted only for overlays and the primary CTA.",
+      "Fully bidirectional (RTL/LTR) via logical properties.",
+      "Motion is functional feedback and always respects prefers-reduced-motion."
+    ],
+    "rules": [
+      { "name": "The Single Voice Rule", "body": "Signal Teal is rationed to 10% or less of any screen — ideally a single element: the one primary action, the active tab, or the metric that matters most. Everything secondary defaults to Cloud White or Muted Steel; reach for Azure only for genuinely informational emphasis and Amber only for rest/gym or warnings, both sparingly. Coral is destruction only. The target is a calm, near-monochrome screen with one teal focal point; two saturated accents competing for the eye is the failure.", "section": "colors" },
+      { "name": "The Constant Figure Rule", "body": "Exercise figures use Figure Silver and a fixed work highlight in both themes; illustration color does not follow the UI theme.", "section": "colors" },
+      { "name": "The Tabular Metric Rule", "body": "Every number a user reads or compares uses font-variant-numeric: tabular-nums so digits don't jitter as they change.", "section": "typography" },
+      { "name": "The Weight-Not-Size Rule", "body": "Establish hierarchy with weight and color before reaching for larger sizes; the scale is tight on purpose.", "section": "typography" },
+      { "name": "The Single Column Rule", "body": "One 620px column with a thumb-reachable bottom nav; do not introduce multi-column desktop layouts or side navigation.", "section": "elevation" },
+      { "name": "The Flat-Rest, Lifted-Overlay Rule", "body": "Rely first on tonal layers and 1px borders; reserve pronounced elevation and backdrop-filter for true overlays and the single primary CTA. Show state with an inset teal ring, never a colored drop shadow.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do design to tokens so both themes and RTL/LTR track automatically.",
+      "Do ration Signal Teal to 10% or less of a screen — ideally one element — and default secondary content to Cloud White / Muted Steel before reaching for Azure or Amber.",
+      "Do give every changing number tabular-nums and an 800 weight.",
+      "Do use logical properties for anything positional.",
+      "Do reserve real shadows and backdrop-filter for overlays and the single primary CTA.",
+      "Do pair every animation with a prefers-reduced-motion fallback and give taps a scale press.",
+      "Do keep exercise illustrations on Figure Silver plus the fixed work-highlight in both themes."
+    ],
+    "donts": [
+      "Don't spend a second saturated accent where one teal would do, or use Coral for anything but destructive actions.",
+      "Don't add desktop multi-column or sidebar layouts; stay in the 620px column with bottom nav.",
+      "Don't introduce web fonts or a display typeface — hierarchy comes from weight, color, and number treatment.",
+      "Don't show state with a colored drop shadow; use the inset teal ring.",
+      "Don't hard-code hex values, physical left/right, or fixed pixel colors that break the light theme or RTL.",
+      "Don't let decoration outrank legibility — this is a dashboard, not a poster."
+    ]
+  }
+}

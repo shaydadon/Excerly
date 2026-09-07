@@ -838,9 +838,9 @@
       <button class="player-help" id="p-help">💬 ${t('needHelp')}</button>
       <div class="player-time" id="p-time">${fmtTime(player.remaining)}</div>
       <div class="player-controls">
-        <button class="p-ctrl" id="p-prev" aria-label="${t('ariaPrev')}">${rtl ? '⏭' : '⏮'}</button>
+        <button class="p-ctrl" id="p-prev" aria-label="${t('ariaPrev')}">⏮</button>
         <button class="p-ctrl p-main" id="p-play" aria-label="${t('ariaPause')}">⏸</button>
-        <button class="p-ctrl" id="p-next" aria-label="${t('ariaNext')}">${rtl ? '⏮' : '⏭'}</button>
+        <button class="p-ctrl" id="p-next" aria-label="${t('ariaNext')}">⏭</button>
       </div>`;
     $('#p-close', P()).addEventListener('click', closePlayer);
     $('#p-prev', P()).addEventListener('click', prevExercise);
@@ -1119,8 +1119,9 @@
     const total = meals.reduce((s, m) => s + m.kcal, 0);
     const target = N.targetCalories();
     const rows = meals.map(m => `
-      <div class="dm-row">
+      <div class="dm-row" data-id="${m.id}">
         <button class="dm-del" data-id="${m.id}" aria-label="${t('removeMealAria')}" title="${t('removeMealAria')}">✕</button>
+        <button class="dm-edit" data-id="${m.id}" aria-label="${t('editMealAria')}" title="${t('editMealAria')}">✎</button>
         <span class="dm-name">${m.name}</span>
         <span class="dm-kcal">${m.kcal} ${t('goalUnit')}</span>
       </div>`).join('');
@@ -1150,9 +1151,34 @@
         <span class="dm-mac p"><b>${protein}</b> ${t('grams')} ${t('protein')}</span>
         <span class="dm-mac f"><b>${fat}</b> ${t('grams')} ${t('fat')}</span>
       </div>` : '';
-    box.innerHTML = `<div class="dm-title">${t('dayMealsTitle')}</div><div class="dm-list">${rows}</div>${macroRow}${summary}`;
+    box.innerHTML = `<div class="dm-title">${t('dayMealsTitle')}</div><div class="dm-hint">${t('editDayHint')}</div><div class="dm-list">${rows}</div>${macroRow}${summary}`;
     box.classList.add('show');
     box.querySelectorAll('.dm-del').forEach(b => b.addEventListener('click', () => removeMeal(b.dataset.id)));
+    box.querySelectorAll('.dm-edit').forEach(b => b.addEventListener('click', () => editDayMeal(b.dataset.id)));
+  }
+
+  // תיקון פריט שכבר נרשם ליום (שם + קלוריות) — כי ה-AI יכול לטעות
+  function editDayMeal(id) {
+    const key = dateKey(new Date());
+    const m = getMeals(key).find(x => x.id === id);
+    const row = document.querySelector('#day-meals .dm-row[data-id="' + id + '"]');
+    if (!m || !row) return;
+    const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    row.classList.add('editing');
+    row.innerHTML = `
+      <button class="dm-save" aria-label="${t('saveMealAria')}" title="${t('saveMealAria')}">✓</button>
+      <input class="dm-name-edit" value="${esc(m.name)}" aria-label="${t('editMealAria')}" />
+      <span class="ni-kcal-edit"><input class="dm-kcal-edit ni-kcal-input" type="number" min="0" inputmode="numeric" value="${m.kcal}" aria-label="${t('editMealAria')}" /><span class="ni-kcal-unit">${t('goalUnit')}</span></span>`;
+    const save = () => {
+      const name = row.querySelector('.dm-name-edit').value.trim() || t('mealLabel');
+      const k = Math.max(0, Math.round(+row.querySelector('.dm-kcal-edit').value || 0));
+      setMeals(key, getMeals(key).map(x => x.id === id ? Object.assign({}, x, { name: name, kcal: k }) : x));
+      refreshNutrition();
+    };
+    row.querySelector('.dm-save').addEventListener('click', save);
+    row.querySelectorAll('input').forEach(inp => inp.addEventListener('keydown', e => { if (e.key === 'Enter') save(); }));
+    const nameInp = row.querySelector('.dm-name-edit');
+    if (nameInp) nameInp.focus();
   }
 
   function renderNutriTarget() {
@@ -1166,16 +1192,25 @@
     return target;
   }
 
-  // מציג את האומדן עם כפתור ＋ ליד כל פריט (הוספה ליום) + "הוסף הכל"
+  // מציג את האומדן עם עריכה מובנית (שם + קלוריות), כפתור ＋ לכל פריט ו"הוסף הכל".
+  // ה-AI יכול לטעות — המשתמש יכול לתקן כאן לפני ההוספה.
   function renderFoodResult(res, target) {
     const box = $('#nutri-result');
-    estimateItems = res.items || [];
+    const escAttr = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    estimateItems = (res.items || []).map(i => ({
+      name: i.name || t('mealLabel'),
+      kcal: Math.round(i.kcal || 0),
+      carbs: Math.round(i.carbs || 0),
+      protein: Math.round(i.protein || 0),
+      fat: Math.round(i.fat || 0)
+    }));
     const kcal = t('goalUnit');
+    const sumKcal = () => estimateItems.reduce((s, i) => s + (i.kcal || 0), 0);
     const itemsHtml = estimateItems.length
-      ? `<ul class="nutri-items add-list">${estimateItems.map((i, idx) => `<li>
+      ? `<div class="nutri-fixhint">${t('fixHint')}</div><ul class="nutri-items add-list edit">${estimateItems.map((i, idx) => `<li>
           <button class="add-item" data-idx="${idx}" aria-label="${t('addMealAria')}" title="${t('addMealAria')}">＋</button>
-          <span class="ni-name">${i.name}</span>
-          <span class="ni-k">${i.kcal} ${kcal}</span>
+          <input class="ni-name-edit" data-idx="${idx}" value="${escAttr(i.name)}" aria-label="${t('editMealAria')}" />
+          <span class="ni-kcal-edit"><input class="ni-kcal-input" type="number" min="0" inputmode="numeric" data-idx="${idx}" value="${i.kcal}" aria-label="${t('editMealAria')}" /><span class="ni-kcal-unit">${kcal}</span></span>
         </li>`).join('')}</ul>`
       : `<div class="nutri-empty">${t('itemsEmpty')}</div>`;
     const unmatched = res.unmatched && res.unmatched.length
@@ -1188,7 +1223,7 @@
       : '';
     box.innerHTML = `
       <div class="est-head">
-        <div class="est-total">${t('estimateLabel', { n: nf(res.total) })}</div>
+        <div class="est-total" id="est-total">${t('estimateLabel', { n: nf(sumKcal()) })}</div>
         ${estimateItems.length ? `<button class="btn btn-primary est-addall" id="est-addall">${t('addAll')}</button>` : ''}
       </div>
       ${macroLine}
@@ -1201,6 +1236,15 @@
     if (addAll) addAll.addEventListener('click', () => addMeals(estimateItems));
     box.querySelectorAll('.add-item').forEach(b =>
       b.addEventListener('click', () => addMeal(estimateItems[+b.dataset.idx])));
+    // עריכה חיה של פרשנות ה-AI
+    box.querySelectorAll('.ni-name-edit').forEach(inp =>
+      inp.addEventListener('input', () => { estimateItems[+inp.dataset.idx].name = inp.value.trim() || t('mealLabel'); }));
+    box.querySelectorAll('.ni-kcal-input').forEach(inp =>
+      inp.addEventListener('input', () => {
+        estimateItems[+inp.dataset.idx].kcal = Math.max(0, Math.round(+inp.value || 0));
+        const tot = $('#est-total', box);
+        if (tot) tot.textContent = t('estimateLabel', { n: nf(sumKcal()) });
+      }));
   }
 
   function renderMenu(plan) {
@@ -1328,6 +1372,49 @@
     });
   }
 
+  /* מצלמה בתוך האפליקציה — לוכדת פריים בלי לצאת מהמסך, כדי שהמשתמש יישאר
+     במסך התזונה והתמונה תיוותר בזיכרון ותחושב ע"י ה-AI (בלי טעינה מחדש של האפליקציה). */
+  let camStream = null;
+  let camFacing = 'environment';
+  function stopCam() {
+    if (camStream) { camStream.getTracks().forEach(tr => tr.stop()); camStream = null; }
+  }
+  function closeCamera() {
+    stopCam();
+    const cam = $('#cam'); if (cam) cam.hidden = true;
+    const v = $('#cam-video'); if (v) v.srcObject = null;
+  }
+  async function startCamStream() {
+    stopCam();
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: camFacing } }, audio: false });
+    const v = $('#cam-video');
+    v.srcObject = camStream;
+    try { await v.play(); } catch (e) {}
+  }
+  async function openCamera() {
+    // אין תמיכה ב-getUserMedia → נפילה חזרה ל-input הרגיל (התנהגות קודמת)
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { $('#food-camera').click(); return; }
+    try { await startCamStream(); }
+    catch (e) { toast(t('camDenied')); $('#food-camera').click(); return; }
+    $('#cam-shot').setAttribute('aria-label', t('camShotAria'));
+    $('#cam-cancel').setAttribute('aria-label', t('camCancelAria'));
+    $('#cam-flip').setAttribute('aria-label', t('camFlipAria'));
+    $('#cam').hidden = false;
+  }
+  function captureCam() {
+    const v = $('#cam-video');
+    if (!v || !v.videoWidth) { closeCamera(); return; }
+    const c = document.createElement('canvas');
+    c.width = v.videoWidth; c.height = v.videoHeight;
+    c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+    closeCamera();
+    c.toBlob(blob => { if (blob) calcFromImage(blob); }, 'image/jpeg', 0.92);
+  }
+  async function flipCam() {
+    camFacing = camFacing === 'environment' ? 'user' : 'environment';
+    try { await startCamStream(); } catch (e) {}
+  }
+
   async function buildMenu() {
     const target = renderNutriTarget();
     if (!target) { toast(t('toastFillProfile')); return; }
@@ -1379,10 +1466,14 @@
       if (file) calcFromImage(file);
       e.target.value = ''; // מאפשר לבחור שוב את אותה תמונה
     };
-    $('#camera-btn').addEventListener('click', () => $('#food-camera').click());
+    $('#camera-btn').addEventListener('click', openCamera);
     $('#gallery-btn').addEventListener('click', () => $('#food-photo').click());
     $('#food-camera').addEventListener('change', onPhoto);
     $('#food-photo').addEventListener('change', onPhoto);
+    // בקרות המצלמה בתוך האפליקציה
+    $('#cam-shot').addEventListener('click', captureCam);
+    $('#cam-cancel').addEventListener('click', closeCamera);
+    $('#cam-flip').addEventListener('click', flipCam);
     document.addEventListener('excerly:profile', () => {
       renderNutriTarget();
       // עדכון היעד גם ברישומי היום כדי שהמחוון והממוצע יתעדכנו
@@ -1853,9 +1944,31 @@
     }
   }
 
+  /* ---------- מתג עיצוב: מודרני (Almanac) / קלאסי ---------- */
+  function applySkin(skin) {
+    document.documentElement.setAttribute('data-skin', skin === 'classic' ? 'classic' : 'almanac');
+  }
+  function initSkin() {
+    let cur = 'almanac';
+    try { if (localStorage.getItem('excerly.skin') === 'classic') cur = 'classic'; } catch (e) {}
+    applySkin(cur);
+    const btn = $('#skin-toggle');
+    if (!btn) return;
+    btn.setAttribute('aria-label', t('skinToggleAria'));
+    btn.setAttribute('title', t('skinToggleAria'));
+    btn.addEventListener('click', () => {
+      const now = document.documentElement.getAttribute('data-skin') === 'classic' ? 'classic' : 'almanac';
+      const next = now === 'classic' ? 'almanac' : 'classic';
+      try { localStorage.setItem('excerly.skin', next); } catch (e) {}
+      applySkin(next);
+      toast(t(next === 'classic' ? 'skinClassic' : 'skinAlmanac'));
+    });
+  }
+
   function init() {
     I18n.applyStatic();
     markLangButtons();
+    initSkin();
     initTabs();
     initInstall();
     $('#lang-switch').addEventListener('click', (e) => {
