@@ -21,7 +21,16 @@
     { n: ['קוסקוס'], per100: 112, portion: 150 },
     { n: ['חזה עוף', 'עוף', 'פרגית'], per100: 165, portion: 150 },
     { n: ['הודו'], per100: 135, portion: 150 },
-    { n: ['בשר', 'בקר', 'סטייק', 'אנטריקוט'], per100: 250, portion: 150 },
+    { n: ['בשר', 'בקר', 'סטייק', 'אנטריקוט', 'אנטרקוט'], per100: 250, portion: 150 },
+    // נתחי בקר (סלנג קצבים/על-האש ישראלי)
+    { n: ['אסאדו', 'שפונדרה', 'שפונדרות', 'צלעות בקר', 'צלעות', 'ספר ריבס', 'ספריבס'], per100: 320, portion: 200 },
+    { n: ['פיקניה', 'פיקנייה', 'שייטל', 'כובע השייטל'], per100: 215, portion: 200 },
+    { n: ['פילה בקר', 'פילה', 'פילה מדומה', 'טנדרלוין'], per100: 200, portion: 200 },
+    { n: ['סינטה', 'ריב איי', 'ריביי', 'טומהוק', 'דנוור', 'פלאנק', 'רוסטביף', 'בריסקט', 'חזה בקר', 'אוסובוקו', 'כתף בקר', 'צלי בקר', 'שריר', 'נתח קצבים', 'וייסבראטן'], per100: 250, portion: 200 },
+    { n: ['כבש', 'טלה', 'צלעות כבש', 'כתף כבש', 'שוק כבש'], per100: 290, portion: 200 },
+    { n: ['קבב', 'קבאב'], perItem: 110 },
+    { n: ['נקניקיה', 'נקניקיות', 'נקניק'], perItem: 250 },
+    { n: ['כבד', 'כבד עוף', 'כבד קצוץ'], per100: 165, portion: 120 },
     { n: ['קציצה', 'קציצות'], perItem: 120 },
     { n: ['שניצל'], perItem: 300 },
     { n: ['סלמון'], per100: 208, portion: 150 },
@@ -64,7 +73,7 @@
     { n: ['עוגה', 'עוגייה', 'עוגיות', 'מאפה', 'קרואסון'], perItem: 300 },
     { n: ['גלידה'], per100: 210, portion: 100 },
     { n: ['פיצה'], perItem: 285 },
-    { n: ['המבורגר'], perItem: 350 },
+    { n: ['המבורגר', 'חמבורגר', 'בורגר'], perItem: 350 },
     { n: ['שווארמה'], per100: 220, portion: 200 },
     { n: ['פלאפל'], perItem: 60 },
     { n: ['קורנפלקס', 'דגני בוקר', 'גרנולה'], per100: 380, portion: 40 },
@@ -80,6 +89,8 @@
   const EN_FOOD = {
     'אורז': 'Rice', 'פסטה': 'Pasta', 'קינואה': 'Quinoa', 'בורגול': 'Bulgur', 'קוסקוס': 'Couscous',
     'חזה עוף': 'Chicken', 'הודו': 'Turkey', 'בשר': 'Beef', 'קציצה': 'Meatballs', 'שניצל': 'Schnitzel',
+    'אסאדו': 'Asado (short ribs)', 'פיקניה': 'Picanha', 'פילה בקר': 'Beef fillet', 'סינטה': 'Sirloin/steak',
+    'כבש': 'Lamb', 'קבב': 'Kebab', 'נקניקיה': 'Sausage', 'כבד': 'Liver',
     'סלמון': 'Salmon', 'דג': 'Fish', 'טונה': 'Tuna', 'טופו': 'Tofu', 'ביצה': 'Egg',
     'לחם לבן': 'Bread', 'פיתה': 'Pita', 'לחמניות': 'Roll', 'מיונז': 'Mayonnaise', 'דוריטוס': 'Chips/snack',
     'קרקר': 'Crackers', 'תפוח אדמה': 'Potato', 'ציפס': 'Fries', 'סלט': 'Salad', 'ירקות': 'Vegetables',
@@ -108,6 +119,8 @@
   const ITEM_UNITS = ['יחידה', 'יחידות', 'מנה', 'מנות', 'פיתה', 'פיתות', 'כדור', 'כדורים',
     'piece', 'pieces', 'serving', 'servings', 'unit', 'units'];
   const NUM_WORDS = { 'חצי': 0.5, 'רבע': 0.25, 'שליש': 0.33, 'זוג': 2, 'half': 0.5, 'quarter': 0.25 };
+  // מילות תיאור/מדד שאינן מזון בפני עצמן (מתעלמים מהן, לא מסמנים כ"לא זוהה")
+  const NOISE = ['נתח', 'נתחי', 'חתיכת', 'חתיכה', 'חתיכות', 'עם', 'של', 'cut', 'piece', 'of', 'with'];
 
   const clean = t => t.replace(/[.,;:!?()"'״׳]/g, '').trim().toLowerCase();
   const PREPS = ['ב', 'ל', 'ה', 'מ', 'ו', 'כ', 'ש'];
@@ -166,7 +179,7 @@
     const s = String(name || '').toLowerCase();
     const has = (...w) => w.some(x => s.indexOf(x) !== -1);
     if (has('אורז', 'פסטה', 'ספגטי', 'נודלס', 'קינואה', 'בורגול', 'קוסקוס', 'לחם', 'טוסט', 'פיתה', 'לחמני', 'באגט', 'קרקר', 'מצה', 'תפוח אדמה', 'פירה', 'בטטה', 'ציפס', 'צ׳יפס', "צ'יפס", 'דגני', 'גרנולה', 'שיבולת', 'דייס', 'פנקייק', 'טורטיה', 'סוכר', 'דבש', 'סילאן')) return 'carb';
-    if (has('עוף', 'פרגית', 'הודו', 'בשר', 'בקר', 'סטייק', 'אנטריקוט', 'קציצ', 'שניצל', 'סלמון', 'דג', 'טונה', 'טופו', 'ביצה', 'ביצים', 'חביתה', 'אומלט')) return 'protein';
+    if (has('עוף', 'פרגית', 'הודו', 'בשר', 'בקר', 'סטייק', 'אנטריקוט', 'אנטרקוט', 'אסאדו', 'שפונדר', 'פיקני', 'שייטל', 'פילה', 'סינטה', 'ריב איי', 'ריביי', 'טומהוק', 'דנוור', 'בריסקט', 'אוסובוקו', 'כבש', 'טלה', 'קבב', 'קבאב', 'נקניק', 'כבד', 'צלעות', 'קציצ', 'שניצל', 'סלמון', 'דג', 'טונה', 'טופו', 'ביצה', 'ביצים', 'חביתה', 'אומלט')) return 'protein';
     if (has('גבינה צהובה', 'שמן', 'חמאה', 'טחינה', 'מיונ', 'חמאת בוטנים', 'שקד', 'אגוז', 'קשיו', 'בוטנים', 'אבוקדו')) return 'fat';
     if (has('חלב', 'יוגורט', 'יופלה', 'קוטג', 'גבינה לבנה')) return 'dairy';
     if (has('חומוס', 'עדשים', 'שעועית', 'פול', 'קטני')) return 'legume';
@@ -186,6 +199,8 @@
     let qty = null, unit = null, i = 0;
     while (i < tokens.length) {
       const t = tokens[i];
+      // מילת תיאור/רעש (למשל "נתח", "חתיכת") – מתעלמים
+      if (NOISE.indexOf(t) !== -1) { i++; continue; }
       // מספר
       const nm = t.match(/^(\d+(?:[.,]\d+)?)$/);
       if (nm) { qty = parseFloat(nm[1].replace(',', '.')); i++; continue; }
@@ -388,6 +403,13 @@
     ? ' Respond in English (name and note in English).'
     : ' החזר את name ואת note בעברית.';
 
+  // מילון נתחי בשר בסלנג קצבים/על-האש ישראלי, לעזור ל-AI לזהות ולאמוד נכון
+  const CUTS_GLOSSARY =
+    ' מונחי נתחי בשר ישראליים נפוצים (זהה אותם גם אחרי המילה "נתח"): ' +
+    'אסאדו/שפונדרה = צלעות בקר שמנות (~320 קק"ל ל-100 גרם); פיקניה = כובע השייטל (~215); ' +
+    'אנטריקוט/ריב איי (~290); פילה = פילה בקר רזה (~200); סינטה = סירלוין (~230); ' +
+    'דנוור/פלאנק/בריסקט/חזה בקר/אוסובוקו/כתף בקר/שריר = נתחי בקר (~230-280); כבש/טלה (~290).';
+
   const IMAGE_SYSTEM_BASE =
     'You are a precise nutrition analyzer. You received a photo of a meal. Identify the items and ' +
     'realistically estimate the total calories based on common portion sizes, considering the visible portion. ' +
@@ -404,14 +426,14 @@
     return normalizeEstimate(await callProxy(url, { action: 'estimate_image', image, lang: curLang() }));
   }
   async function estimateImageAI(image, key) {
-    return normalizeEstimate(await callClaude(key, IMAGE_SYSTEM_BASE + langLine(), imageContent(image), 1024));
+    return normalizeEstimate(await callClaude(key, IMAGE_SYSTEM_BASE + CUTS_GLOSSARY + langLine(), imageContent(image), 1024));
   }
 
   async function estimateAI(text, key) {
     const system = 'You are a nutrition assistant. Given a free-text description (in any language) of what ' +
       'someone ate, realistically estimate the total calories and macronutrients. Return JSON only, no extra text: ' +
       '{"total": number, "items": [{"name": string, "kcal": number, "carbs": number, "protein": number, "fat": number}], "note": string}. ' +
-      'carbs, protein and fat are grams for that item.' + langLine();
+      'carbs, protein and fat are grams for that item.' + CUTS_GLOSSARY + langLine();
     return normalizeEstimate(await callClaude(key, system, text, 1024));
   }
 
