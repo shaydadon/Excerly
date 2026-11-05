@@ -843,15 +843,24 @@
           </svg>
           <div class="player-core">
             <div class="player-anim">${exVisual(ex, true)}</div>
-            <div class="player-time" id="p-time">${fmtTime(player.remaining)}</div>
+            <div class="player-time iso-num" id="p-time" dir="ltr">${fmtTime(player.remaining)}</div>
+            <div class="player-time-cap">${t('playerStepLeft')}</div>
           </div>
         </div>
         <div class="player-name">${escapeHtml(L(ex.name))}</div>
-        <div>${escapeHtml(L(ex.area))}${hold !== '—' ? ' · ' + escapeHtml(hold) : ''}</div>
+        <div class="player-meta">${escapeHtml(L(ex.area))}</div>
+        ${hold !== '—' ? `<div class="player-hold">${t('playerHoldCue', { h: escapeHtml(hold) })}</div>` : ''}
+        <p class="player-clock-note">${t('playerClockNote')}</p>
         <button class="p-main wide" id="p-play" aria-label="${t('ariaPause')}">${t('ariaPause')}</button>
         <div class="player-controls">
-          <button class="p-ctrl" id="p-prev" aria-label="${t('ariaPrev')}">‹</button>
-          <button class="p-ctrl" id="p-next" aria-label="${t('ariaNext')}">›</button>
+          <button class="p-ctrl" id="p-prev" aria-label="${t('ariaPrev')}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M14 6 8 12l6 6"/></svg>
+            <span>${t('prevShort')}</span>
+          </button>
+          <button class="p-ctrl" id="p-next" aria-label="${t('ariaNext')}">
+            <span>${t('nextShort')}</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg>
+          </button>
         </div>
       </div>
       ${next ? `<div class="next-ex"><div><div class="section-hint">${t('ariaNext')}</div><b>${escapeHtml(L(next.name))}</b></div><div class="player-anim" style="width:54px;height:54px">${exVisual(next, false)}</div></div>` : ''}`;
@@ -1155,19 +1164,24 @@
         <button class="dm-del" data-id="${m.id}" aria-label="${t('removeMealAria')}" title="${t('removeMealAria')}">✕</button>
         <button class="dm-edit" data-id="${m.id}" aria-label="${t('editMealAria')}" title="${t('editMealAria')}">✎</button>
         <span class="dm-name">${escapeHtml(m.name)}${m.provenance && m.provenance.source === 'fdc' ? ' <span class="tag">USDA</span>' : ''}${m.provenance && m.provenance.source === 'tzameret' ? ' <span class="tag">צמרת</span>' : ''}${!m.provenance ? ' <span class="tag miss">' + t('microMissing') + '</span>' : ''}</span>
-        <span class="dm-kcal">${m.kcal == null ? '—' : m.kcal} ${t('goalUnit')}</span>
+        <span class="dm-kcal"><bdi class="iso-num" dir="ltr">${m.kcal == null ? '—' : m.kcal}</bdi><span>${t('goalUnit')}</span></span>
       </div>`).join('');
     let summary;
     if (target) {
       const v = N.verdict(total, target);
       const pct = Math.min(100, Math.round((total / target) * 100));
       const vLabel = t(v.key === 'over' ? 'vOver' : v.key === 'met' ? 'vMet' : 'vUnder');
-      const deltaTxt = v.key === 'over' ? t('dOver', { n: nf(v.delta) })
-        : v.key === 'under' ? t('dUnder', { n: nf(v.delta) }) : t('dMet');
+      const iso = n => '<bdi class="iso-num" dir="ltr">' + nf(n) + '</bdi>';
+      const deltaTxt = v.key === 'over' ? t('dOver', { n: iso(v.delta) })
+        : v.key === 'under' ? t('dUnder', { n: iso(v.delta) }) : t('dMet');
       summary = `
         <div class="nutri-summary" style="margin-top:10px">
           <div class="nutri-verdict" style="background:${v.color}">${vLabel}</div>
-          <div class="nutri-numbers">${t('ofTarget', { a: '<b>' + nf(total) + '</b>', b: nf(target), d: deltaTxt })}</div>
+          <div class="nutri-pair light">
+            <div class="pair-item"><bdi class="iso-num" dir="ltr">${nf(total)}</bdi><span>${t('ateLabel')}</span></div>
+            <div class="pair-item"><bdi class="iso-num" dir="ltr">${nf(target)}</bdi><span>${t('targetLabel')}</span></div>
+          </div>
+          <div class="nutri-numbers">${deltaTxt}</div>
         </div>
         <div class="nutri-bar"><span style="width:${pct}%;background:${v.color}"></span></div>`;
     } else {
@@ -1179,9 +1193,9 @@
     const fat = meals.reduce((s, m) => s + (m.fat || 0), 0);
     const macroRow = (carbs || protein || fat) ? `
       <div class="dm-macros">
-        <span class="dm-mac c"><b>${carbs}</b> ${t('grams')} ${t('carbs')}</span>
-        <span class="dm-mac p"><b>${protein}</b> ${t('grams')} ${t('protein')}</span>
-        <span class="dm-mac f"><b>${fat}</b> ${t('grams')} ${t('fat')}</span>
+        <span class="dm-mac c"><span>${t('carbs')}</span><bdi class="iso-num" dir="ltr">${carbs}</bdi><span>${t('grams')}</span></span>
+        <span class="dm-mac p"><span>${t('protein')}</span><bdi class="iso-num" dir="ltr">${protein}</bdi><span>${t('grams')}</span></span>
+        <span class="dm-mac f"><span>${t('fat')}</span><bdi class="iso-num" dir="ltr">${fat}</bdi><span>${t('grams')}</span></span>
       </div>` : '';
     box.innerHTML = `<div class="dm-title">${t('dayMealsTitle')}</div><div class="dm-hint">${t('editDayHint')}</div><div class="dm-list">${rows}</div>${macroRow}${summary}`;
     renderMicroSummary(meals);
@@ -1233,7 +1247,7 @@
       box.innerHTML = `<div class="nutri-need-profile">${t('needProfile')}</div>`;
       return null;
     }
-    box.innerHTML = `<div class="nutri-goal"><span class="nutri-goal-lbl">${t('goalLabel')}</span><span class="nutri-goal-val">${nf(target)} ${t('goalUnit')}</span></div>`;
+    box.innerHTML = `<div class="nutri-goal"><span class="nutri-goal-lbl">${t('goalLabel')}</span><span class="nutri-goal-val"><bdi class="iso-num" dir="ltr">${nf(target)}</bdi> <span>${t('goalUnit')}</span></span></div>`;
     return target;
   }
 
@@ -1276,7 +1290,7 @@
     const eP = estimateItems.reduce((s, i) => s + (i.protein || 0), 0);
     const eF = estimateItems.reduce((s, i) => s + (i.fat || 0), 0);
     const macroLine = estimateItems.length && (eC || eP || eF)
-      ? `<div class="dm-macros est"><span class="dm-mac c"><b>${eC}</b> ${t('grams')} ${t('carbs')}</span><span class="dm-mac p"><b>${eP}</b> ${t('grams')} ${t('protein')}</span><span class="dm-mac f"><b>${eF}</b> ${t('grams')} ${t('fat')}</span></div>`
+      ? `<div class="dm-macros est"><span class="dm-mac c"><span>${t('carbs')}</span><bdi class="iso-num" dir="ltr">${eC}</bdi><span>${t('grams')}</span></span><span class="dm-mac p"><span>${t('protein')}</span><bdi class="iso-num" dir="ltr">${eP}</bdi><span>${t('grams')}</span></span><span class="dm-mac f"><span>${t('fat')}</span><bdi class="iso-num" dir="ltr">${eF}</bdi><span>${t('grams')}</span></span></div>`
       : '';
     box.innerHTML = `
       <div class="est-head">
@@ -1315,7 +1329,7 @@
         <div class="menu-item">
           <div class="menu-slot">${m.label}</div>
           <div class="menu-name">${m.name}</div>
-          <div class="menu-kcal">${m.kcal} ${t('goalUnit')}</div>
+          <div class="menu-kcal"><bdi class="iso-num" dir="ltr">${m.kcal}</bdi><span>${t('goalUnit')}</span></div>
         </div>`).join('')}</div>
       <div class="menu-total">${plan.target ? t('menuTotal', { n: nf(plan.total), t: nf(plan.target) }) : t('menuTotalNoTarget', { n: nf(plan.total) })}</div>
       ${plan.source === 'ai' ? `<div class="nutri-src">${t('menuSrcAi')}</div>` : ''}
@@ -1988,7 +2002,13 @@
     const kn = window.ExcerlyNutrients ? ExcerlyNutrients.knownKcal(meals) : { total: meals.reduce((s, m) => s + (m.kcal || 0), 0) };
     const target = N.targetCalories();
     const nums = $('#nutri-hero-nums');
-    if (nums) nums.textContent = nf(kn.total || 0) + (target ? ' / ' + nf(target) : '');
+    if (nums) {
+      const eaten = '<div class="pair-item"><bdi class="iso-num" dir="ltr">' + nf(kn.total || 0) + '</bdi><span>' + t('ateLabel') + '</span></div>';
+      const goal = target
+        ? '<div class="pair-item"><bdi class="iso-num" dir="ltr">' + nf(target) + '</bdi><span>' + t('targetLabel') + '</span></div>'
+        : '<div class="pair-item"><bdi class="iso-num" dir="ltr">—</bdi><span>' + t('targetLabel') + '</span></div>';
+      nums.innerHTML = eaten + goal;
+    }
     const ring = $('#nutri-ring');
     const pct = target ? Math.max(6, Math.min(100, Math.round(((kn.total || 0) / target) * 100))) : 6;
     if (ring) ring.style.setProperty('--pct', String(pct));
@@ -2005,8 +2025,11 @@
     const keys = ['vitaminC', 'vitaminD', 'vitaminA', 'calcium', 'iron', 'folate', 'vitaminB12', 'potassium'];
     const rows = day.nutrients.filter(n => keys.indexOf(n.key) !== -1).map(n => {
       const label = I18n.lang === 'en' ? n.nameEn : n.nameHe;
-      const val = n.status === 'missing' || n.amount == null ? t('microMissing') : (n.amount + ' ' + n.unit + (n.status === 'partial' ? ' · ' + t('microPartial') : ''));
-      return '<div><span>' + label + '</span><b>' + val + '</b></div>';
+      const partial = n.status === 'partial' ? ' <span class="tag warn">' + t('microPartial') + '</span>' : '';
+      const val = n.status === 'missing' || n.amount == null
+        ? '<span class="micro-miss">' + t('microMissing') + '</span>'
+        : '<span class="micro-val"><bdi class="iso-num" dir="ltr">' + n.amount + '</bdi><span class="micro-unit">' + n.unit + '</span></span>';
+      return '<div class="micro-item"><span class="micro-name">' + label + partial + '</span>' + val + '</div>';
     }).join('');
     box.innerHTML = '<h3>' + t('microTitle') + '</h3><p class="section-hint">' + t('microCoverage', { n: day.fdcMeals, t: day.meals }) + '</p><div class="micro-list">' + rows + '</div>';
   }
