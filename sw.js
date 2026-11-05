@@ -1,5 +1,5 @@
 /* Excerly – Service Worker לתמיכה בעבודה לא מקוונת (PWA) */
-const CACHE = 'excerly-v47';
+const CACHE = 'excerly-v48';
 const EX_KEYS = ['neck','shoulders','arms','sidebend','twist','forwardfold','hamstring',
   'butterfly','quad','hipflexor','calf','catcow','cobra','child'];
 const EX_IMGS = EX_KEYS.flatMap((k) => [
@@ -14,6 +14,8 @@ const ASSETS = [
   'assets/js/data.js',
   'assets/js/animations.js',
   'assets/js/nutrition.js',
+  'assets/js/nutrients.js',
+  'assets/js/usda.js',
   'assets/js/workout.js',
   'assets/js/gcal.js',
   'assets/js/app.js',

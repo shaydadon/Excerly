@@ -379,7 +379,17 @@
           if (trailUnit && !afterIsFood) { q = parseFloat(tokens[j].replace(',', '.')); u = trailUnit; j += 2; }
         }
         const kcal = Math.round(kcalFor(m.food, q == null ? 1 : q, u));
-        if (kcal > 0) { const nm2 = foodLabel(m.food); items.push(Object.assign({ name: nm2, kcal }, macrosFor(nm2, kcal))); }
+        if (kcal > 0) {
+          const nm2 = foodLabel(m.food);
+          const qq = q == null ? 1 : q;
+          let grams = null, gramsUncertain = q == null || !u || u.type !== 'g';
+          if (u && u.type === 'g') grams = Math.round(qq * u.grams);
+          else if (m.food.portion) grams = Math.round(qq * m.food.portion);
+          items.push(Object.assign({
+            name: nm2, kcal, grams, gramsUncertain, source: 'estimate',
+            queryEn: EN_FOOD[m.food.n[0]] || null
+          }, macrosFor(nm2, kcal)));
+        }
         qty = null; unit = null; i = j;
       } else {
         if (t.length > 1) unmatched.push(t); // מילה לא מזוהה (תיאור/מזון חסר)
@@ -469,17 +479,22 @@
   /* ---------- נירמול תשובות ה-AI למבנה אחיד ---------- */
   function normalizeEstimate(out) {
     const items = (out.items || []).map(i => {
-      const kcal = Math.round(i.kcal || 0);
-      // אם ה-AI לא החזיר מקרו — נאמד מקומית לפי שם המזון
+      const kcal = i.kcal == null ? 0 : Math.round(Number(i.kcal) || 0);
       const hasMacro = i.carbs != null || i.protein != null || i.fat != null;
       const mac = hasMacro
         ? { carbs: Math.round(i.carbs || 0), protein: Math.round(i.protein || 0), fat: Math.round(i.fat || 0) }
         : macrosFor(i.name, kcal);
-      return Object.assign({ name: i.name, kcal }, mac);
+      const item = Object.assign({ name: i.name || '', kcal }, mac);
+      if (i.grams != null && isFinite(+i.grams)) item.grams = Math.round(+i.grams);
+      if (i.gramsUncertain || item.grams == null) item.gramsUncertain = true;
+      if (i.code != null) item.code = i.code;
+      if (i.source) item.source = i.source;
+      if (i.queryEn) item.queryEn = String(i.queryEn).slice(0, 80);
+      return item;
     });
     return {
-      total: Math.round(out.total || items.reduce((s, i) => s + i.kcal, 0)),
-      items, unmatched: [], note: out.note || '', source: 'ai'
+      total: Math.round(out.total || items.reduce((s, i) => s + (i.kcal || 0), 0)),
+      items, unmatched: out.unmatched || [], note: out.note || '', source: out.source || 'ai'
     };
   }
   function normalizeMenu(out, target) {

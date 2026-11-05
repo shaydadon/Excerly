@@ -2,19 +2,19 @@
 name: Excerly
 description: A calm, clarity-first home stretching & fitness journal — dark by default, one teal voice.
 colors:
-  bg: "#0e1116"
-  bg-soft: "#161b22"
-  card: "#1b2230"
-  card-2: "#222c3c"
-  line: "#2b3648"
-  text: "#eaf0f7"
-  muted: "#9aa7b8"
-  accent: "#35d0a5"
-  accent-2: "#4aa3ff"
-  accent-warm: "#ffb454"
-  danger: "#ef5f6b"
-  accent-ink: "#06231c"
-  fig: "#cdd8e6"
+  bg: "#F2EADC"
+  bg-soft: "#E7DFD0"
+  card: "#F7F3EA"
+  card-2: "#EFE8DC"
+  line: "#E0D5C6"
+  text: "#24211F"
+  muted: "#5C564E"
+  accent: "#B96D50"
+  accent-2: "#8C4E36"
+  accent-ink: "#7A4330"
+  accent-warm: "#B96D50"
+  danger: "#9C3B32"
+  fig: "#24211F"
 typography:
   display:
     fontFamily: '"Segoe UI", "Assistant", "Rubik", system-ui, -apple-system, sans-serif'

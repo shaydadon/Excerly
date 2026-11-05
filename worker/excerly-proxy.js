@@ -197,7 +197,8 @@ const LOOKUP_TOOL = {
 const ESTIMATE_TOOL_SYSTEM =
   'אתה מנתח תזונה מדויק המשתמש במאגר התזונה הלאומי (צמרת) של משרד הבריאות. פרק את תיאור הארוחה למרכיבים בודדים, ולכל מרכיב הערך כמות בגרמים לפי מנות נפוצות (העדף אומדן ישראלי). ' +
   'לכל מרכיב קרא ל-lookup_food ובחר את ה-code המתאים ביותר מהתוצאות. אם אין התאמה טובה, סמן source=estimate וספק בעצמך kcal,carbs,protein,fat. ' +
-  'בסיום החזר JSON בלבד, ללא טקסט לפני או אחרי: {"items":[{"name":string,"code":number|null,"grams":number,"source":"tzameret"|"estimate","kcal":number,"carbs":number,"protein":number,"fat":number}],"note":string}. ' +
+  'בסיום החזר JSON בלבד, ללא טקסט לפני או אחרי: {"items":[{"name":string,"queryEn":string,"code":number|null,"grams":number,"source":"tzameret"|"estimate","kcal":number,"carbs":number,"protein":number,"fat":number}],"note":string}. ' +
+  'queryEn הוא ביטוי חיפוש קצר באנגלית ל-FoodData Central (זיהוי בלבד). אל תמציא כמויות ויטמינים. ' +
   'עבור source=tzameret אין צורך לחשב מאקרו (השרת יחשב מה-code והגרמים); עבור source=estimate ספק את הערכים. name בעברית, note משפט קצר.' +
   CUTS_GLOSSARY_TOOL;
 const IMAGE_TOOL_SYSTEM =
@@ -258,12 +259,14 @@ function finalizeItems(parsed, tz) {
       const k = grams / 100;
       items.push({
         name: it.name || dbf.n, grams: Math.round(grams), code: dbf.c, source: 'tzameret',
+        queryEn: it.queryEn ? String(it.queryEn).slice(0, 80) : undefined,
         kcal: Math.round((dbf.kcal || 0) * k), carbs: Math.round((dbf.carb || 0) * k),
         protein: Math.round((dbf.prot || 0) * k), fat: Math.round((dbf.fat || 0) * k)
       });
     } else {
       items.push({
         name: it.name || '', grams: grams ? Math.round(grams) : undefined, source: 'estimate',
+        queryEn: it.queryEn ? String(it.queryEn).slice(0, 80) : undefined,
         kcal: Math.round(numOrNull(it.kcal) || 0), carbs: Math.round(numOrNull(it.carbs) || 0),
         protein: Math.round(numOrNull(it.protein) || 0), fat: Math.round(numOrNull(it.fat) || 0)
       });
@@ -313,11 +316,76 @@ async function incrementUsage(env, userId, day) {
   } catch (e) { return null; }
 }
 
+const fdcCache = new Map();
+const fdcHits = [];
+function fdcLimited(ip) {
+  const now = Date.now();
+  for (let i = fdcHits.length - 1; i >= 0; i--) if (now - fdcHits[i].t > 60000) fdcHits.splice(i, 1);
+  const n = fdcHits.filter(h => h.ip === ip).length;
+  if (n >= 30) return true;
+  fdcHits.push({ ip, t: now });
+  return false;
+}
+function fdcKey(env) {
+  const k = env && env.FDC_API_KEY && String(env.FDC_API_KEY).trim();
+  return { key: k || 'DEMO_KEY', keyMode: k ? 'private' : 'demo' };
+}
+async function handleFdc(body, env, origin, ip) {
+  if (fdcLimited(ip || 'anon')) return json({ error: 'rate_limited' }, 429, origin);
+  const cred = fdcKey(env);
+  const base = 'https://api.nal.usda.gov/fdc/v1';
+  try {
+    if (body.action === 'fdc_search') {
+      const q = String(body.query || '').trim().slice(0, 120);
+      if (!q) return json({ error: 'missing_query' }, 400, origin);
+      const pageSize = Math.max(1, Math.min(8, parseInt(body.pageSize, 10) || 6));
+      const path = '/foods/search?query=' + encodeURIComponent(q) + '&pageSize=' + pageSize +
+        '&dataType=' + encodeURIComponent('Foundation,SR Legacy') + '&api_key=' + encodeURIComponent(cred.key);
+      if (!fdcCache.has(path)) {
+        const r = await fetch(base + path);
+        const data = await r.json().catch(() => null);
+        if (r.status === 429) return json({ error: 'rate_limited', keyMode: cred.keyMode }, 429, origin);
+        if (!r.ok || !data) return json({ error: 'upstream', status: r.status, keyMode: cred.keyMode }, 502, origin);
+        fdcCache.set(path, data);
+      }
+      const data = fdcCache.get(path);
+      const foods = (data.foods || []).map(f => ({
+        fdcId: f.fdcId, description: f.description, dataType: f.dataType,
+        brandOwner: f.brandOwner || null, brandName: f.brandName || null
+      }));
+      return json({ foods, totalHits: data.totalHits || foods.length, keyMode: cred.keyMode }, 200, origin);
+    }
+    if (body.action === 'fdc_food') {
+      const id = parseInt(body.fdcId, 10);
+      if (!id) return json({ error: 'bad_id' }, 400, origin);
+      const path = '/food/' + id + '?api_key=' + encodeURIComponent(cred.key);
+      if (!fdcCache.has(path)) {
+        const r = await fetch(base + path);
+        const data = await r.json().catch(() => null);
+        if (r.status === 429) return json({ error: 'rate_limited', keyMode: cred.keyMode }, 429, origin);
+        if (!r.ok || !data) return json({ error: 'upstream', status: r.status, keyMode: cred.keyMode }, 502, origin);
+        fdcCache.set(path, data);
+      }
+      return json({ food: fdcCache.get(path), keyMode: cred.keyMode }, 200, origin);
+    }
+  } catch (e) {
+    return json({ error: 'offline' }, 502, origin);
+  }
+  return json({ error: 'unknown_action' }, 400, origin);
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || '';
     if (request.method === 'OPTIONS') return new Response(null, { headers: corsHeaders(origin) });
     if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405, origin);
+
+    let body;
+    try { body = await request.json(); }
+    catch (e) { return json({ error: 'Bad JSON body' }, 400, origin); }
+    if (body && (body.action === 'fdc_search' || body.action === 'fdc_food')) {
+      return handleFdc(body, env, origin, request.headers.get('CF-Connecting-IP') || 'anon');
+    }
 
     // הגבלת קצב לכל כתובת IP (מגן על המפתח מפני שימוש-יתר).
     // עדיפות ל-Durable Object (מונה עקבי בכל הקצה); גיבוי – הגבלה בזיכרון.
@@ -335,10 +403,6 @@ export default {
     if (limited) return json({ error: 'rate_limited', detail: 'Too many requests. Please wait a minute and try again.' }, 429, origin);
 
     if (!env.ANTHROPIC_API_KEY) return json({ error: 'Server missing ANTHROPIC_API_KEY' }, 500, origin);
-
-    let body;
-    try { body = await request.json(); }
-    catch (e) { return json({ error: 'Bad JSON body' }, 400, origin); }
 
     // ----- מכסת AI לכל משתמש -----
     const token = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '') || body.token || '';
