@@ -65,7 +65,7 @@
 
   const figGender = () => (figPref === 'female' ? 'female' : 'male');
   const GYM_FILE = {
-    squat: 'gym-squat', legPress: 'gym-legpress', legCurl: 'gym-legcurl',
+    squat: 'gym-squat', legPress: 'gym-legpress', legCurl: 'gym-legcurl', legExt: 'gym-legext',
     calf: 'gym-calf', hipThrust: 'gym-hipthrust', lunge: 'gym-lunge',
     bench: 'gym-bench', inclineDb: 'gym-inclinedb', fly: 'gym-fly',
     ohp: 'gym-ohp', lateral: 'gym-lateral', pushdown: 'gym-pushdown',
@@ -1782,6 +1782,7 @@
     const days = (plan.days || []).map((d, i) => {
       const rows = (d.exercises || []).map(e => `
         <div class="pex">
+          <span class="ex-thumb">${gymVisual(e)}</span>
           <div class="pex-name">${escapeHtml(e.name)}</div>
           <div class="pex-meta">
             <span>${escapeHtml(e.sets)}×${escapeHtml(e.reps)}</span>

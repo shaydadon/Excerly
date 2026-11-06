@@ -403,6 +403,8 @@ button.train-row { cursor: pointer; }
 .ex-finish { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: #fff; cursor: pointer; }
 .ex-finish.on { background: var(--ok); color: #fff; border-color: var(--ok); }
 .plan-day, .saved-plan, .pex { border-top: 1px solid var(--line); padding: 8px 0; }
+.pex { display: flex; gap: 8px; align-items: center; }
+.pex .pex-name { flex: 1; }
 .sheet-hero, .detail-stage, .gym-hero {
   background: var(--card-2); border-radius: 18px; min-height: 120px; display: grid; place-items: center; margin-bottom: 8px;
 }
