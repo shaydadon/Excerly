@@ -51,13 +51,28 @@
   let viewDate = new Date();        // חודש מוצג בלוח
   let journalDate = new Date();
   let pendingSlot = null;
+  let logSlot = null;
   let confirmDraft = [];
   let trainPlace = 'home';
   try { trainPlace = localStorage.getItem('excerly.trainPlace') === 'gym' ? 'gym' : 'home'; } catch (e) {}
+  // העדפת איורי התרגילים. נפרדת ממין הפרופיל שמשמש רק ל-BMI.
+  let figPref = 'male';
+  try {
+    const savedFig = localStorage.getItem('excerly.fig');
+    if (savedFig === 'female' || savedFig === 'male') figPref = savedFig;
+  } catch (e) {}
   const today = new Date();
 
-  // מגדר הדמות באנימציות – לפי הפרופיל (ברירת מחדל: זכר)
-  const figGender = () => (load(STORE.profile, {}).gender === 'female' ? 'female' : 'male');
+  const figGender = () => (figPref === 'female' ? 'female' : 'male');
+  const GYM_FILE = {
+    squat: 'gym-squat', legPress: 'gym-legpress', legCurl: 'gym-legcurl', legExt: 'gym-legext',
+    calf: 'gym-calf', hipThrust: 'gym-hipthrust', lunge: 'gym-lunge',
+    bench: 'gym-bench', inclineDb: 'gym-inclinedb', fly: 'gym-fly',
+    ohp: 'gym-ohp', lateral: 'gym-lateral', pushdown: 'gym-pushdown',
+    pulldown: 'gym-pulldown', row: 'gym-row', facePull: 'gym-facepull',
+    curl: 'gym-curl', hammer: 'gym-hammer', rearDelt: 'gym-reardelt',
+    plank: 'gym-plank', cardio: 'gym-cardio'
+  };
 
   /* ---------- שכבת ויזואל לתרגיל: Lottie (אם הוגדר) או SVG מובנה ----------
      אם קיים קובץ Lottie לתרגיל ב-D.LOTTIE – מציגים אותו במסכים הגדולים
@@ -69,17 +84,44 @@
     if (typeof e === 'string') return e;
     return e[figGender()] || e.male || e.female || null;
   }
-  // תמונת אווטאר סטטית (זכר/נקבה) אם קיימת לתרגיל
-  function exImg(ex) {
-    if (!(D.EXIMG || {})[ex.animation]) return null;
-    const g = figGender() === 'female' ? 'f' : 'm';
-    return `assets/exercise-img/${ex.animation}-${g}.png`;
+  function missingFrame() {
+    return `<span class="ex-missing" role="img" aria-label="${escapeHtml(t('figMissing'))}">${escapeHtml(t('figMissing'))}</span>`;
   }
-  // מחזיר HTML לויזואל התרגיל: Lottie (מסך גדול) > תמונה סטטית > דמות SVG.
+  // תמונת תרגיל ביתי שאומתה. תרגיל בלי תמונה מאומתת לא נופל לדמות הכחולה.
+  function exImg(ex) {
+    if (!ex || !(D.EXIMG || {})[ex.animation]) return null;
+    const g = figGender() === 'female' ? 'f' : 'm';
+    return `assets/exercise-img/${ex.animation}-${g}.jpg`;
+  }
+  function gymIdOf(ex) {
+    if (!ex) return null;
+    if (ex.id && (W.EX || {})[ex.id]) return ex.id;
+    const name = typeof ex.name === 'string' ? ex.name : '';
+    const bank = W.EX || {};
+    for (const k of Object.keys(bank)) {
+      if (bank[k].he === name || bank[k].en === name) return k;
+    }
+    return null;
+  }
+  function gymImg(id) {
+    const file = GYM_FILE[id];
+    if (!file) return null;
+    const g = figGender() === 'female' ? 'f' : 'm';
+    return `assets/exercise-img/${file}-${g}.jpg`;
+  }
+  function gymVisual(ex) {
+    const id = gymIdOf(ex);
+    const img = id ? gymImg(id) : null;
+    if (img) return `<img class="ex-photo" src="${img}" alt="" loading="lazy">`;
+    if (id) return missingFrame();
+    return '';
+  }
+  // מחזיר HTML לויזואל התרגיל: Lottie (מסך גדול) > תמונה מאומתת > מסגרת חסרה.
   function exVisual(ex, big) {
     if (big && lottieSrc(ex)) return `<div class="ex-lottie" data-lottie="${ex.animation}"></div>`;
     const img = exImg(ex);
     if (img) return `<img class="ex-photo" src="${img}" alt="" loading="lazy">`;
+    if (ex && ex.animation && D.EXERCISES[ex.animation]) return missingFrame();
     return A.svgFor(ex.animation, figGender());
   }
   // אתחול נגני Lottie בתוך אלמנט לאחר שהוזרק ל-DOM
@@ -559,10 +601,13 @@
       }
       return `<div class="ex-item ${ed ? 'done' : ''}">
         <div class="gym-ex">
-          <span class="ex-name">${escapeHtml(e.name)}</span>
-          <span class="ex-reps">${escapeHtml(e.sets)}×${escapeHtml(e.reps)}${e.rest && e.rest !== '—' ? ' · ⏱ ' + escapeHtml(e.rest) : ''}</span>
-          ${progLine}
-          ${e.note ? `<span class="ex-area">${escapeHtml(e.note)}</span>` : ''}
+          <span class="ex-thumb">${gymVisual(e)}</span>
+          <span class="ex-info">
+            <span class="ex-name">${escapeHtml(e.name)}</span>
+            <span class="ex-reps">${escapeHtml(e.sets)}×${escapeHtml(e.reps)}${e.rest && e.rest !== '—' ? ' · ⏱ ' + escapeHtml(e.rest) : ''}</span>
+            ${progLine}
+            ${e.note ? `<span class="ex-area">${escapeHtml(e.note)}</span>` : ''}
+          </span>
         </div>
         <button class="ex-finish ${ed ? 'on' : ''}" data-gid="${id}"
           aria-label="${ed ? t('finishUnmark') : t('finishMark')}" title="${ed ? t('finishUnmark') : t('finishMark')}">${ed ? '✓' : '+'}</button>
@@ -606,7 +651,7 @@
       <div class="sheet-head">
         <div class="row">
           <div class="sheet-head-main">
-            <div class="gym-hero">🏋️</div>
+            ${(() => { const p0 = day.exercises[0] ? gymImg(gymIdOf(day.exercises[0])) : null; return p0 ? `<img class="sheet-hero" src="${p0}" alt="" />` : `<div class="gym-hero">${missingFrame()}</div>`; })()}
             <div>
               <div class="sheet-date">${dayLabel}</div>
               <div class="sheet-title">${escapeHtml(day.name || sched.plan.title || t('gymDayChip'))}</div>
@@ -1066,7 +1111,8 @@
   function backfillMacros(arr) {
     let changed = false;
     const out = (arr || []).map(m => {
-      if (m && m.carbs == null && N.macrosFor) { changed = true; return Object.assign({}, m, N.macrosFor(m.name, m.kcal || 0)); }
+      if (!m || m.components || m.kcal == null || m.kcalIncomplete) return m;
+      if (m.carbs == null && N.macrosFor) { changed = true; return Object.assign({}, m, N.macrosFor(m.name, m.kcal || 0)); }
       return m;
     });
     return { out, changed };
@@ -1157,9 +1203,10 @@
       renderMicroSummary(meals);
       return;
     }
-    const total = meals.reduce((s, m) => s + m.kcal, 0);
+    const kn = window.ExcerlyNutrients ? ExcerlyNutrients.knownKcal(meals) : { total: meals.reduce((s, m) => s + (m.kcal || 0), 0), incomplete: false };
+    const total = kn.total;
     const target = N.targetCalories();
-    const rows = meals.map(m => `
+    const rows = meals.map(m => m.components ? renderLogCard(m) : `
       <div class="dm-row" data-id="${m.id}">
         <button class="dm-del" data-id="${m.id}" aria-label="${t('removeMealAria')}" title="${t('removeMealAria')}">✕</button>
         <button class="dm-edit" data-id="${m.id}" aria-label="${t('editMealAria')}" title="${t('editMealAria')}">✎</button>
@@ -1182,6 +1229,7 @@
             <div class="pair-item"><bdi class="iso-num" dir="ltr">${nf(target)}</bdi><span>${t('targetLabel')}</span></div>
           </div>
           <div class="nutri-numbers">${deltaTxt}</div>
+          ${kn.incomplete ? '<p class="section-hint">' + t('logPending') + '</p>' : ''}
         </div>
         <div class="nutri-bar"><span style="width:${pct}%;background:${v.color}"></span></div>`;
     } else {
@@ -1202,6 +1250,103 @@
     box.classList.add('show');
     box.querySelectorAll('.dm-del').forEach(b => b.addEventListener('click', () => removeMeal(b.dataset.id)));
     box.querySelectorAll('.dm-edit').forEach(b => b.addEventListener('click', () => editDayMeal(b.dataset.id)));
+    bindLogCards(box);
+  }
+
+  function placeholderSvg() {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 10h16v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 10c0-3 2-5 4-5s4 2 4 5"/></svg>';
+  }
+  function renderLogCard(m) {
+    const MC = window.ExcerlyMealCard;
+    const slotName = t(m.slot === 'lunch' ? 'slotLunch' : m.slot === 'dinner' ? 'slotDinner' : m.slot === 'snack' ? 'slotSnack' : 'slotBreakfast');
+    const photo = m.photoKind === 'user' && m.photo
+      ? '<img class="log-photo" alt="' + t('userPhotoCap') + '" src="' + m.photo + '"/><span class="log-cap">' + t('userPhotoCap') + '</span>'
+      : '<div class="log-ph">' + placeholderSvg() + '</div><span class="log-cap">' + t('placeholderCap') + '</span>';
+    const comps = (m.components || []).map(c => {
+      const q = c.questionKey === 'needGrams' ? t('qNeedGrams')
+        : c.questionKey === 'noMatch' ? t('qNoMatch')
+        : c.questionKey === 'whichFood' ? t('qWhich')
+        : c.questionKey === 'unavailable' ? t('qUnavailable') : '';
+      const known = MC && MC.componentConfirmed(c);
+      const vals = known
+        ? '<div class="micro-val"><bdi class="iso-num" dir="ltr">' + c.kcal + '</bdi><span>' + t('goalUnit') + '</span></div>'
+        : '';
+      const choices = (c.options || []).map(o =>
+        '<button type="button" class="btn btn-ghost log-choice" data-meal="' + m.id + '" data-comp="' + c.id + '" data-fdc="' + o.fdcId + '">' + escapeHtml(o.description) + '</button>'
+      ).join('');
+      const grams = (c.questionKey === 'needGrams' || (c.matchState === 'matched' && c.per100g))
+        ? '<form class="log-q" data-meal="' + m.id + '" data-comp="' + c.id + '"><input class="log-grams" type="number" min="1" step="1" inputmode="decimal" aria-label="' + t('gramsLabel') + '" value="' + (c.grams || '') + '"/><button class="btn btn-primary" type="submit">' + t('saveMealAria') + '</button></form>'
+        : '';
+      const retry = c.questionKey === 'unavailable'
+        ? '<button type="button" class="btn btn-ghost log-retry" data-meal="' + m.id + '">' + t('retryMatch') + '</button>' : '';
+      const portion = c.quantityState === 'usda-portion' ? '<div class="log-cap">' + t('portionNote') + '</div>' : '';
+      return '<div class="log-comp"><b>' + escapeHtml(c.name) + '</b>' + (c.candidate && known ? '<div class="log-cap">USDA · ' + escapeHtml(c.candidate.description) + '</div>' : '') + portion + (q ? '<div class="section-hint">' + q + '</div>' : '') + vals + choices + grams + retry + '</div>';
+    }).join('');
+    const banner = m.status === 'confirmed' ? '' : '<div class="tag warn">' + t(m.status === 'partial' ? 'logPartial' : 'logPending') + '</div>';
+    const kcal = m.kcal == null ? '—' : m.kcal;
+    return '<article class="log-card ' + (m.status === 'confirmed' ? '' : 'pending') + '" data-id="' + m.id + '"><div>' + photo + '</div><div><div class="log-actions"><button type="button" class="dm-del" data-id="' + m.id + '" aria-label="' + t('removeMealAria') + '">✕</button></div><div class="log-slot">' + slotName + '</div><div class="log-name">' + escapeHtml(m.name) + '</div>' + banner + '<div class="micro-val"><bdi class="iso-num" dir="ltr">' + kcal + '</bdi><span>' + t('goalUnit') + '</span></div>' + comps + '</div></article>';
+  }
+  function bindLogCards(box) {
+    box.querySelectorAll('.log-q').forEach(form => form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const grams = form.querySelector('.log-grams').value;
+      answerComponentGrams(form.dataset.meal, form.dataset.comp, grams);
+    }));
+    box.querySelectorAll('.log-choice').forEach(btn => btn.addEventListener('click', () => {
+      chooseComponentMatch(btn.dataset.meal, btn.dataset.comp, btn.dataset.fdc);
+    }));
+    box.querySelectorAll('.log-retry').forEach(btn => btn.addEventListener('click', () => {
+      resolveStoredMeal(dateKey(new Date()), btn.dataset.meal);
+    }));
+  }
+  function answerComponentGrams(mealId, compId, grams) {
+    const key = dateKey(new Date());
+    const MC = window.ExcerlyMealCard;
+    if (!MC) return;
+    const next = getMeals(key).map(m => {
+      if (m.id !== mealId) return m;
+      const out = MC.applyComponentGrams(m, compId, grams, window.ExcerlyNutrients);
+      return out.meal || m;
+    });
+    setMeals(key, next);
+    refreshNutrition();
+  }
+  function chooseComponentMatch(mealId, compId, fdcId) {
+    const key = dateKey(new Date());
+    const MC = window.ExcerlyMealCard;
+    if (!MC) return;
+    const next = getMeals(key).map(m => m.id === mealId ? MC.applyComponentChoice(m, compId, fdcId) : m);
+    setMeals(key, next);
+    refreshNutrition();
+    const meal = next.find(m => m.id === mealId);
+    const comp = meal && (meal.components || []).find(c => c.id === compId);
+    if (comp && comp.matchState === 'matched' && !comp.per100g && window.ExcerlyUsda) {
+      ExcerlyUsda.foodDetail(fdcId).then(det => {
+        if (!det.ok) return;
+        const again = getMeals(key).map(m => {
+          if (m.id !== mealId) return m;
+          const copy = Object.assign({}, m, { components: m.components.map(c => Object.assign({}, c)) });
+          const target = copy.components.find(c => c.id === compId);
+          if (target) target.per100g = det.per100g;
+          return MC.rollup(copy);
+        });
+        setMeals(key, again);
+        refreshNutrition();
+      });
+    }
+  }
+  function resolveStoredMeal(key, id) {
+    const MC = window.ExcerlyMealCard;
+    const meal = getMeals(key).find(m => m.id === id);
+    if (!MC || !meal) return;
+    const api = window.ExcerlyUsda ? {
+      search: (q) => ExcerlyUsda.searchFoods(q, q),
+      detail: (fdcId) => ExcerlyUsda.foodDetail(fdcId)
+    } : null;
+    MC.resolveMeal(meal, api, window.ExcerlyNutrients).then(next => {
+      setMeals(key, getMeals(key).map(m => m.id === id ? next : m));
+      refreshNutrition();
+    }).catch(() => {});
   }
 
   // תיקון פריט שכבר נרשם ליום (שם + קלוריות) — כי ה-AI יכול לטעות
@@ -1357,26 +1502,43 @@
     box.hidden = false;
   }
 
+  function currentLogSlot() {
+    if (logSlot) return logSlot;
+    return window.ExcerlyMealCard ? ExcerlyMealCard.slotForHour(new Date().getHours()) : 'breakfast';
+  }
+  function markSlotChips() {
+    const slot = currentLogSlot();
+    document.querySelectorAll('#slot-toggle button').forEach(b => b.classList.toggle('on', b.dataset.slot === slot));
+  }
+  function persistMealCard(meal) {
+    const key = dateKey(new Date());
+    const arr = getMeals(key).slice();
+    const idx = arr.findIndex(m => m.id === meal.id);
+    if (idx >= 0) arr[idx] = meal; else arr.push(meal);
+    setMeals(key, arr);
+    refreshNutrition();
+    return key;
+  }
+  function logTextMeal(text, photo) {
+    const MC = window.ExcerlyMealCard;
+    if (!MC) return;
+    const meal = MC.createPending({
+      id: uid(),
+      text: text,
+      slot: currentLogSlot(),
+      photo: photo || null
+    });
+    const key = persistMealCard(meal);
+    const input = $('#food-text');
+    if (input) input.value = '';
+    clearPhotoResult();
+    resolveStoredMeal(key, meal.id);
+  }
   async function calcFood() {
-    const target = renderNutriTarget();
-    if (!target) { toast(t('toastFillProfile')); return; }
     const text = $('#food-text').value.trim();
     if (!text) { toast(t('toastWriteFood')); return; }
-    const prov = aiProvider();
-    const btn = $('#calc-food');
-    let res;
-    if (prov.mode !== 'local') {
-      btn.disabled = true; btn.textContent = t('calcBtnBusy');
-      try {
-        res = prov.mode === 'proxy'
-          ? await N.estimateViaProxy(text, prov.url)
-          : await N.estimateAI(text, prov.key);
-      } catch (e) { if (!aiErrToast(e)) toast(t('toastAiErrLocal')); res = N.estimateLocal(text); }
-      btn.disabled = false; btn.textContent = t('calcBtn');
-    } else {
-      res = N.estimateLocal(text);
-    }
-    openFoodConfirm(res);
+    const img = document.querySelector('#photo-preview img');
+    logTextMeal(text, img ? img.getAttribute('src') : null);
   }
 
   // כיווץ תמונה בצד הלקוח לפני שליחה ל-AI (חוסך תעבורה וזמן)
@@ -1405,9 +1567,18 @@
   }
 
   async function calcFromImage(file) {
-    const target = renderNutriTarget();
-    if (!target) { toast(t('toastFillProfile')); return; }
     const prov = aiProvider();
+    const MC = window.ExcerlyMealCard;
+    let pendingId = null;
+    let key = dateKey(new Date());
+    if (MC) {
+      let preview = null;
+      try { preview = await fileToResizedDataURL(file); } catch (e) { preview = null; }
+      const meal = MC.createPending({ id: uid(), text: t('photoBtnBusy'), slot: currentLogSlot(), photo: preview });
+      meal.components = [];
+      key = persistMealCard(meal);
+      pendingId = meal.id;
+    }
     if (prov.mode === 'local') {
       toast(t('toastNeedAiPhoto'));
       $('#ai-settings').open = true;
@@ -1435,7 +1606,21 @@
       return;
     }
     setPhotoBusy(false);
-    if (myReq !== photoReqId) return; // המשתמש הסיר את התמונה בזמן הניתוח
+    if (myReq !== photoReqId) return;
+    if (pendingId && window.ExcerlyMealCard) {
+      const comps = ExcerlyMealCard.splitComponents((res.items || []).map(i => i.name).filter(Boolean).join(' עם '));
+      (res.items || []).forEach((it, idx) => {
+        if (!comps[idx]) return;
+        comps[idx].name = it.name || comps[idx].name;
+        if (it.queryEn) comps[idx].queryEn = it.queryEn;
+        comps[idx].grams = null;
+        comps[idx].quantityState = 'unknown';
+      });
+      const cur = getMeals(key).map(m => m.id === pendingId ? Object.assign({}, m, { name: (res.items || []).map(i => i.name).join(' · ') || m.name, components: comps.length ? comps : m.components }) : m);
+      setMeals(key, cur);
+      resolveStoredMeal(key, pendingId);
+      return;
+    }
     openFoodConfirm(res);
   }
 
@@ -1546,6 +1731,15 @@
     updateAiBadge();
 
     $('#calc-food').addEventListener('click', calcFood);
+    const slots = $('#slot-toggle');
+    if (slots) slots.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b || !b.dataset.slot) return;
+      logSlot = b.dataset.slot;
+      pendingSlot = logSlot;
+      markSlotChips();
+    });
+    markSlotChips();
     $('#build-menu').addEventListener('click', buildMenu);
     const onPhoto = (e) => {
       const file = e.target.files && e.target.files[0];
@@ -1588,6 +1782,7 @@
     const days = (plan.days || []).map((d, i) => {
       const rows = (d.exercises || []).map(e => `
         <div class="pex">
+          <span class="ex-thumb">${gymVisual(e)}</span>
           <div class="pex-name">${escapeHtml(e.name)}</div>
           <div class="pex-meta">
             <span>${escapeHtml(e.sets)}×${escapeHtml(e.reps)}</span>
@@ -1992,6 +2187,8 @@
     ).join('');
     box.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
       pendingSlot = b.dataset.slot;
+      logSlot = b.dataset.slot;
+      markSlotChips();
       setTab('nutrition');
       const input = $('#food-text');
       if (input) { input.focus(); input.placeholder = t(b.dataset.slot === 'breakfast' ? 'slotBreakfast' : b.dataset.slot === 'lunch' ? 'slotLunch' : b.dataset.slot === 'dinner' ? 'slotDinner' : 'slotSnack'); }
@@ -2016,6 +2213,11 @@
     const ht = $('#home-target'); if (ht) ht.textContent = target ? nf(target) : '—';
     const note = $('#home-nutri-note');
     if (note) note.textContent = !target ? t('needProfile') : (kn.incomplete ? t('kcalPartial') : t('kcalLive'));
+    const inc = $('#nutri-incomplete');
+    if (inc) {
+      inc.hidden = !kn.incomplete;
+      inc.textContent = !kn.incomplete ? '' : (kn.total > 0 ? t('logPartial') : t('logPending'));
+    }
   }
   function renderMicroSummary(meals) {
     const box = $('#micro-summary');
@@ -2086,26 +2288,53 @@
     const add = $('#journal-add', box);
     if (add) add.addEventListener('click', () => setTab('nutrition'));
   }
+  function heroMedia(html) {
+    return html || ('<div class="train-hero-missing">' + missingFrame() + '</div>');
+  }
+  function trainRows(rows) {
+    return '<section class="train-progress"><h3>' + escapeHtml(t('progressTitle')) + '</h3><div class="ex-list">' + rows + '</div></section>';
+  }
   function renderTrainSpot() {
     const box = $('#train-spot');
     if (!box) return;
     const tog = $('#place-toggle');
     if (tog) tog.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.place === trainPlace));
     const now = new Date();
+    const key = dateKey(now);
     const prog = D.programForDate(now);
     if (trainPlace === 'gym') {
       const gym = scheduledDay(now);
       if (!gym) { box.innerHTML = '<div class="empty">' + t('planHint') + '</div>'; return; }
-      const ex0 = (gym.day.exercises || [])[0];
-      const name = ex0 && ex0.name ? (typeof ex0.name === 'string' ? ex0.name : L(ex0.name)) : (gym.day.name || '');
-      box.innerHTML = '<article class="train-hero"><div class="pad"><h3>' + escapeHtml(gym.day.name || t('myPlan')) + '</h3><div>' + escapeHtml(name) + '</div><button type="button" class="btn btn-primary" id="train-open">' + t('startWorkoutShort') + '</button></div><div class="pad"></div></article>';
+      const list = gym.day.exercises || [];
+      const first = list[0];
+      const photo = first ? gymImg(gymIdOf(first)) : null;
+      const media = photo ? '<img alt="" src="' + photo + '">' : heroMedia('');
+      const doneN = list.filter((_, i) => isExDone(key, 'gym:' + gym.dayIdx + ':' + i)).length;
+      const rows = list.map((e, i) => {
+        const ed = isExDone(key, 'gym:' + gym.dayIdx + ':' + i);
+        const label = typeof e.name === 'string' ? e.name : L(e.name);
+        return '<div class="train-row"><span class="ex-thumb">' + gymVisual(e) + '</span><span class="ex-info"><span class="ex-name">' + escapeHtml(label) + '</span><span class="ex-reps">' + escapeHtml(e.sets) + ' × ' + escapeHtml(e.reps) + '</span></span><span class="train-check' + (ed ? ' on' : '') + '" aria-hidden="true">' + (ed ? '✓' : '') + '</span></div>';
+      }).join('');
+      box.innerHTML = '<article class="train-hero"><div class="pad"><h3>' + escapeHtml(gym.day.name || t('myPlan')) + '</h3><div class="train-count">' + escapeHtml(t('minutesChip', { n: gym.day.minutes || '' })) + '</div><div class="train-count">' + escapeHtml(t('exCount', { n: list.length })) + '</div><div class="train-count">' + escapeHtml(t('progressChip', { d: doneN, n: list.length })) + '</div><button type="button" class="btn btn-primary" id="train-open">' + t('startWorkoutShort') + '</button></div>' + media + '</article>' + trainRows(rows);
       const b = $('#train-open', box); if (b) b.addEventListener('click', () => openSheet(now));
       return;
     }
-    const ex = prog.exercises && prog.exercises[0] ? D.EXERCISES[prog.exercises[0]] : null;
-    const img = ex ? exImg(ex) : '';
-    box.innerHTML = '<article class="train-hero"><div class="pad"><h3>' + escapeHtml(L(prog.title)) + '</h3><div>' + escapeHtml(D.estimatedMinutes(prog) + ' ' + t('minWord')) + '</div><button type="button" class="btn btn-primary" id="train-open">' + t('startWorkoutShort') + '</button></div><img alt="" src="' + (img || '') + '"/></article>';
+    const ids = (prog && prog.exercises) || [];
+    const first = ids[0] ? D.EXERCISES[ids[0]] : null;
+    const photo = first ? exImg(first) : null;
+    const media = photo ? '<img alt="" src="' + photo + '">' : heroMedia('');
+    const mins = D.estimatedMinutes(prog);
+    const doneN = doneCount(prog, key);
+    const rows = ids.map(id => {
+      const ex = D.EXERCISES[id];
+      const ed = isExDone(key, id);
+      return '<button type="button" class="train-row" data-ex="' + id + '"><span class="ex-thumb">' + exVisual(ex, false) + '</span><span class="ex-info"><span class="ex-name">' + escapeHtml(L(ex.name)) + '</span><span class="ex-reps">' + escapeHtml(L(ex.reps)) + '</span></span><span class="train-check' + (ed ? ' on' : '') + '" aria-hidden="true">' + (ed ? '✓' : '') + '</span></button>';
+    }).join('');
+    box.innerHTML = '<article class="train-hero"><div class="pad"><h3>' + escapeHtml(L(prog.title)) + '</h3><div class="train-count">' + escapeHtml(t('minutesChip', { n: mins })) + '</div><div class="train-count">' + escapeHtml(t('exCount', { n: ids.length })) + '</div><div class="train-count">' + escapeHtml(t('progressChip', { d: doneN, n: ids.length })) + '</div><button type="button" class="btn btn-primary" id="train-open">' + t('startWorkoutShort') + '</button></div>' + media + '</article>' + trainRows(rows);
     const b = $('#train-open', box); if (b) b.addEventListener('click', () => openPlayer(now));
+    box.querySelectorAll('.train-row[data-ex]').forEach(row => {
+      row.addEventListener('click', () => openExercise(row.dataset.ex));
+    });
   }
   function renderProfileHero() {
     const who = $('#profile-who');
@@ -2284,9 +2513,26 @@
       b => b.classList.toggle('on', b.dataset.lang === I18n.lang));
   }
 
-  // רענון כל התוכן הדינמי בעת החלפת שפה
+  function markFigButtons() {
+    const tog = $('#fig-toggle');
+    if (!tog) return;
+    tog.querySelectorAll('button').forEach(b => {
+      const on = b.dataset.fig === figGender();
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+  function setFigGender(g) {
+    figPref = g === 'female' ? 'female' : 'male';
+    try { localStorage.setItem('excerly.fig', figPref); } catch (e) {}
+    markFigButtons();
+    reRenderAll();
+  }
+
+  // רענון כל התוכן הדינמי בעת החלפת שפה או העדפת הדמויות
   function reRenderAll() {
     markLangButtons();
+    markFigButtons();
     const p = load(STORE.profile, null);
     if (p && p.age && p.weight && p.height) renderBMI(p);
     renderNutriTarget();
@@ -2297,8 +2543,8 @@
     renderHistory();
     renderPlan(load(STORE.plan, null));
     updateReminderStatus(load(STORE.reminder, { enabled: false, time: '18:00' }));
-    // אם חלון היום פתוח – רענון תוכנו
     if (sheet.classList.contains('open') && sheetDate) renderWorkout(sheetDate);
+    if (!P().hidden && player.exs.length) renderPlayer();
   }
 
   /* ---------- ניווט טאבים תחתון ---------- */
@@ -2412,6 +2658,13 @@
     const cj = $('#close-journal');
     if (cj) cj.addEventListener('click', () => setHomeView('dash'));
     setHomeView('dash');
+    markFigButtons();
+    const figTog = $('#fig-toggle');
+    if (figTog) figTog.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      setFigGender(b.dataset.fig);
+    });
     const place = $('#place-toggle');
     if (place) place.addEventListener('click', (e) => {
       const b = e.target.closest('button');

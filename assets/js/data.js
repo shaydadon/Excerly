@@ -258,12 +258,15 @@
     // ריק כברירת מחדל – מוסיפים כאן ערכים כדי לשדרג תרגילים.
   };
 
-  /* תמונות אווטאר סטטיות (זכר/נקבה) לכל תרגיל.
-     קבצים: assets/exercise-img/<key>-m.png  /  -f.png
-     מפתחות הרשומים כאן מוצגים כתמונה במקום דמות ה-SVG. */
+  /* תמונות שאומתו ויזואלית (זכר/נקבה).
+     קבצים: assets/exercise-img/<key>-m.jpg ו-<key>-f.jpg
+     סיבובי כתפיים וסיבוב עמוד שדרה הם איורי תנועה מקוריים
+     (שלושה שלבים), לא תצלום ולא עיבוד של תרשים צד שלישי.
+     המקור הווקטורי: assets/exercise-img/diagrams/. */
   const EXIMG = {
-    neck: 1, shoulders: 1, arms: 1, sidebend: 1, twist: 1, forwardfold: 1,
-    hamstring: 1, butterfly: 1, quad: 1, hipflexor: 1, calf: 1, catcow: 1, cobra: 1, child: 1
+    neck: 1, arms: 1, sidebend: 1, forwardfold: 1,
+    hamstring: 1, butterfly: 1, quad: 1, hipflexor: 1, calf: 1, catcow: 1, cobra: 1, child: 1,
+    shoulders: 1, twist: 1
   };
 
   global.ExcerlyData = {

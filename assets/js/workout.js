@@ -92,12 +92,13 @@
     const dayList = chooseDays(days, p.focusArea).map((k, idx) => {
       const def = DAY_DEF[k];
       const exs = def.ex.map(e => ({
+        id: e,
         name: exName(e), sets: sc.sets, reps: e === 'plank' ? (curLang() === 'en' ? '3 × 40 sec' : "3 × 40 שנ'") : sc.reps,
         rest, note: ''
       }));
       if (cardioLevel !== 'none') {
         const mins = cardioLevel === 'lots' ? (curLang() === 'en' ? '20 min' : "20 דק'") : (curLang() === 'en' ? '10 min' : "10 דק'");
-        exs.push({ name: exName('cardio'), sets: '1', reps: mins, rest: '—', note: '' });
+        exs.push({ id: 'cardio', name: exName('cardio'), sets: '1', reps: mins, rest: '—', note: '' });
       }
       return {
         name: (curLang() === 'en' ? 'Day ' : 'יום ') + (idx + 1),
@@ -185,5 +186,5 @@
     return normalize(JSON.parse(m[0]));
   }
 
-  global.ExcerlyWorkout = { planLocal, planViaProxy, planAI };
+  global.ExcerlyWorkout = { planLocal, planViaProxy, planAI, EX };
 })(window);

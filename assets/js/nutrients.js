@@ -214,8 +214,10 @@
   function knownKcal(meals) {
     let sum = 0, missing = 0;
     (meals || []).forEach(m => {
-      if (m && m.kcal != null && isFinite(Number(m.kcal))) sum += Number(m.kcal);
-      else missing++;
+      const has = m && m.kcal != null && isFinite(Number(m.kcal));
+      if (has) sum += Number(m.kcal);
+      const open = m && (m.kcalIncomplete || m.status === 'pending' || m.status === 'partial');
+      if (!has || open) missing++;
     });
     return { total: Math.round(sum), missing: missing, incomplete: missing > 0 };
   }
@@ -231,11 +233,22 @@
     });
     let fdcMeals = 0;
     list.forEach(m => {
+      const incompleteMeal = m && (m.status === 'pending' || m.status === 'partial' || m.kcalIncomplete);
       const official = m && m.provenance && m.provenance.per100g && (m.provenance.source === 'fdc' || m.provenance.source === 'tzameret');
-      if (m && m.provenance && m.provenance.source === 'fdc') fdcMeals++;
+      if (m && m.provenance && m.provenance.source === 'fdc' && !incompleteMeal) fdcMeals++;
       CATALOG.forEach(spec => {
         const bucket = acc[spec.key];
         const n = m && m.provenance && m.provenance.nutrients && m.provenance.nutrients[spec.key];
+        if (incompleteMeal) {
+          if (n && n.amount != null && n.status !== 'missing') {
+            if (bucket.amount == null) bucket.amount = 0;
+            bucket.amount += Number(n.amount);
+            bucket.unit = n.unit || bucket.unit;
+            bucket.knownMeals++;
+          }
+          bucket.missingMeals++;
+          return;
+        }
         if (!official || !n || n.status === 'missing' || n.amount == null) {
           bucket.missingMeals++;
           return;

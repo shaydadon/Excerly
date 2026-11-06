@@ -1,11 +1,16 @@
 /* Excerly – Service Worker לתמיכה בעבודה לא מקוונת (PWA) */
-const CACHE = 'excerly-v49';
-const EX_KEYS = ['neck','shoulders','arms','sidebend','twist','forwardfold','hamstring',
-  'butterfly','quad','hipflexor','calf','catcow','cobra','child'];
+const CACHE = 'excerly-v54';
+const EX_KEYS = ['neck','arms','sidebend','forwardfold','hamstring',
+  'butterfly','quad','hipflexor','calf','catcow','cobra','child','shoulders','twist'];
+const GYM_KEYS = ['squat','legpress','legcurl','legext','calf','hipthrust','lunge','bench','inclinedb','fly',
+  'ohp','lateral','pushdown','pulldown','row','facepull','curl','hammer','reardelt','plank','cardio'];
 const EX_IMGS = EX_KEYS.flatMap((k) => [
-  `assets/exercise-img/${k}-m.png`,
-  `assets/exercise-img/${k}-f.png`
-]);
+  `assets/exercise-img/${k}-m.jpg`,
+  `assets/exercise-img/${k}-f.jpg`
+]).concat(GYM_KEYS.flatMap((k) => [
+  `assets/exercise-img/gym-${k}-m.jpg`,
+  `assets/exercise-img/gym-${k}-f.jpg`
+]));
 const ASSETS = [
   '.',
   'index.html',
@@ -16,6 +21,7 @@ const ASSETS = [
   'assets/js/nutrition.js',
   'assets/js/nutrients.js',
   'assets/js/usda.js',
+  'assets/js/mealcard.js',
   'assets/js/workout.js',
   'assets/js/gcal.js',
   'assets/js/app.js',
