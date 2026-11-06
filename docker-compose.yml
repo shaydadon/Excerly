@@ -8,9 +8,23 @@
 #   Stop:    docker compose down
 #
 services:
+  fdc:
+    image: node:22-alpine
+    container_name: excerly-fdc
+    environment:
+      PORT: "8787"
+      # Private data.gov key. Empty falls back to the documented DEMO_KEY inside the proxy.
+      FDC_API_KEY: ${FDC_API_KEY:-}
+    volumes:
+      - ./tools/fdc-proxy.mjs:/app/tools/fdc-proxy.mjs:ro
+    working_dir: /app
+    command: ["node", "tools/fdc-proxy.mjs"]
+    restart: unless-stopped
   web:
     image: nginx:alpine
     container_name: excerly-web
+    depends_on:
+      - fdc
     ports:
       - "8080:80"
     volumes:

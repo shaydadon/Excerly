@@ -103,3 +103,15 @@ AI_DAILY_LIMIT    = "25"     # בקשות ליום למשתמש (ברירת מח
 המפתח נשמר כ-Secret של Cloudflare ומוזרק רק בצד השרת בזמן הקריאה
 ל-Anthropic. הוא לעולם אינו נשלח לדפדפן ואינו מופיע בקוד המקור.
 ה-`service_role` של Supabase גם הוא Secret ולעולם לא נשלח לדפדפן.
+
+## FoodData Central
+
+פעולות `fdc_search` ו-`fdc_food` לא דורשות מפתח Anthropic ולא נספרות במכסת ה-AI.
+מפתח USDA:
+
+```bash
+wrangler secret put FDC_API_KEY
+```
+
+בלי הסוד השרת משתמש ב-`DEMO_KEY` המתועד (מכסה נמוכה, לפיתוח). המפתח לא חוזר ללקוח.
+פריסת ה-Worker הזו לא בוצעה בסבב הזה.

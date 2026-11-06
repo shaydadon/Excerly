@@ -49,6 +49,11 @@
   let doneMap = load(STORE.done, {});
   let exDoneMap = load(STORE.exdone, {}); // השלמה ברמת תרגיל בודד
   let viewDate = new Date();        // חודש מוצג בלוח
+  let journalDate = new Date();
+  let pendingSlot = null;
+  let confirmDraft = [];
+  let trainPlace = 'home';
+  try { trainPlace = localStorage.getItem('excerly.trainPlace') === 'gym' ? 'gym' : 'home'; } catch (e) {}
   const today = new Date();
 
   // מגדר הדמות באנימציות – לפי הפרופיל (ברירת מחדל: זכר)
@@ -337,6 +342,7 @@
       const cell = el('div', 'cal-cell');
       if (prog.rest) cell.classList.add('rest');
       if (sameDay(date, today)) cell.classList.add('today');
+      if (journalDate && sameDay(date, journalDate)) cell.classList.add('selected');
 
       const gym = scheduledDay(date);
       if (gym) cell.classList.add('gym');
@@ -353,7 +359,7 @@
       // אימון עתידי שטרם בוצע — ניתן לגרירה להעברה ליום אחר
       if (gym && !doneMap[key]) { cell.classList.add('draggable'); armDrag(cell); }
 
-      cell.addEventListener('click', () => { if (dragSuppressClick) return; openSheet(date); });
+      cell.addEventListener('click', () => { if (dragSuppressClick) return; selectJournalDay(date); });
       grid.appendChild(cell);
     }
   }
@@ -692,6 +698,7 @@
     renderWorkout(sheetDate);
     renderCalendar();
     updateStreak();
+    renderHomeDash();
     renderHistory();
     if (!silent) {
       if (doneMap[key] && !wasDone) toast(t('toastAllDone'));
@@ -715,6 +722,7 @@
     renderWorkout(sheetDate);
     renderCalendar();
     updateStreak();
+    renderHomeDash();
     renderHistory();
     if (doneMap[key]) toast(t('toastWorkoutDone'));
   }
@@ -762,7 +770,10 @@
   const player = { idx: 0, remaining: 0, paused: false, timer: null, exs: [], key: null, date: null };
   const P = () => $('#player');
   const RING_R = 46, RING_C = 2 * Math.PI * RING_R;
-  const fmtTime = s => Math.floor(s / 60) + ':' + String(Math.max(0, s) % 60).padStart(2, '0');
+  const fmtTime = s => {
+    const v = Math.max(0, s | 0);
+    return String(Math.floor(v / 60)).padStart(2, '0') + ':' + String(v % 60).padStart(2, '0');
+  };
 
   function openPlayer(date) {
     const prog = D.programForDate(date);
@@ -798,7 +809,7 @@
   function togglePlay() {
     player.paused = !player.paused;
     const b = $('#p-play', P());
-    if (b) { b.textContent = player.paused ? '▶' : '⏸'; b.setAttribute('aria-label', player.paused ? t('ariaPlay') : t('ariaPause')); }
+    if (b) { b.textContent = player.paused ? t('ariaPlay') : t('ariaPause'); b.setAttribute('aria-label', player.paused ? t('ariaPlay') : t('ariaPause')); }
   }
 
   function updatePlayerTime() {
@@ -815,33 +826,44 @@
 
   function renderPlayer() {
     const ex = D.EXERCISES[player.exs[player.idx]];
+    const next = player.exs[player.idx + 1] ? D.EXERCISES[player.exs[player.idx + 1]] : null;
     const hold = L(ex.hold);
-    const rtl = I18n.lang === 'he';
     P().innerHTML = `
       <div class="player-top">
         <button class="p-icon" id="p-close" aria-label="${t('ariaClose')}">✕</button>
         <div class="player-count">${t('playerOf', { i: player.idx + 1, n: player.exs.length })}</div>
-        <span class="p-icon" style="visibility:hidden"></span>
+        <button class="p-icon" id="p-help" aria-label="${t('needHelp')}">?</button>
       </div>
-      <div class="player-stage">
-        <svg class="p-ring" viewBox="0 0 100 100" aria-hidden="true">
-          <circle class="p-track" cx="50" cy="50" r="${RING_R}" />
-          <circle class="p-prog" id="p-prog" cx="50" cy="50" r="${RING_R}" />
-        </svg>
-        <div class="player-anim">${exVisual(ex, true)}</div>
+      <h2 class="screen-title" style="font-size:40px">${t('myPlan')}</h2>
+      <div class="player-card">
+        <div class="player-stage">
+          <svg class="p-ring" viewBox="0 0 100 100" aria-hidden="true">
+            <circle class="p-track" cx="50" cy="50" r="${RING_R}" />
+            <circle class="p-prog" id="p-prog" cx="50" cy="50" r="${RING_R}" />
+          </svg>
+          <div class="player-core">
+            <div class="player-anim">${exVisual(ex, true)}</div>
+            <div class="player-time iso-num" id="p-time" dir="ltr">${fmtTime(player.remaining)}</div>
+            <div class="player-time-cap">${t('playerStepLeft')}</div>
+          </div>
+        </div>
+        <div class="player-name">${escapeHtml(L(ex.name))}</div>
+        <div class="player-meta">${escapeHtml(L(ex.area))}</div>
+        ${hold !== '—' ? `<div class="player-hold">${t('playerHoldCue', { h: escapeHtml(hold) })}</div>` : ''}
+        <p class="player-clock-note">${t('playerClockNote')}</p>
+        <button class="p-main wide" id="p-play" aria-label="${t('ariaPause')}">${t('ariaPause')}</button>
+        <div class="player-controls">
+          <button class="p-ctrl" id="p-prev" aria-label="${t('ariaPrev')}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M14 6 8 12l6 6"/></svg>
+            <span>${t('prevShort')}</span>
+          </button>
+          <button class="p-ctrl" id="p-next" aria-label="${t('ariaNext')}">
+            <span>${t('nextShort')}</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg>
+          </button>
+        </div>
       </div>
-      <div class="player-name">${L(ex.name)}</div>
-      <div class="detail-badges" style="justify-content:center;margin-top:6px">
-        <span class="badge reps">${t('badgeReps', { r: L(ex.reps) })}</span>
-        ${hold !== '—' ? `<span class="badge hold">${t('badgeHold', { h: hold })}</span>` : ''}
-      </div>
-      <button class="player-help" id="p-help">💬 ${t('needHelp')}</button>
-      <div class="player-time" id="p-time">${fmtTime(player.remaining)}</div>
-      <div class="player-controls">
-        <button class="p-ctrl" id="p-prev" aria-label="${t('ariaPrev')}">⏮</button>
-        <button class="p-ctrl p-main" id="p-play" aria-label="${t('ariaPause')}">⏸</button>
-        <button class="p-ctrl" id="p-next" aria-label="${t('ariaNext')}">⏭</button>
-      </div>`;
+      ${next ? `<div class="next-ex"><div><div class="section-hint">${t('ariaNext')}</div><b>${escapeHtml(L(next.name))}</b></div><div class="player-anim" style="width:54px;height:54px">${exVisual(next, false)}</div></div>` : ''}`;
     $('#p-close', P()).addEventListener('click', closePlayer);
     $('#p-prev', P()).addEventListener('click', prevExercise);
     $('#p-next', P()).addEventListener('click', nextExercise);
@@ -1074,24 +1096,36 @@
     save(STORE.meals, all);
     const fl = load(STORE.foodlog, {});
     if (arr.length) {
-      const total = arr.reduce((s, m) => s + (m.kcal || 0), 0);
+      const kn = window.ExcerlyNutrients ? ExcerlyNutrients.knownKcal(arr) : { total: arr.reduce((s, m) => s + (m.kcal || 0), 0), incomplete: false };
+      const total = kn.total;
       const target = N.targetCalories() || (fl[key] && fl[key].target) || 2000;
       const v = N.verdict(total, target);
-      fl[key] = { total, target, verdict: { color: v.color, key: v.key } };
+      fl[key] = { total, target, verdict: { color: v.color, key: v.key }, kcalIncomplete: !!kn.incomplete };
     } else delete fl[key];
     save(STORE.foodlog, fl);
   }
 
   function addMeals(items) {
-    const valid = (items || []).filter(it => it && it.kcal);
+    const valid = (items || []).filter(it => it && (it.kcal || it.kcal === 0 || it.provenance));
     if (!valid.length) return;
     const key = dateKey(new Date());
     const arr = getMeals(key).slice();
-    valid.forEach(it => arr.push({
-      id: uid(), name: it.name || t('mealLabel'), kcal: Math.round(it.kcal),
-      carbs: Math.round(it.carbs || 0), protein: Math.round(it.protein || 0), fat: Math.round(it.fat || 0)
-    }));
+    const num = (v, d) => (v == null || v === '' || !isFinite(+v) ? null : Math.round(+v * d) / d);
+    valid.forEach(it => {
+      const row = {
+        id: uid(), name: it.name || t('mealLabel'),
+        kcal: num(it.kcal, 1),
+        carbs: num(it.carbs, 10), protein: num(it.protein, 10), fat: num(it.fat, 10),
+        grams: it.grams == null ? null : num(it.grams, 10),
+        source: it.source || (it.provenance && it.provenance.source) || null,
+        code: it.code || (it.provenance && it.provenance.tzameretCode) || null,
+        slot: it.slot || pendingSlot || null
+      };
+      if (it.provenance) row.provenance = it.provenance;
+      arr.push(row);
+    });
     setMeals(key, arr);
+    pendingSlot = null;
     refreshNutrition();
     toast(t('toastAdded'));
   }
@@ -1108,6 +1142,7 @@
   function refreshNutrition() {
     renderDayMeals();
     renderHistory();
+    renderHomeDash();
     if (sheet.classList.contains('open') && sheetDate) renderWorkout(sheetDate);
   }
 
@@ -1116,27 +1151,37 @@
     if (!box) return;
     const key = dateKey(new Date());
     const meals = getMeals(key);
-    if (!meals.length) { box.innerHTML = ''; box.classList.remove('show'); return; }
+    if (!meals.length) {
+      box.innerHTML = `<div class="empty">${t('noMeals')}</div>`;
+      box.classList.add('show');
+      renderMicroSummary(meals);
+      return;
+    }
     const total = meals.reduce((s, m) => s + m.kcal, 0);
     const target = N.targetCalories();
     const rows = meals.map(m => `
       <div class="dm-row" data-id="${m.id}">
         <button class="dm-del" data-id="${m.id}" aria-label="${t('removeMealAria')}" title="${t('removeMealAria')}">✕</button>
         <button class="dm-edit" data-id="${m.id}" aria-label="${t('editMealAria')}" title="${t('editMealAria')}">✎</button>
-        <span class="dm-name">${m.name}</span>
-        <span class="dm-kcal">${m.kcal} ${t('goalUnit')}</span>
+        <span class="dm-name">${escapeHtml(m.name)}${m.provenance && m.provenance.source === 'fdc' ? ' <span class="tag">USDA</span>' : ''}${m.provenance && m.provenance.source === 'tzameret' ? ' <span class="tag">צמרת</span>' : ''}${!m.provenance ? ' <span class="tag miss">' + t('microMissing') + '</span>' : ''}</span>
+        <span class="dm-kcal"><bdi class="iso-num" dir="ltr">${m.kcal == null ? '—' : m.kcal}</bdi><span>${t('goalUnit')}</span></span>
       </div>`).join('');
     let summary;
     if (target) {
       const v = N.verdict(total, target);
       const pct = Math.min(100, Math.round((total / target) * 100));
       const vLabel = t(v.key === 'over' ? 'vOver' : v.key === 'met' ? 'vMet' : 'vUnder');
-      const deltaTxt = v.key === 'over' ? t('dOver', { n: nf(v.delta) })
-        : v.key === 'under' ? t('dUnder', { n: nf(v.delta) }) : t('dMet');
+      const iso = n => '<bdi class="iso-num" dir="ltr">' + nf(n) + '</bdi>';
+      const deltaTxt = v.key === 'over' ? t('dOver', { n: iso(v.delta) })
+        : v.key === 'under' ? t('dUnder', { n: iso(v.delta) }) : t('dMet');
       summary = `
         <div class="nutri-summary" style="margin-top:10px">
           <div class="nutri-verdict" style="background:${v.color}">${vLabel}</div>
-          <div class="nutri-numbers">${t('ofTarget', { a: '<b>' + nf(total) + '</b>', b: nf(target), d: deltaTxt })}</div>
+          <div class="nutri-pair light">
+            <div class="pair-item"><bdi class="iso-num" dir="ltr">${nf(total)}</bdi><span>${t('ateLabel')}</span></div>
+            <div class="pair-item"><bdi class="iso-num" dir="ltr">${nf(target)}</bdi><span>${t('targetLabel')}</span></div>
+          </div>
+          <div class="nutri-numbers">${deltaTxt}</div>
         </div>
         <div class="nutri-bar"><span style="width:${pct}%;background:${v.color}"></span></div>`;
     } else {
@@ -1148,11 +1193,12 @@
     const fat = meals.reduce((s, m) => s + (m.fat || 0), 0);
     const macroRow = (carbs || protein || fat) ? `
       <div class="dm-macros">
-        <span class="dm-mac c"><b>${carbs}</b> ${t('grams')} ${t('carbs')}</span>
-        <span class="dm-mac p"><b>${protein}</b> ${t('grams')} ${t('protein')}</span>
-        <span class="dm-mac f"><b>${fat}</b> ${t('grams')} ${t('fat')}</span>
+        <span class="dm-mac c"><span>${t('carbs')}</span><bdi class="iso-num" dir="ltr">${carbs}</bdi><span>${t('grams')}</span></span>
+        <span class="dm-mac p"><span>${t('protein')}</span><bdi class="iso-num" dir="ltr">${protein}</bdi><span>${t('grams')}</span></span>
+        <span class="dm-mac f"><span>${t('fat')}</span><bdi class="iso-num" dir="ltr">${fat}</bdi><span>${t('grams')}</span></span>
       </div>` : '';
     box.innerHTML = `<div class="dm-title">${t('dayMealsTitle')}</div><div class="dm-hint">${t('editDayHint')}</div><div class="dm-list">${rows}</div>${macroRow}${summary}`;
+    renderMicroSummary(meals);
     box.classList.add('show');
     box.querySelectorAll('.dm-del').forEach(b => b.addEventListener('click', () => removeMeal(b.dataset.id)));
     box.querySelectorAll('.dm-edit').forEach(b => b.addEventListener('click', () => editDayMeal(b.dataset.id)));
@@ -1166,12 +1212,24 @@
     if (!m || !row) return;
     const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
     row.classList.add('editing');
+    const gramField = (m.provenance && m.provenance.per100g)
+      ? `<label class="ni-kcal-edit">${t('gramsLabel')}<input class="dm-grams-edit ni-kcal-input" type="number" min="1" step="1" inputmode="decimal" value="${m.provenance.grams || m.grams || ''}" /></label>`
+      : `<span class="ni-kcal-edit"><input class="dm-kcal-edit ni-kcal-input" type="number" min="0" inputmode="numeric" value="${m.kcal == null ? '' : m.kcal}" aria-label="${t('editMealAria')}" /><span class="ni-kcal-unit">${t('goalUnit')}</span></span>`;
     row.innerHTML = `
       <button class="dm-save" aria-label="${t('saveMealAria')}" title="${t('saveMealAria')}">✓</button>
       <input class="dm-name-edit" value="${esc(m.name)}" aria-label="${t('editMealAria')}" />
-      <span class="ni-kcal-edit"><input class="dm-kcal-edit ni-kcal-input" type="number" min="0" inputmode="numeric" value="${m.kcal}" aria-label="${t('editMealAria')}" /><span class="ni-kcal-unit">${t('goalUnit')}</span></span>`;
+      ${gramField}`;
     const save = () => {
       const name = row.querySelector('.dm-name-edit').value.trim() || t('mealLabel');
+      const gramsEl = row.querySelector('.dm-grams-edit');
+      if (gramsEl && m.provenance && m.provenance.per100g && window.ExcerlyNutrients) {
+        const edited = ExcerlyNutrients.applyGramEdit(Object.assign({}, m, { name: name }), gramsEl.value);
+        if (!edited.ok) { toast(t('needGrams')); return; }
+        edited.meal.name = name;
+        setMeals(key, getMeals(key).map(x => x.id === id ? edited.meal : x));
+        refreshNutrition();
+        return;
+      }
       const k = Math.max(0, Math.round(+row.querySelector('.dm-kcal-edit').value || 0));
       setMeals(key, getMeals(key).map(x => x.id === id ? Object.assign({}, x, { name: name, kcal: k }) : x));
       refreshNutrition();
@@ -1189,7 +1247,7 @@
       box.innerHTML = `<div class="nutri-need-profile">${t('needProfile')}</div>`;
       return null;
     }
-    box.innerHTML = `<div class="nutri-goal"><span class="nutri-goal-lbl">${t('goalLabel')}</span><span class="nutri-goal-val">${nf(target)} ${t('goalUnit')}</span></div>`;
+    box.innerHTML = `<div class="nutri-goal"><span class="nutri-goal-lbl">${t('goalLabel')}</span><span class="nutri-goal-val"><bdi class="iso-num" dir="ltr">${nf(target)}</bdi> <span>${t('goalUnit')}</span></span></div>`;
     return target;
   }
 
@@ -1232,7 +1290,7 @@
     const eP = estimateItems.reduce((s, i) => s + (i.protein || 0), 0);
     const eF = estimateItems.reduce((s, i) => s + (i.fat || 0), 0);
     const macroLine = estimateItems.length && (eC || eP || eF)
-      ? `<div class="dm-macros est"><span class="dm-mac c"><b>${eC}</b> ${t('grams')} ${t('carbs')}</span><span class="dm-mac p"><b>${eP}</b> ${t('grams')} ${t('protein')}</span><span class="dm-mac f"><b>${eF}</b> ${t('grams')} ${t('fat')}</span></div>`
+      ? `<div class="dm-macros est"><span class="dm-mac c"><span>${t('carbs')}</span><bdi class="iso-num" dir="ltr">${eC}</bdi><span>${t('grams')}</span></span><span class="dm-mac p"><span>${t('protein')}</span><bdi class="iso-num" dir="ltr">${eP}</bdi><span>${t('grams')}</span></span><span class="dm-mac f"><span>${t('fat')}</span><bdi class="iso-num" dir="ltr">${eF}</bdi><span>${t('grams')}</span></span></div>`
       : '';
     box.innerHTML = `
       <div class="est-head">
@@ -1271,7 +1329,7 @@
         <div class="menu-item">
           <div class="menu-slot">${m.label}</div>
           <div class="menu-name">${m.name}</div>
-          <div class="menu-kcal">${m.kcal} ${t('goalUnit')}</div>
+          <div class="menu-kcal"><bdi class="iso-num" dir="ltr">${m.kcal}</bdi><span>${t('goalUnit')}</span></div>
         </div>`).join('')}</div>
       <div class="menu-total">${plan.target ? t('menuTotal', { n: nf(plan.total), t: nf(plan.target) }) : t('menuTotalNoTarget', { n: nf(plan.total) })}</div>
       ${plan.source === 'ai' ? `<div class="nutri-src">${t('menuSrcAi')}</div>` : ''}
@@ -1318,7 +1376,7 @@
     } else {
       res = N.estimateLocal(text);
     }
-    renderFoodResult(res, target);
+    openFoodConfirm(res);
   }
 
   // כיווץ תמונה בצד הלקוח לפני שליחה ל-AI (חוסך תעבורה וזמן)
@@ -1378,7 +1436,7 @@
     }
     setPhotoBusy(false);
     if (myReq !== photoReqId) return; // המשתמש הסיר את התמונה בזמן הניתוח
-    renderFoodResult(res, target);
+    openFoodConfirm(res);
   }
 
   // הסרת התמונה והתוצאה שלה — התמונה והקלוריות נעלמות
@@ -1394,7 +1452,9 @@
   function setPhotoBusy(busy) {
     document.querySelectorAll('.photo-action').forEach(b => {
       b.disabled = busy;
-      b.textContent = busy ? t('photoBtnBusy') : t(b.getAttribute('data-i18n'));
+      const key = b.getAttribute('data-i18n');
+      if (key) b.textContent = busy ? t('photoBtnBusy') : t(key);
+      else b.setAttribute('aria-busy', busy ? 'true' : 'false');
     });
   }
 
@@ -1885,6 +1945,336 @@
     renderHistory();
   }
 
+
+  /* =========================================================
+     מסכי הבית / יומן / אישור מקור USDA
+     ========================================================= */
+  function setHomeView(mode) {
+    document.body.dataset.home = mode === 'journal' ? 'journal' : 'dash';
+  }
+  function selectJournalDay(date) {
+    journalDate = date;
+    viewDate = new Date(date.getFullYear(), date.getMonth(), 1);
+    if (document.body.dataset.home !== 'journal') setHomeView('journal');
+    renderCalendar();
+    renderJournalDay();
+  }
+  function ico(path) {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">' + path + '</svg>';
+  }
+  function renderWeekStrip() {
+    const box = $('#home-week');
+    if (!box) return;
+    const now = new Date(); now.setHours(0, 0, 0, 0);
+    const start = new Date(now); start.setDate(now.getDate() - now.getDay());
+    box.innerHTML = '';
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start); d.setDate(start.getDate() + i);
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'week-day' + (sameDay(d, today) ? ' on' : '');
+      b.innerHTML = '<span>' + I18n.dayShort()[d.getDay()] + '</span><span class="n">' + d.getDate() + '</span>';
+      b.addEventListener('click', () => selectJournalDay(d));
+      box.appendChild(b);
+    }
+  }
+  function renderShortcuts() {
+    const box = $('#meal-shortcuts');
+    if (!box) return;
+    const slots = [
+      ['breakfast', 'slotBreakfast', '<path d="M8 8h8v8a4 4 0 0 1-8 0z"/><path d="M8 4v3M12 4v3M16 4v3"/>'],
+      ['lunch', 'slotLunch', '<path d="M8 4v7a2 2 0 0 0 4 0V4M10 11v9M16 4c2 2 2 6 0 8v8"/>'],
+      ['dinner', 'slotDinner', '<path d="M6 10h12c.5 4-2 7-6 7s-6.5-3-6-7z"/><path d="M8 17c.5 2 2 3 4 3s3.5-1 4-3"/>'],
+      ['snack', 'slotSnack', '<path d="M5 19c8-1 13-8 14-14-6 1-13 6-14 14z"/>']
+    ];
+    box.innerHTML = slots.map(s =>
+      '<button type="button" data-slot="' + s[0] + '"><span class="sc-ico">' + ico(s[2]) + '</span><span>' + t(s[1]) + '</span></button>'
+    ).join('');
+    box.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+      pendingSlot = b.dataset.slot;
+      setTab('nutrition');
+      const input = $('#food-text');
+      if (input) { input.focus(); input.placeholder = t(b.dataset.slot === 'breakfast' ? 'slotBreakfast' : b.dataset.slot === 'lunch' ? 'slotLunch' : b.dataset.slot === 'dinner' ? 'slotDinner' : 'slotSnack'); }
+    }));
+  }
+  function renderNutriHero() {
+    const meals = getMeals(dateKey(new Date()));
+    const kn = window.ExcerlyNutrients ? ExcerlyNutrients.knownKcal(meals) : { total: meals.reduce((s, m) => s + (m.kcal || 0), 0) };
+    const target = N.targetCalories();
+    const nums = $('#nutri-hero-nums');
+    if (nums) {
+      const eaten = '<div class="pair-item"><bdi class="iso-num" dir="ltr">' + nf(kn.total || 0) + '</bdi><span>' + t('ateLabel') + '</span></div>';
+      const goal = target
+        ? '<div class="pair-item"><bdi class="iso-num" dir="ltr">' + nf(target) + '</bdi><span>' + t('targetLabel') + '</span></div>'
+        : '<div class="pair-item"><bdi class="iso-num" dir="ltr">—</bdi><span>' + t('targetLabel') + '</span></div>';
+      nums.innerHTML = eaten + goal;
+    }
+    const ring = $('#nutri-ring');
+    const pct = target ? Math.max(6, Math.min(100, Math.round(((kn.total || 0) / target) * 100))) : 6;
+    if (ring) ring.style.setProperty('--pct', String(pct));
+    const hk = $('#home-kcal'); if (hk) hk.textContent = nf(kn.total || 0);
+    const ht = $('#home-target'); if (ht) ht.textContent = target ? nf(target) : '—';
+    const note = $('#home-nutri-note');
+    if (note) note.textContent = !target ? t('needProfile') : (kn.incomplete ? t('kcalPartial') : t('kcalLive'));
+  }
+  function renderMicroSummary(meals) {
+    const box = $('#micro-summary');
+    if (!box || !window.ExcerlyNutrients) return;
+    const day = ExcerlyNutrients.summarizeDay(meals || []);
+    if (!day.meals) { box.innerHTML = ''; return; }
+    const keys = ['vitaminC', 'vitaminD', 'vitaminA', 'calcium', 'iron', 'folate', 'vitaminB12', 'potassium'];
+    const rows = day.nutrients.filter(n => keys.indexOf(n.key) !== -1).map(n => {
+      const label = I18n.lang === 'en' ? n.nameEn : n.nameHe;
+      const partial = n.status === 'partial' ? ' <span class="tag warn">' + t('microPartial') + '</span>' : '';
+      const val = n.status === 'missing' || n.amount == null
+        ? '<span class="micro-miss">' + t('microMissing') + '</span>'
+        : '<span class="micro-val"><bdi class="iso-num" dir="ltr">' + n.amount + '</bdi><span class="micro-unit">' + n.unit + '</span></span>';
+      return '<div class="micro-item"><span class="micro-name">' + label + partial + '</span>' + val + '</div>';
+    }).join('');
+    box.innerHTML = '<h3>' + t('microTitle') + '</h3><p class="section-hint">' + t('microCoverage', { n: day.fdcMeals, t: day.meals }) + '</p><div class="micro-list">' + rows + '</div>';
+  }
+  function renderHomeDash() {
+    const now = new Date();
+    const loc = I18n.lang === 'he' ? 'he-IL' : 'en-US';
+    const line = $('#home-date');
+    if (line) {
+      let wd = '';
+      try { wd = new Intl.DateTimeFormat(loc, { weekday: 'long' }).format(now); } catch (e) { wd = I18n.dayNames()[now.getDay()]; }
+      line.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg><span>' + now.getDate() + '.' + (now.getMonth() + 1) + '.' + now.getFullYear() + '</span><span>|</span><span>' + wd + '</span>';
+    }
+    const greet = $('#home-greet');
+    if (greet) {
+      const h = now.getHours();
+      const g = h < 12 ? t('greetMorning') : h < 17 ? t('greetAfternoon') : h < 21 ? t('greetEvening') : t('greetNight');
+      greet.textContent = g + ' ' + (doneMap[dateKey(now)] ? t('greetDone') : t('greetWait'));
+    }
+    const prog = D.programForDate(now);
+    const gym = scheduledDay(now);
+    const titleEl = $('#hero-title');
+    if (titleEl) titleEl.textContent = gym ? (gym.day.name || t('myPlan')) : L(prog.title);
+    const meta = $('#hero-meta');
+    if (meta) {
+      const mins = gym && gym.day && gym.day.minutes ? gym.day.minutes : D.estimatedMinutes(prog);
+      meta.textContent = mins ? ('⏱ ' + mins + ' ' + t('minWord')) : '';
+    }
+    const ids = (prog && prog.exercises) || [];
+    const doneN = ids.filter(id => isExDone(dateKey(now), id)).length;
+    const pct = ids.length ? Math.max(8, Math.round(doneN / ids.length * 100)) : 12;
+    const ring = $('#hero-ring'); if (ring) ring.style.setProperty('--pct', String(pct));
+    renderHero();
+    renderNutriHero();
+    renderShortcuts();
+    renderWeekStrip();
+    renderTrainSpot();
+    renderProfileHero();
+    if (document.body.dataset.home === 'journal') renderJournalDay();
+  }
+  function renderJournalDay() {
+    const box = $('#journal-day');
+    if (!box) return;
+    const date = journalDate || new Date();
+    const key = dateKey(date);
+    const prog = D.programForDate(date);
+    const gym = scheduledDay(date);
+    const meals = getMeals(key);
+    const title = gym ? (gym.day.name || t('myPlan')) : L(prog.title);
+    const mealHtml = meals.length ? meals.map(m => '<div class="tl-item"><div class="tl-time">' + escapeHtml(m.slot ? t(m.slot === 'breakfast' ? 'slotBreakfast' : m.slot === 'lunch' ? 'slotLunch' : m.slot === 'dinner' ? 'slotDinner' : 'slotSnack') : 'todayAgenda') + '</div><div>' + escapeHtml(m.name) + '</div></div>').join('') : '<div class="empty">' + t('noMeals') + '</div>';
+    const isToday = sameDay(date, today);
+    box.innerHTML = '<h3>' + escapeHtml(I18n.dayNames()[date.getDay()]) + ' ' + date.getDate() + '</h3><div class="tl"><div class="tl-item"><div class="tl-time">' + escapeHtml(title) + '</div><button type="button" class="btn btn-primary" id="journal-start">' + t('journalStart') + '</button></div>' + mealHtml + '</div>' + (isToday ? '<button type="button" class="btn btn-ghost" id="journal-add">' + t('journalAdd') + '</button>' : '');
+    const st = $('#journal-start', box);
+    if (st) st.addEventListener('click', () => openSheet(date));
+    const add = $('#journal-add', box);
+    if (add) add.addEventListener('click', () => setTab('nutrition'));
+  }
+  function renderTrainSpot() {
+    const box = $('#train-spot');
+    if (!box) return;
+    const tog = $('#place-toggle');
+    if (tog) tog.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.place === trainPlace));
+    const now = new Date();
+    const prog = D.programForDate(now);
+    if (trainPlace === 'gym') {
+      const gym = scheduledDay(now);
+      if (!gym) { box.innerHTML = '<div class="empty">' + t('planHint') + '</div>'; return; }
+      const ex0 = (gym.day.exercises || [])[0];
+      const name = ex0 && ex0.name ? (typeof ex0.name === 'string' ? ex0.name : L(ex0.name)) : (gym.day.name || '');
+      box.innerHTML = '<article class="train-hero"><div class="pad"><h3>' + escapeHtml(gym.day.name || t('myPlan')) + '</h3><div>' + escapeHtml(name) + '</div><button type="button" class="btn btn-primary" id="train-open">' + t('startWorkoutShort') + '</button></div><div class="pad"></div></article>';
+      const b = $('#train-open', box); if (b) b.addEventListener('click', () => openSheet(now));
+      return;
+    }
+    const ex = prog.exercises && prog.exercises[0] ? D.EXERCISES[prog.exercises[0]] : null;
+    const img = ex ? exImg(ex) : '';
+    box.innerHTML = '<article class="train-hero"><div class="pad"><h3>' + escapeHtml(L(prog.title)) + '</h3><div>' + escapeHtml(D.estimatedMinutes(prog) + ' ' + t('minWord')) + '</div><button type="button" class="btn btn-primary" id="train-open">' + t('startWorkoutShort') + '</button></div><img alt="" src="' + (img || '') + '"/></article>';
+    const b = $('#train-open', box); if (b) b.addEventListener('click', () => openPlayer(now));
+  }
+  function renderProfileHero() {
+    const who = $('#profile-who');
+    const stats = $('#profile-stats');
+    const hist = $('#profile-history');
+    const links = $('#me-links');
+    if (!who || !stats) return;
+    const cloud = $('#cloud-user');
+    who.textContent = (cloud && cloud.textContent.trim()) || t('profileFallback');
+    const keys = Object.keys(doneMap);
+    const weeks = {};
+    keys.forEach(k => {
+      const d = new Date(k + 'T00:00:00');
+      if (isNaN(d.getTime())) return;
+      const s = new Date(d); s.setDate(d.getDate() - d.getDay());
+      weeks[dateKey(s)] = 1;
+    });
+    stats.innerHTML = '<div class="progressTitle" style="font-weight:800;margin-bottom:6px">' + t('progressTitle') + '</div><b>' + keys.length + ' ' + t('workoutsWord') + '</b><div>' + Object.keys(weeks).length + ' ' + t('weeksWord') + '</div>';
+    if (hist) {
+      const recent = keys.slice().sort().reverse().slice(0, 3);
+      hist.innerHTML = recent.length ? recent.map(k => {
+        const d = new Date(k + 'T00:00:00');
+        const p = D.programForDate(d);
+        return '<div class="check-row"><span class="check">✓</span><span>' + escapeHtml(L(p.title)) + '</span></div>';
+      }).join('') : '<div class="empty">' + t('noHistory') + '</div>';
+    }
+    if (links) {
+      links.innerHTML = '<button type="button" data-jump="profile-form">' + t('linkPrefs') + '<span>‹</span></button>' +
+        '<button type="button" data-jump="reminder-toggle">' + t('linkReminders') + '<span>‹</span></button>' +
+        '<button type="button" data-jump="cloud-card">' + t('linkSync') + ' <span class="section-hint">' + t('notConnected') + '</span><span>‹</span></button>';
+      links.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+        const el = document.getElementById(b.dataset.jump) || document.querySelector('#' + b.dataset.jump);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }));
+    }
+  }
+  let tzCache = null;
+  async function tzameretFood(code) {
+    try {
+      if (!tzCache) {
+        const r = await fetch('assets/data/tzameret.json');
+        if (!r.ok) return null;
+        tzCache = await r.json();
+      }
+      const c = Number(code);
+      return (tzCache.foods || []).find(f => Number(f.c) === c) || null;
+    } catch (e) { return null; }
+  }
+  function paintConfirm(res) {
+    const box = $('#nutri-result');
+    if (!box) return;
+    const cards = confirmDraft.map((it, idx) => {
+      const foods = (it.foods || []).map(f =>
+        '<label class="cand"><input type="radio" name="src-' + idx + '" value="fdc:' + f.fdcId + '"' + (it.picked === 'fdc:' + f.fdcId ? ' checked' : '') + ' /><span><b>' + escapeHtml(f.description) + '</b><small>' + escapeHtml(f.dataType || '') + (f.brand ? ' · ' + escapeHtml(f.brand) : '') + (f.matchUncertain ? ' · ' + t('uncertain') : '') + '</small></span></label>'
+      ).join('');
+      const tz = (it.source === 'tzameret' && it.code != null)
+        ? '<label class="cand"><input type="radio" name="src-' + idx + '" value="tz"' + (it.picked === 'tz' ? ' checked' : '') + ' /><span><b>' + t('pickTz') + '</b><small>' + escapeHtml(it.name) + '</small></span></label>'
+        : '';
+      const status = it.status === 'searching' ? '<p class="busy">' + t('searching') + '</p>'
+        : it.status === 'rate_limited' ? '<p class="err">' + t('fdcRate') + '</p>'
+        : it.status && it.status !== 'ready' ? '<p class="err">' + t('fdcOffline') + '</p>'
+        : '';
+      return '<div class="confirm-card" data-idx="' + idx + '"><h3>' + escapeHtml(it.name || '') + '</h3>' +
+        (it.gramsUncertain ? '<p class="tag warn">' + t('uncertain') + '</p>' : '') +
+        '<label>' + t('gramsLabel') + '<input class="confirm-grams" type="number" min="1" step="1" inputmode="decimal" value="' + (it.grams || '') + '" /></label>' +
+        status + tz + foods +
+        '<div class="btn-row"><input class="confirm-q" type="text" placeholder="banana raw" value="' + escapeHtml(it.queryEn || '') + '" /><button type="button" class="btn btn-ghost confirm-refine">' + t('refineSearch') + '</button></div></div>';
+    }).join('');
+    box.innerHTML = '<h3>' + t('confirmHead') + '</h3>' + (res && res.note ? '<p class="section-hint">' + escapeHtml(res.note) + '</p>' : '') +
+      cards +
+      '<div class="btn-row"><button type="button" class="btn btn-primary" id="confirm-save">' + t('confirmSave') + '</button></div>' +
+      '<p class="section-hint">' + t('estimateWarn') + '</p>' +
+      '<button type="button" class="btn btn-ghost btn-block" id="confirm-estimate">' + t('confirmEstimate') + '</button>';
+    box.classList.add('show');
+    box.querySelectorAll('.confirm-grams').forEach(inp => inp.addEventListener('input', () => {
+      confirmDraft[+inp.closest('.confirm-card').dataset.idx].grams = inp.value;
+    }));
+    box.querySelectorAll('input[type="radio"]').forEach(r => r.addEventListener('change', () => {
+      if (r.checked) confirmDraft[+r.closest('.confirm-card').dataset.idx].picked = r.value;
+    }));
+    box.querySelectorAll('.confirm-refine').forEach(btn => btn.addEventListener('click', async () => {
+      const card = btn.closest('.confirm-card');
+      const it = confirmDraft[+card.dataset.idx];
+      const q = card.querySelector('.confirm-q').value.trim();
+      it.queryEn = q;
+      it.status = 'searching';
+      paintConfirm(res);
+      if (!window.ExcerlyUsda) { it.status = 'offline'; paintConfirm(res); return; }
+      const found = await ExcerlyUsda.searchFoods(q || it.name, q || null);
+      it.status = found.ok ? 'ready' : (found.error || 'offline');
+      it.foods = found.foods || [];
+      paintConfirm(res);
+    }));
+    const saveBtn = $('#confirm-save', box);
+    if (saveBtn) saveBtn.addEventListener('click', saveOfficial);
+    const estBtn = $('#confirm-estimate', box);
+    if (estBtn) estBtn.addEventListener('click', saveEstimateFallback);
+  }
+  async function openFoodConfirm(res) {
+    confirmDraft = (res.items || []).map(it => Object.assign({
+      picked: null, foods: [], status: 'searching',
+      grams: it.grams || '',
+      gramsUncertain: !!(it.gramsUncertain || it.grams == null)
+    }, it));
+    paintConfirm(res);
+    if (!window.ExcerlyUsda) {
+      confirmDraft.forEach(it => { it.status = 'offline'; });
+      paintConfirm(res);
+      return;
+    }
+    for (let i = 0; i < confirmDraft.length; i++) {
+      const it = confirmDraft[i];
+      const found = await ExcerlyUsda.searchFoods(it.name, it.queryEn);
+      if (!confirmDraft[i]) return;
+      it.status = found.ok ? 'ready' : (found.error || 'offline');
+      it.foods = found.foods || [];
+      it.keyMode = found.keyMode || null;
+      paintConfirm(res);
+    }
+  }
+  async function saveOfficial() {
+    if (!window.ExcerlyNutrients) return;
+    const meals = [];
+    for (let i = 0; i < confirmDraft.length; i++) {
+      const it = confirmDraft[i];
+      const grams = Number(it.grams);
+      if (!isFinite(grams) || grams <= 0) { toast(t('needGrams')); return; }
+      if (it.picked === 'tz') {
+        const food = await tzameretFood(it.code);
+        if (!food) { toast(t('srcMissing')); return; }
+        meals.push(ExcerlyNutrients.mealFromOfficial(ExcerlyNutrients.per100FromTzameret(food), grams, {
+          name: it.name, source: 'tzameret', tzameretCode: food.c, description: food.n, dataset: 'MOH Tzameret', slot: pendingSlot
+        }));
+      } else if (it.picked && String(it.picked).indexOf('fdc:') === 0) {
+        const det = await ExcerlyUsda.foodDetail(String(it.picked).slice(4));
+        if (!det.ok) { toast(det.error === 'rate_limited' ? t('fdcRate') : t('fdcFail')); return; }
+        meals.push(ExcerlyNutrients.mealFromOfficial(det.per100g, grams, {
+          name: it.name, source: 'fdc', fdcId: det.fdcId, description: det.description, dataType: det.dataType,
+          retrievedAt: det.retrievedAt, dataset: 'USDA FoodData Central', slot: pendingSlot
+        }));
+      } else { toast(t('needSource')); return; }
+    }
+    addMeals(meals);
+    const box = $('#nutri-result');
+    if (box) { box.classList.remove('show'); box.innerHTML = ''; }
+    const text = $('#food-text'); if (text) text.value = '';
+  }
+  function saveEstimateFallback() {
+    const meals = [];
+    for (let i = 0; i < confirmDraft.length; i++) {
+      const it = confirmDraft[i];
+      const grams = Number(it.grams);
+      if (!isFinite(grams) || grams <= 0) { toast(t('needGrams')); return; }
+      meals.push({
+        name: it.name, kcal: it.kcal, carbs: it.carbs, protein: it.protein, fat: it.fat,
+        grams: grams, source: 'estimate', slot: pendingSlot,
+        provenance: {
+          source: 'estimate', fdcId: null, tzameretCode: it.code || null, description: it.name,
+          grams: grams, gramsConfirmed: true, unit: 'g', per100g: null, nutrients: null,
+          dataset: 'estimate', retrievedAt: new Date().toISOString()
+        }
+      });
+    }
+    addMeals(meals);
+    const box = $('#nutri-result');
+    if (box) { box.classList.remove('show'); box.innerHTML = ''; }
+  }
+
+
   /* =========================================================
      אתחול
      ========================================================= */
@@ -1903,6 +2293,7 @@
     renderDayMeals();
     renderCalendar();
     updateStreak();
+    renderHomeDash();
     renderHistory();
     renderPlan(load(STORE.plan, null));
     updateReminderStatus(load(STORE.reminder, { enabled: false, time: '18:00' }));
@@ -1914,12 +2305,16 @@
   const TABS = ['home', 'workouts', 'nutrition', 'me'];
   function setTab(name) {
     if (TABS.indexOf(name) === -1) name = 'home';
-    document.querySelectorAll('section.card[data-tab]').forEach(s => {
+    document.querySelectorAll('section[data-tab]').forEach(s => {
       const active = s.dataset.tab === name;
       s.hidden = !active;
       if (active) { s.classList.remove('tab-in'); void s.offsetWidth; s.classList.add('tab-in'); }
     });
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      const on = b.dataset.tab === name;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-current', on ? 'page' : 'false');
+    });
     save(STORE.tab, name);
     window.scrollTo({ top: 0, behavior: 'auto' });
   }
@@ -2012,6 +2407,20 @@
       renderCalendar();
     });
     $('#today-btn').addEventListener('click', () => openSheet(new Date()));
+    const oj = $('#open-journal');
+    if (oj) oj.addEventListener('click', () => { setHomeView('journal'); selectJournalDay(new Date()); });
+    const cj = $('#close-journal');
+    if (cj) cj.addEventListener('click', () => setHomeView('dash'));
+    setHomeView('dash');
+    const place = $('#place-toggle');
+    if (place) place.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      trainPlace = b.dataset.place === 'gym' ? 'gym' : 'home';
+      try { localStorage.setItem('excerly.trainPlace', trainPlace); } catch (err) {}
+      renderTrainSpot();
+    });
+    renderHomeDash();
     initGCal();
     document.addEventListener('excerly:quota', updateAiQuota);
     updateAiQuota();

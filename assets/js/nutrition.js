@@ -21,7 +21,16 @@
     { n: ['קוסקוס'], per100: 112, portion: 150 },
     { n: ['חזה עוף', 'עוף', 'פרגית'], per100: 165, portion: 150 },
     { n: ['הודו'], per100: 135, portion: 150 },
-    { n: ['בשר', 'בקר', 'סטייק', 'אנטריקוט'], per100: 250, portion: 150 },
+    { n: ['בשר', 'בקר', 'סטייק', 'אנטריקוט', 'אנטרקוט'], per100: 250, portion: 150 },
+    // נתחי בקר (סלנג קצבים/על-האש ישראלי)
+    { n: ['אסאדו', 'שפונדרה', 'שפונדרות', 'צלעות בקר', 'צלעות', 'ספר ריבס', 'ספריבס'], per100: 320, portion: 200 },
+    { n: ['פיקניה', 'פיקנייה', 'שייטל', 'כובע השייטל'], per100: 215, portion: 200 },
+    { n: ['פילה בקר', 'פילה', 'פילה מדומה', 'טנדרלוין'], per100: 200, portion: 200 },
+    { n: ['סינטה', 'ריב איי', 'ריביי', 'טומהוק', 'דנוור', 'פלאנק', 'רוסטביף', 'בריסקט', 'חזה בקר', 'אוסובוקו', 'כתף בקר', 'צלי בקר', 'שריר', 'נתח קצבים', 'וייסבראטן'], per100: 250, portion: 200 },
+    { n: ['כבש', 'טלה', 'צלעות כבש', 'כתף כבש', 'שוק כבש'], per100: 290, portion: 200 },
+    { n: ['קבב', 'קבאב'], perItem: 110 },
+    { n: ['נקניקיה', 'נקניקיות', 'נקניק'], perItem: 250 },
+    { n: ['כבד', 'כבד עוף', 'כבד קצוץ'], per100: 165, portion: 120 },
     { n: ['קציצה', 'קציצות'], perItem: 120 },
     { n: ['שניצל'], perItem: 300 },
     { n: ['סלמון'], per100: 208, portion: 150 },
@@ -64,7 +73,7 @@
     { n: ['עוגה', 'עוגייה', 'עוגיות', 'מאפה', 'קרואסון'], perItem: 300 },
     { n: ['גלידה'], per100: 210, portion: 100 },
     { n: ['פיצה'], perItem: 285 },
-    { n: ['המבורגר'], perItem: 350 },
+    { n: ['המבורגר', 'חמבורגר', 'בורגר'], perItem: 350 },
     { n: ['שווארמה'], per100: 220, portion: 200 },
     { n: ['פלאפל'], perItem: 60 },
     { n: ['קורנפלקס', 'דגני בוקר', 'גרנולה'], per100: 380, portion: 40 },
@@ -73,13 +82,141 @@
     { n: ['קפה הפוך', 'קפוצ׳ינו', 'לאטה'], perItem: 60 },
     { n: ['קולה', 'משקה קל', 'מיץ', 'סודה מתוקה'], per100: 42, portion: 330 },
     { n: ['בירה'], per100: 43, portion: 330 },
-    { n: ['יין'], per100: 83, portion: 150 }
+    { n: ['יין'], per100: 83, portion: 150 },
+
+    /* ---- מוצרי חלב וגבינות ---- */
+    { n: ['מוצרלה'], per100: 280, portion: 30 },
+    { n: ['פטה', 'גבינה בולגרית', 'בולגרית', 'צפתית'], per100: 260, portion: 30 },
+    { n: ['קרם גבינה', 'גבינת שמנת', 'שמנת חמוצה', 'שמנת'], per100: 250, portion: 30 },
+    { n: ['לבנה', 'לאבנה'], per100: 150, portion: 60 },
+    { n: ['ריקוטה'], per100: 174, portion: 50 },
+    { n: ['מעדן', 'דנונה', 'פודינג', 'מוס'], per100: 130, portion: 120 },
+
+    /* ---- מאפים, לחמים ומאפי בצק ---- */
+    { n: ['לאפה'], perItem: 280 },
+    { n: ['טורטיה', 'טורטייה', 'רפפה'], perItem: 150 },
+    { n: ['בורקס', 'בורקסים'], perItem: 350 },
+    { n: ['סמבוסק', 'סמבוסק'], perItem: 250 },
+    { n: ['ג׳חנון', 'גחנון'], perItem: 450 },
+    { n: ['מלוואח', 'מלאווח'], perItem: 500 },
+    { n: ['בייגל', 'בייגלה'], perItem: 250 },
+    { n: ['רוגלך', 'רוגלעך'], perItem: 120 },
+    { n: ['מאפין', 'מפין'], perItem: 380 },
+    { n: ['סופגניה', 'סופגנייה', 'דונאט'], perItem: 300 },
+    { n: ['פריכיות', 'פריכית'], perItem: 35 },
+    { n: ['מוזלי'], per100: 360, portion: 40 },
+
+    /* ---- מנות מבושלות ---- */
+    { n: ['שקשוקה'], per100: 110, portion: 300 },
+    { n: ['לזניה', 'לזניות'], per100: 135, portion: 300 },
+    { n: ['ניוקי'], per100: 130, portion: 200 },
+    { n: ['רביולי'], per100: 160, portion: 200 },
+    { n: ['מג׳דרה', 'מגדרה'], per100: 150, portion: 200 },
+    { n: ['ריזוטו'], per100: 160, portion: 250 },
+    { n: ['קארי', 'קרי'], per100: 150, portion: 300 },
+    { n: ['פאד תאי'], per100: 150, portion: 300 },
+    { n: ['ראמן'], perItem: 450 },
+    { n: ['סושי'], perItem: 45 },
+    { n: ['ספרינג רול', 'אגרול'], perItem: 120 },
+    { n: ['נאגטס', 'נגיסים'], perItem: 50 },
+    { n: ['סביח'], perItem: 500 },
+    { n: ['בוריטו'], perItem: 600 },
+    { n: ['טאקו'], perItem: 200 },
+    { n: ['נאצוס', 'נאצ׳וס', "נאצ'וס"], per100: 500, portion: 80 },
+    { n: ['קסדייה', 'קוסדייה'], perItem: 400 },
+    { n: ['מרק עוף', 'מרק ירקות', 'מרק'], per100: 40, portion: 300 },
+
+    /* ---- בשר, נקניקים ודגים ---- */
+    { n: ['פסטרמה', 'חזה הודו', 'נקניק הודו'], per100: 120, portion: 40 },
+    { n: ['סלמי', 'קבנוס', 'מרגז', 'צ׳וריסו'], per100: 350, portion: 40 },
+    { n: ['בייקון'], per100: 540, portion: 30 },
+    { n: ['אווז', 'ברווז'], per100: 250, portion: 150 },
+    { n: ['הרינג', 'מטיאס'], per100: 260, portion: 80 },
+    { n: ['סרדינים', 'סרדין'], per100: 208, portion: 80 },
+    { n: ['שרימפס', 'שרימפ', 'חסילונים'], per100: 99, portion: 100 },
+    { n: ['קלמארי', 'קלמרי', 'דיונון'], per100: 175, portion: 100 },
+    { n: ['מקרל', 'מקרלה', 'מוסר ים'], per100: 205, portion: 120 },
+    { n: ['פילה דג', 'מושט', 'דניס', 'לברק', 'בורי'], per100: 130, portion: 150 },
+
+    /* ---- ירקות ---- */
+    { n: ['ברוקולי'], per100: 34, portion: 150 },
+    { n: ['כרובית'], per100: 25, portion: 150 },
+    { n: ['כרוב', 'כרוב סגול'], per100: 25, portion: 100 },
+    { n: ['חסה', 'עלים ירוקים', 'רוקט'], per100: 15, portion: 50 },
+    { n: ['תרד', 'מנגולד'], per100: 23, portion: 100 },
+    { n: ['קישוא', 'קישואים'], per100: 17, portion: 150 },
+    { n: ['חציל', 'חצילים'], per100: 25, portion: 150 },
+    { n: ['דלעת', 'דלורית'], per100: 26, portion: 150 },
+    { n: ['פטריות', 'פטרייה', 'שמפיניון'], per100: 22, portion: 100 },
+    { n: ['בצל', 'שום'], per100: 40, portion: 30 },
+    { n: ['תירס', 'קלח תירס'], per100: 96, portion: 100 },
+    { n: ['אפונה'], per100: 81, portion: 100 },
+    { n: ['שעועית ירוקה', 'במיה'], per100: 35, portion: 100 },
+    { n: ['סלק'], per100: 43, portion: 100 },
+    { n: ['מטבוחה', 'סלט חצילים', 'סלט טורקי'], per100: 120, portion: 60 },
+    { n: ['אדממה'], per100: 120, portion: 100 },
+
+    /* ---- פירות ---- */
+    { n: ['מנגו'], per100: 60, portion: 150, perItem: 200 },
+    { n: ['אננס'], per100: 50, portion: 150 },
+    { n: ['קיווי'], perItem: 45 },
+    { n: ['אפרסק', 'נקטרינה'], perItem: 60 },
+    { n: ['שזיף', 'שזיפים'], perItem: 30 },
+    { n: ['משמש', 'משמשים'], perItem: 17 },
+    { n: ['רימון'], perItem: 130 },
+    { n: ['תאנה', 'תאנים'], perItem: 40 },
+    { n: ['תמר', 'תמרים'], perItem: 20 },
+    { n: ['אשכולית'], perItem: 100 },
+    { n: ['דובדבן', 'דובדבנים'], per100: 63, portion: 100 },
+    { n: ['אוכמניות', 'פטל', 'פירות יער'], per100: 57, portion: 100 },
+    { n: ['ליצ׳י', 'ליצי'], per100: 66, portion: 100 },
+    { n: ['פסיפלורה'], perItem: 17 },
+    { n: ['פירות יבשים', 'צימוקים', 'משמש מיובש'], per100: 300, portion: 40 },
+
+    /* ---- אגוזים וזרעים ---- */
+    { n: ['פיסטוק', 'פיסטוקים'], per100: 560, portion: 30 },
+    { n: ['אגוזי מלך', 'אגוז מלך', 'פקאן'], per100: 650, portion: 30 },
+    { n: ['גרעינים', 'גרעיני חמניה', 'גרעיני דלעת', 'זרעים', 'צ׳יה', "צ'יה", 'פשתן'], per100: 560, portion: 20 },
+
+    /* ---- ממתקים וחטיפים ---- */
+    { n: ['וופל', 'וופלים'], perItem: 130 },
+    { n: ['בראוני'], perItem: 250 },
+    { n: ['מלבי'], perItem: 200 },
+    { n: ['עוגת גבינה'], perItem: 350 },
+    { n: ['טירמיסו'], perItem: 400 },
+    { n: ['קרמבו'], perItem: 110 },
+    { n: ['חלבה'], per100: 540, portion: 30 },
+    { n: ['פופקורן'], per100: 480, portion: 30 },
+    { n: ['מרשמלו'], per100: 320, portion: 20 },
+    { n: ['סוכריות', 'סוכריה', 'ג׳לי', 'טופי'], per100: 380, portion: 30 },
+    { n: ['חטיף אנרגיה', 'חטיף גרנולה', 'חטיף חלבון', 'חטיף בריאות'], perItem: 200 },
+
+    /* ---- רטבים וממרחים ---- */
+    { n: ['קטשופ'], per100: 100, portion: 15 },
+    { n: ['חרדל'], per100: 66, portion: 10 },
+    { n: ['רוטב סויה', 'סויה'], per100: 60, portion: 15 },
+    { n: ['פסטו'], per100: 450, portion: 20 },
+    { n: ['רוטב עגבניות', 'רסק עגבניות'], per100: 40, portion: 60 },
+    { n: ['רוטב סלט', 'ויניגרט', 'רוטב שמנת'], per100: 300, portion: 20 },
+    { n: ['סלסה', 'גוואקמולה'], per100: 130, portion: 40 },
+    { n: ['סילאן', 'סירופ מייפל', 'ריבה', 'ממרח שוקולד', 'נוטלה'], per100: 320, portion: 20 },
+
+    /* ---- משקאות ---- */
+    { n: ['מים', 'מים מינרלים', 'סודה'], per100: 0, portion: 250 },
+    { n: ['תה', 'תה צמחים', 'תה ירוק'], perItem: 2 },
+    { n: ['שוקו', 'שוקולד חם', 'קקאו'], per100: 80, portion: 250 },
+    { n: ['מיץ תפוזים', 'מיץ טבעי', 'מיץ סחוט'], per100: 45, portion: 250 },
+    { n: ['סמות׳י', 'סמוזי', 'שייק פירות'], per100: 60, portion: 300 },
+    { n: ['משקה אנרגיה', 'רד בול'], per100: 45, portion: 250 },
+    { n: ['וודקה', 'וויסקי', 'ערק', 'ג׳ין', 'רום', 'טקילה', 'ליקר', 'קוקטייל'], per100: 250, portion: 40 }
   ];
 
   // תוויות אנגלית לתצוגה (לפי השם העברי הקנוני של המזון)
   const EN_FOOD = {
     'אורז': 'Rice', 'פסטה': 'Pasta', 'קינואה': 'Quinoa', 'בורגול': 'Bulgur', 'קוסקוס': 'Couscous',
     'חזה עוף': 'Chicken', 'הודו': 'Turkey', 'בשר': 'Beef', 'קציצה': 'Meatballs', 'שניצל': 'Schnitzel',
+    'אסאדו': 'Asado (short ribs)', 'פיקניה': 'Picanha', 'פילה בקר': 'Beef fillet', 'סינטה': 'Sirloin/steak',
+    'כבש': 'Lamb', 'קבב': 'Kebab', 'נקניקיה': 'Sausage', 'כבד': 'Liver',
     'סלמון': 'Salmon', 'דג': 'Fish', 'טונה': 'Tuna', 'טופו': 'Tofu', 'ביצה': 'Egg',
     'לחם לבן': 'Bread', 'פיתה': 'Pita', 'לחמניות': 'Roll', 'מיונז': 'Mayonnaise', 'דוריטוס': 'Chips/snack',
     'קרקר': 'Crackers', 'תפוח אדמה': 'Potato', 'ציפס': 'Fries', 'סלט': 'Salad', 'ירקות': 'Vegetables',
@@ -90,7 +227,30 @@
     'סוכר': 'Sugar', 'דבש': 'Honey', 'שוקולד': 'Chocolate', 'עוגה': 'Cake/pastry', 'גלידה': 'Ice cream',
     'פיצה': 'Pizza', 'המבורגר': 'Burger', 'שווארמה': 'Shawarma', 'פלאפל': 'Falafel',
     'קורנפלקס': 'Cereal', 'שיבולת שועל': 'Oatmeal', 'קפה': 'Coffee', 'קפה הפוך': 'Latte',
-    'קולה': 'Soft drink', 'בירה': 'Beer', 'יין': 'Wine'
+    'קולה': 'Soft drink', 'בירה': 'Beer', 'יין': 'Wine',
+    // תוספות
+    'מוצרלה': 'Mozzarella', 'פטה': 'Feta', 'קרם גבינה': 'Cream cheese', 'לבנה': 'Labaneh', 'ריקוטה': 'Ricotta',
+    'מעדן': 'Dairy dessert', 'לאפה': 'Laffa', 'טורטיה': 'Tortilla', 'בורקס': 'Bourekas', 'סמבוסק': 'Sambousek',
+    'ג׳חנון': 'Jachnun', 'מלוואח': 'Malawach', 'בייגל': 'Bagel', 'רוגלך': 'Rugelach', 'מאפין': 'Muffin',
+    'סופגניה': 'Donut', 'פריכיות': 'Rice cakes', 'מוזלי': 'Muesli', 'שקשוקה': 'Shakshuka', 'לזניה': 'Lasagna',
+    'ניוקי': 'Gnocchi', 'רביולי': 'Ravioli', 'מג׳דרה': 'Mujadara', 'ריזוטו': 'Risotto', 'קארי': 'Curry',
+    'פאד תאי': 'Pad Thai', 'ראמן': 'Ramen', 'סושי': 'Sushi', 'ספרינג רול': 'Spring roll', 'נאגטס': 'Nuggets',
+    'סביח': 'Sabich', 'בוריטו': 'Burrito', 'טאקו': 'Taco', 'נאצוס': 'Nachos', 'קסדייה': 'Quesadilla',
+    'מרק עוף': 'Soup', 'פסטרמה': 'Deli turkey', 'סלמי': 'Salami', 'בייקון': 'Bacon', 'אווז': 'Duck/goose',
+    'הרינג': 'Herring', 'סרדינים': 'Sardines', 'שרימפס': 'Shrimp', 'קלמארי': 'Calamari', 'מקרל': 'Mackerel',
+    'פילה דג': 'Fish fillet', 'ברוקולי': 'Broccoli', 'כרובית': 'Cauliflower', 'כרוב': 'Cabbage', 'חסה': 'Lettuce',
+    'תרד': 'Spinach', 'קישוא': 'Zucchini', 'חציל': 'Eggplant', 'דלעת': 'Pumpkin', 'פטריות': 'Mushrooms',
+    'בצל': 'Onion/garlic', 'תירס': 'Corn', 'אפונה': 'Peas', 'שעועית ירוקה': 'Green beans', 'סלק': 'Beet',
+    'מטבוחה': 'Matbucha', 'אדממה': 'Edamame', 'מנגו': 'Mango', 'אננס': 'Pineapple', 'קיווי': 'Kiwi',
+    'אפרסק': 'Peach', 'שזיף': 'Plum', 'משמש': 'Apricot', 'רימון': 'Pomegranate', 'תאנה': 'Fig', 'תמר': 'Date',
+    'אשכולית': 'Grapefruit', 'דובדבן': 'Cherries', 'אוכמניות': 'Berries', 'ליצ׳י': 'Lychee', 'פסיפלורה': 'Passion fruit',
+    'פירות יבשים': 'Dried fruit', 'פיסטוק': 'Pistachios', 'אגוזי מלך': 'Walnuts/pecans', 'גרעינים': 'Seeds',
+    'וופל': 'Waffle', 'בראוני': 'Brownie', 'מלבי': 'Malabi', 'עוגת גבינה': 'Cheesecake', 'טירמיסו': 'Tiramisu',
+    'קרמבו': 'Krembo', 'חלבה': 'Halva', 'פופקורן': 'Popcorn', 'מרשמלו': 'Marshmallow', 'סוכריות': 'Candy',
+    'חטיף אנרגיה': 'Energy/granola bar', 'קטשופ': 'Ketchup', 'חרדל': 'Mustard', 'רוטב סויה': 'Soy sauce',
+    'פסטו': 'Pesto', 'רוטב עגבניות': 'Tomato sauce', 'רוטב סלט': 'Dressing', 'סלסה': 'Salsa/guacamole',
+    'סילאן': 'Syrup/spread', 'מים': 'Water', 'תה': 'Tea', 'שוקו': 'Cocoa/chocolate milk', 'מיץ תפוזים': 'Juice',
+    'סמות׳י': 'Smoothie', 'משקה אנרגיה': 'Energy drink', 'וודקה': 'Spirits'
   };
   const foodLabel = food => (curLang() === 'en' && EN_FOOD[food.n[0]]) ? EN_FOOD[food.n[0]] : food.n[0];
 
@@ -108,6 +268,8 @@
   const ITEM_UNITS = ['יחידה', 'יחידות', 'מנה', 'מנות', 'פיתה', 'פיתות', 'כדור', 'כדורים',
     'piece', 'pieces', 'serving', 'servings', 'unit', 'units'];
   const NUM_WORDS = { 'חצי': 0.5, 'רבע': 0.25, 'שליש': 0.33, 'זוג': 2, 'half': 0.5, 'quarter': 0.25 };
+  // מילות תיאור/מדד שאינן מזון בפני עצמן (מתעלמים מהן, לא מסמנים כ"לא זוהה")
+  const NOISE = ['נתח', 'נתחי', 'חתיכת', 'חתיכה', 'חתיכות', 'עם', 'של', 'cut', 'piece', 'of', 'with'];
 
   const clean = t => t.replace(/[.,;:!?()"'״׳]/g, '').trim().toLowerCase();
   const PREPS = ['ב', 'ל', 'ה', 'מ', 'ו', 'כ', 'ש'];
@@ -165,13 +327,13 @@
   function macroClass(name) {
     const s = String(name || '').toLowerCase();
     const has = (...w) => w.some(x => s.indexOf(x) !== -1);
-    if (has('אורז', 'פסטה', 'ספגטי', 'נודלס', 'קינואה', 'בורגול', 'קוסקוס', 'לחם', 'טוסט', 'פיתה', 'לחמני', 'באגט', 'קרקר', 'מצה', 'תפוח אדמה', 'פירה', 'בטטה', 'ציפס', 'צ׳יפס', "צ'יפס", 'דגני', 'גרנולה', 'שיבולת', 'דייס', 'פנקייק', 'טורטיה', 'סוכר', 'דבש', 'סילאן')) return 'carb';
-    if (has('עוף', 'פרגית', 'הודו', 'בשר', 'בקר', 'סטייק', 'אנטריקוט', 'קציצ', 'שניצל', 'סלמון', 'דג', 'טונה', 'טופו', 'ביצה', 'ביצים', 'חביתה', 'אומלט')) return 'protein';
-    if (has('גבינה צהובה', 'שמן', 'חמאה', 'טחינה', 'מיונ', 'חמאת בוטנים', 'שקד', 'אגוז', 'קשיו', 'בוטנים', 'אבוקדו')) return 'fat';
-    if (has('חלב', 'יוגורט', 'יופלה', 'קוטג', 'גבינה לבנה')) return 'dairy';
+    if (has('אורז', 'פסטה', 'ספגטי', 'נודלס', 'קינואה', 'בורגול', 'קוסקוס', 'לחם', 'טוסט', 'פיתה', 'לחמני', 'באגט', 'קרקר', 'מצה', 'תפוח אדמה', 'פירה', 'בטטה', 'ציפס', 'צ׳יפס', "צ'יפס", 'דגני', 'גרנולה', 'שיבולת', 'דייס', 'פנקייק', 'טורטי', 'סוכר', 'דבש', 'סילאן', 'לאפה', 'בייגל', 'לזני', 'ניוקי', 'רביולי', 'מגדר', 'מג׳דר', 'ריזוטו', 'פאד תאי', 'ראמן', 'בוריטו', 'טאקו', 'נאצ', 'קסדיי', 'פופקורן', 'פריכי', 'מוזלי', 'וופל', 'בראוני', 'מלבי', 'קרמבו', 'מרשמלו', 'קטשופ', 'מיץ', 'שוקו', 'סמות', 'סמוזי', 'רד בול', 'משקה אנרגיה', 'תמר', 'צימוק', 'פירות יבש', 'דונאט', 'סופגני', 'מאפין', 'רוגל')) return 'carb';
+    if (has('עוף', 'פרגית', 'הודו', 'בשר', 'בקר', 'סטייק', 'אנטריקוט', 'אנטרקוט', 'אסאדו', 'שפונדר', 'פיקני', 'שייטל', 'פילה', 'סינטה', 'ריב איי', 'ריביי', 'טומהוק', 'דנוור', 'בריסקט', 'אוסובוקו', 'כבש', 'טלה', 'קבב', 'קבאב', 'נקניק', 'כבד', 'צלעות', 'קציצ', 'שניצל', 'סלמון', 'דג', 'טונה', 'טופו', 'ביצה', 'ביצים', 'חביתה', 'אומלט', 'פסטרמ', 'סלמי', 'קבנוס', 'מרגז', 'צ׳וריסו', 'בייקון', 'אווז', 'ברווז', 'הרינג', 'מטיאס', 'סרדינ', 'שרימפ', 'חסילונ', 'קלמר', 'דיונון', 'מקרל', 'מושט', 'דניס', 'לברק', 'נאגטס', 'נגיסים', 'אדממ')) return 'protein';
+    if (has('גבינה צהובה', 'שמן', 'חמאה', 'טחינה', 'מיונ', 'חמאת בוטנים', 'שקד', 'אגוז', 'קשיו', 'בוטנים', 'אבוקדו', 'מוצרל', 'פטה', 'בולגרית', 'צפתית', 'קרם גבינה', 'גבינת שמנת', 'שמנת', 'פיסטוק', 'גרעינ', 'זרעים', 'צ׳יה', 'פשתן', 'פסטו', 'חלבה', 'נוטלה', 'ממרח שוקולד', 'גוואקמול')) return 'fat';
+    if (has('חלב', 'יוגורט', 'יופלה', 'קוטג', 'גבינה לבנה', 'ריקוטה', 'לבנה', 'מעדן', 'דנונה', 'פודינג', 'עוגת גבינ', 'טירמיס')) return 'dairy';
     if (has('חומוס', 'עדשים', 'שעועית', 'פול', 'קטני')) return 'legume';
-    if (has('סלט', 'ירק', 'מלפפון', 'עגבני', 'גזר', 'פלפל', 'ברוקולי', 'חסה', 'כרוב')) return 'veg';
-    if (has('תפוח', 'בננה', 'תפוז', 'קלמנטינ', 'אגס', 'ענבים', 'אבטיח', 'מלון', 'תות', 'פרי')) return 'fruit';
+    if (has('סלט', 'ירק', 'מלפפון', 'עגבני', 'גזר', 'פלפל', 'ברוקולי', 'חסה', 'כרוב', 'כרובית', 'תרד', 'מנגולד', 'קישוא', 'חציל', 'דלעת', 'דלורית', 'פטרי', 'שמפיניון', 'בצל', 'שום', 'תירס', 'אפונ', 'סלק', 'מטבוח', 'רוקט')) return 'veg';
+    if (has('תפוח', 'בננה', 'תפוז', 'קלמנטינ', 'אגס', 'ענבים', 'אבטיח', 'מלון', 'תות', 'פרי', 'מנגו', 'אננס', 'קיווי', 'אפרסק', 'נקטרינ', 'שזיף', 'משמש', 'רימון', 'תאנ', 'אשכולי', 'דובדבן', 'אוכמני', 'ליצ', 'פסיפלור', 'פטל')) return 'fruit';
     return 'mixed';
   }
   function macrosFor(name, kcal) {
@@ -186,6 +348,8 @@
     let qty = null, unit = null, i = 0;
     while (i < tokens.length) {
       const t = tokens[i];
+      // מילת תיאור/רעש (למשל "נתח", "חתיכת") – מתעלמים
+      if (NOISE.indexOf(t) !== -1) { i++; continue; }
       // מספר
       const nm = t.match(/^(\d+(?:[.,]\d+)?)$/);
       if (nm) { qty = parseFloat(nm[1].replace(',', '.')); i++; continue; }
@@ -215,7 +379,17 @@
           if (trailUnit && !afterIsFood) { q = parseFloat(tokens[j].replace(',', '.')); u = trailUnit; j += 2; }
         }
         const kcal = Math.round(kcalFor(m.food, q == null ? 1 : q, u));
-        if (kcal > 0) { const nm2 = foodLabel(m.food); items.push(Object.assign({ name: nm2, kcal }, macrosFor(nm2, kcal))); }
+        if (kcal > 0) {
+          const nm2 = foodLabel(m.food);
+          const qq = q == null ? 1 : q;
+          let grams = null, gramsUncertain = q == null || !u || u.type !== 'g';
+          if (u && u.type === 'g') grams = Math.round(qq * u.grams);
+          else if (m.food.portion) grams = Math.round(qq * m.food.portion);
+          items.push(Object.assign({
+            name: nm2, kcal, grams, gramsUncertain, source: 'estimate',
+            queryEn: EN_FOOD[m.food.n[0]] || null
+          }, macrosFor(nm2, kcal)));
+        }
         qty = null; unit = null; i = j;
       } else {
         if (t.length > 1) unmatched.push(t); // מילה לא מזוהה (תיאור/מזון חסר)
@@ -305,17 +479,22 @@
   /* ---------- נירמול תשובות ה-AI למבנה אחיד ---------- */
   function normalizeEstimate(out) {
     const items = (out.items || []).map(i => {
-      const kcal = Math.round(i.kcal || 0);
-      // אם ה-AI לא החזיר מקרו — נאמד מקומית לפי שם המזון
+      const kcal = i.kcal == null ? 0 : Math.round(Number(i.kcal) || 0);
       const hasMacro = i.carbs != null || i.protein != null || i.fat != null;
       const mac = hasMacro
         ? { carbs: Math.round(i.carbs || 0), protein: Math.round(i.protein || 0), fat: Math.round(i.fat || 0) }
         : macrosFor(i.name, kcal);
-      return Object.assign({ name: i.name, kcal }, mac);
+      const item = Object.assign({ name: i.name || '', kcal }, mac);
+      if (i.grams != null && isFinite(+i.grams)) item.grams = Math.round(+i.grams);
+      if (i.gramsUncertain || item.grams == null) item.gramsUncertain = true;
+      if (i.code != null) item.code = i.code;
+      if (i.source) item.source = i.source;
+      if (i.queryEn) item.queryEn = String(i.queryEn).slice(0, 80);
+      return item;
     });
     return {
-      total: Math.round(out.total || items.reduce((s, i) => s + i.kcal, 0)),
-      items, unmatched: [], note: out.note || '', source: 'ai'
+      total: Math.round(out.total || items.reduce((s, i) => s + (i.kcal || 0), 0)),
+      items, unmatched: out.unmatched || [], note: out.note || '', source: out.source || 'ai'
     };
   }
   function normalizeMenu(out, target) {
@@ -388,6 +567,13 @@
     ? ' Respond in English (name and note in English).'
     : ' החזר את name ואת note בעברית.';
 
+  // מילון נתחי בשר בסלנג קצבים/על-האש ישראלי, לעזור ל-AI לזהות ולאמוד נכון
+  const CUTS_GLOSSARY =
+    ' מונחי נתחי בשר ישראליים נפוצים (זהה אותם גם אחרי המילה "נתח"): ' +
+    'אסאדו/שפונדרה = צלעות בקר שמנות (~320 קק"ל ל-100 גרם); פיקניה = כובע השייטל (~215); ' +
+    'אנטריקוט/ריב איי (~290); פילה = פילה בקר רזה (~200); סינטה = סירלוין (~230); ' +
+    'דנוור/פלאנק/בריסקט/חזה בקר/אוסובוקו/כתף בקר/שריר = נתחי בקר (~230-280); כבש/טלה (~290).';
+
   const IMAGE_SYSTEM_BASE =
     'You are a precise nutrition analyzer. You received a photo of a meal. Identify the items and ' +
     'realistically estimate the total calories based on common portion sizes, considering the visible portion. ' +
@@ -404,14 +590,14 @@
     return normalizeEstimate(await callProxy(url, { action: 'estimate_image', image, lang: curLang() }));
   }
   async function estimateImageAI(image, key) {
-    return normalizeEstimate(await callClaude(key, IMAGE_SYSTEM_BASE + langLine(), imageContent(image), 1024));
+    return normalizeEstimate(await callClaude(key, IMAGE_SYSTEM_BASE + CUTS_GLOSSARY + langLine(), imageContent(image), 1024));
   }
 
   async function estimateAI(text, key) {
     const system = 'You are a nutrition assistant. Given a free-text description (in any language) of what ' +
       'someone ate, realistically estimate the total calories and macronutrients. Return JSON only, no extra text: ' +
       '{"total": number, "items": [{"name": string, "kcal": number, "carbs": number, "protein": number, "fat": number}], "note": string}. ' +
-      'carbs, protein and fat are grams for that item.' + langLine();
+      'carbs, protein and fat are grams for that item.' + CUTS_GLOSSARY + langLine();
     return normalizeEstimate(await callClaude(key, system, text, 1024));
   }
 
