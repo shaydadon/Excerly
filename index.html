@@ -267,10 +267,17 @@
         <div>
           <div class="nutri-pair" id="nutri-hero-nums"></div>
           <div class="unit" data-i18n="goalUnit">קק״ל</div>
+          <p class="section-hint" id="nutri-incomplete" hidden></p>
         </div>
       </div>
       <p class="section-hint" id="nutri-hint" data-i18n="nutriHint">כתבו בטקסט חופשי מה אכלתם — המערכת תזהה את המזון, ואתם תאשרו מקור וכמות לפני השמירה.</p>
       <div class="nutri-target" id="nutri-target"></div>
+      <div class="seg" id="slot-toggle" role="group" aria-label="meal slot">
+        <button type="button" data-slot="breakfast" data-i18n="slotBreakfast">ארוחת בוקר</button>
+        <button type="button" data-slot="lunch" data-i18n="slotLunch">ארוחת צהריים</button>
+        <button type="button" data-slot="dinner" data-i18n="slotDinner">ארוחת ערב</button>
+        <button type="button" data-slot="snack" data-i18n="slotSnack">חטיף</button>
+      </div>
       <p class="ask" data-i18n="foodLabel">מה אכלתי היום?</p>
       <div class="day-meals" id="day-meals"></div>
       <div id="micro-summary"></div>
@@ -411,6 +418,7 @@
   <script src="assets/js/nutrition.js"></script>
   <script src="assets/js/nutrients.js"></script>
   <script src="assets/js/usda.js"></script>
+  <script src="assets/js/mealcard.js"></script>
   <script src="assets/js/workout.js"></script>
   <script src="assets/js/gcal.js"></script>
   <script src="assets/js/app.js"></script>

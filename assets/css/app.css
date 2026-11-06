@@ -235,7 +235,7 @@ textarea { min-height: 72px; resize: vertical; }
 .nutri-pair.light .pair-item span { color: var(--muted); }
 .nutri-pair.light .iso-num { color: var(--ink); font-size: 22px; }
 .iso-num { unicode-bidi: isolate; direction: ltr; display: inline-block; }
-.nutri-hero .unit { color: #E7D7CC; font-size: 14px; font-weight: 500; margin-top: 4px; }
+.nutri-hero .unit, .nutri-hero .section-hint { color: #E7D7CC; font-size: 14px; font-weight: 500; margin-top: 4px; }
 .ask { font-size: 20px; font-weight: 700; margin: 8px 0; }
 .food-row { display: flex; gap: 8px; align-items: center; }
 .food-row textarea { flex: 1; min-height: 52px; }
@@ -271,6 +271,23 @@ textarea { min-height: 72px; resize: vertical; }
 }
 .dm-macros { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; color: var(--muted); font-size: 13px; }
 .dm-mac b { color: var(--ink); }
+.log-card {
+  display: grid; grid-template-columns: 92px 1fr; gap: 10px; align-items: start;
+  background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 12px; margin: 0 0 12px;
+}
+.log-card.pending { border-style: dashed; }
+.log-photo, .log-ph {
+  width: 92px; height: 92px; border-radius: 16px; object-fit: cover; background: var(--card-2);
+  display: grid; place-items: center; color: var(--olive);
+}
+.log-ph svg { width: 42px; height: 42px; }
+.log-cap { display: block; font-size: 11px; font-weight: 600; color: var(--muted); margin-top: 4px; line-height: 1.3; }
+.log-slot { font-size: 12px; font-weight: 800; color: var(--accent-ink); }
+.log-name { font-weight: 800; overflow-wrap: anywhere; margin: 2px 0 6px; }
+.log-comp { border-top: 1px solid var(--line); padding: 8px 0; }
+.log-q { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.log-q input { flex: 1 1 120px; min-width: 0; }
+.log-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .meal-card { display: grid; grid-template-columns: 84px 1fr; gap: 10px; align-items: center; }
 .meal-card .ph {
   width: 84px; height: 72px; border-radius: 14px; background: var(--card-2);

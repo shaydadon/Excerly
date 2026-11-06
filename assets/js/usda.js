@@ -91,6 +91,7 @@
       description: food.description || '',
       dataType: food.dataType || '',
       per100g: per100,
+      portions: food.foodPortions || [],
       keyMode: r.data.keyMode || null,
       retrievedAt: new Date().toISOString()
     };
