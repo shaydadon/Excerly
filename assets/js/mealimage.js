@@ -39,11 +39,21 @@
   // ספק חיצוני אופציונלי; כישלון = נשארים עם התמונה המייצגת
   async function requestFromProvider(meal) {
     const conf = global.EXCERLY_CONFIG || {};
-    if (!conf.mealImageProvider || (meal && meal.photoKind === 'user')) return null;
+    if (!conf.mealImageProvider || (meal && meal.photoKind === 'user' && meal.photo)) return null;
+    if (representative(meal).src) return null;
     try {
       const res = await fetch(conf.mealImageProvider, {
         method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ action: 'meal_image', name: meal.name, items: (meal.components || []).map(c => c.queryEn || c.name) })
+        body: JSON.stringify({
+        action: 'meal_image',
+        name: meal.name,
+        items: (meal.components || []).map(c => ({
+          name: c.name || '',
+          queryEn: c.queryEn || '',
+          grams: c.grams,
+          cookingMethod: c.cookingMethod || c.method || ''
+        }))
+      })
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data || !data.src) return null;

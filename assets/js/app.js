@@ -1519,6 +1519,7 @@
     MC.resolveMeal(meal, api, window.ExcerlyNutrients).then(next => {
       setMeals(key, getMeals(key).map(m => m.id === id ? next : m));
       refreshNutrition();
+      queueMealImage(key, id);
     }).catch(() => {});
   }
 
@@ -1692,6 +1693,42 @@
     refreshNutrition();
     return key;
   }
+  function shrinkMealImage(src) {
+    const MAX = 80000;
+    if (!src || typeof document === 'undefined') return Promise.resolve(src && src.length <= MAX ? src : null);
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, 512 / Math.max(img.width || 1, img.height || 1));
+        const w = Math.max(1, Math.round((img.width || 512) * scale));
+        const h = Math.max(1, Math.round((img.height || 512) * scale));
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        let q = 0.72, out = c.toDataURL('image/jpeg', q);
+        while (out.length > MAX && q > 0.4) { q -= 0.08; out = c.toDataURL('image/jpeg', q); }
+        resolve(out.length <= MAX ? out : null);
+      };
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
+  }
+  function queueMealImage(key, id) {
+    const meal = getMeals(key).find(m => m.id === id);
+    if (!meal || !window.ExcerlyMealImage) return;
+    ExcerlyMealImage.requestFromProvider(meal).then(img => {
+      if (!img || !img.src) return null;
+      return shrinkMealImage(img.src).then(small => {
+        if (!small) return;
+        const next = getMeals(key).map(m => m.id === id ? Object.assign({}, m, {
+          image: { src: small, kind: 'generated', provider: 'workers-ai' }
+        }) : m);
+        if (JSON.stringify(next).length > 1200000) return;
+        setMeals(key, next);
+        refreshNutrition();
+      });
+    }).catch(() => {});
+  }
   function logTextMeal(text, photo) {
     const MC = window.ExcerlyMealCard;
     if (!MC) return;
@@ -1713,6 +1750,7 @@
         if (photo) { next.photo = photo; next.photoKind = 'user'; }
         setMeals(key, getMeals(key).map(m => m.id === meal.id ? next : m));
         refreshNutrition();
+        queueMealImage(key, meal.id);
       }).catch(() => resolveStoredMeal(key, meal.id));
       return;
     }

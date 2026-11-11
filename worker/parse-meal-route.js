@@ -25,6 +25,17 @@ const PICK_SYSTEM =
   'Prefer a plain, unbranded, cooked-form match that fits the cookingMethod (fried/grilled/roasted). ' +
   'Do not return nutrition values.';
 
+// Haiku 4.5 rejects output_config.effort ("This model does not support the effort parameter").
+// Do not send effort, output_config, or thinking on this route.
+export function anthropicMessagesBody(model, system, user, maxTokens) {
+  return {
+    model,
+    max_tokens: maxTokens || 1024,
+    system,
+    messages: [{ role: 'user', content: user }]
+  };
+}
+
 async function callJsonModel(env, model, system, user, maxTokens) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -33,13 +44,7 @@ async function callJsonModel(env, model, system, user, maxTokens) {
       'x-api-key': env.ANTHROPIC_API_KEY,
       'anthropic-version': '2023-06-01'
     },
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens || 1024,
-      output_config: { effort: 'low' },
-      system,
-      messages: [{ role: 'user', content: user }]
-    })
+    body: JSON.stringify(anthropicMessagesBody(model, system, user, maxTokens))
   });
   const raw = await res.text();
   if (!res.ok) return { error: true, status: res.status, detail: raw.slice(0, 400) };
@@ -197,5 +202,96 @@ export async function handleParseMeal(body, env) {
   const ingredients = (parsed.parsed.ingredients || []).map(stripNutrition).filter(i => i.nameHe && i.grams > 0);
   const meal = applyOfficial(ingredients, indexed, parsed.parsed.note || '');
   return { error: false, parsed: meal };
+}
+
+const imageHits = [];
+const imageMem = new Map();
+
+export function resetMealImageState() {
+  imageHits.length = 0;
+  imageMem.clear();
+}
+
+export function mealImagePrompt(body) {
+  const items = Array.isArray(body && body.items) ? body.items.slice(0, 12) : [];
+  const bits = items.map(it => {
+    if (it == null) return '';
+    if (typeof it === 'string') return it.slice(0, 80);
+    const name = String(it.queryEn || it.nameEn || it.name || '').slice(0, 80);
+    const grams = Number(it.grams);
+    const g = isFinite(grams) && grams > 0 ? Math.round(grams) + ' g' : '';
+    const method = String(it.cookingMethod || it.method || '').slice(0, 40);
+    return [g, method, name].filter(Boolean).join(' ');
+  }).filter(Boolean);
+  return [
+    'Photorealistic overhead photo of this homemade meal on a plain ceramic plate, natural daylight, no text, no logo, no watermark, no people.',
+    body && body.name ? 'The meal is: ' + String(body.name).slice(0, 180) + '.' : '',
+    bits.length ? 'Visible food: ' + bits.join('; ') + '.' : ''
+  ].filter(Boolean).join(' ').slice(0, 2048);
+}
+
+export async function mealImageKey(body) {
+  const text = mealImagePrompt(body);
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function imageLimited(ip, limit, windowMs) {
+  const now = Date.now();
+  const max = limit || 6;
+  const win = windowMs || 10 * 60 * 1000;
+  for (let i = imageHits.length - 1; i >= 0; i--) if (now - imageHits[i].t > win) imageHits.splice(i, 1);
+  if (imageHits.filter(h => h.ip === ip).length >= max) return true;
+  imageHits.push({ ip, t: now });
+  return false;
+}
+
+function asDataUrl(image) {
+  if (!image) return null;
+  if (typeof image === 'string') {
+    if (image.startsWith('data:image/')) return image;
+    return 'data:image/jpeg;base64,' + image.replace(/\s/g, '');
+  }
+  return null;
+}
+
+export async function handleMealImage(body, env, ip) {
+  const who = ip || 'anon';
+  const limit = env && env.MEAL_IMAGE_LIMIT ? parseInt(env.MEAL_IMAGE_LIMIT, 10) : 6;
+  if (!env || !env.AI || typeof env.AI.run !== 'function') {
+    return { error: true, status: 501, detail: 'Workers AI binding missing' };
+  }
+  const prompt = mealImagePrompt(body);
+  if (!prompt || prompt.length < 20) return { error: true, status: 400, detail: 'missing meal description' };
+  const key = await mealImageKey(body);
+  if (imageMem.has(key)) return { error: false, parsed: { src: imageMem.get(key), cached: true } };
+  try {
+    if (typeof caches !== 'undefined' && caches.default) {
+      const hit = await caches.default.match('https://excerly-meal-image.local/' + key);
+      if (hit) {
+        const src = await hit.text();
+        imageMem.set(key, src);
+        return { error: false, parsed: { src, cached: true } };
+      }
+    }
+  } catch (e) {}
+  if (imageLimited(who, limit)) return { error: true, status: 429, detail: 'rate_limited' };
+  let result;
+  try {
+    result = await env.AI.run('@cf/black-forest-labs/flux-1-schnell', { prompt, steps: 4 });
+  } catch (e) {
+    return { error: true, status: 502, detail: 'image_failed' };
+  }
+  const src = asDataUrl(result && (result.image || result));
+  if (!src) return { error: true, status: 502, detail: 'image_failed' };
+  imageMem.set(key, src);
+  try {
+    if (typeof caches !== 'undefined' && caches.default) {
+      await caches.default.put('https://excerly-meal-image.local/' + key, new Response(src, {
+        headers: { 'content-type': 'text/plain', 'cache-control': 'public, max-age=86400' }
+      }));
+    }
+  } catch (e) {}
+  return { error: false, parsed: { src, cached: false } };
 }
 
