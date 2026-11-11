@@ -4,14 +4,19 @@
    Nutrition is scaled from that code. No image generation and no new secret.
    ============================================================= */
 
+import { stabilizeIngredient, describeDish } from './portions.mjs';
+
 const PARSE_MODEL_DEFAULT = 'claude-haiku-4-5'; // cheap, Hebrew is strong; override with env.PARSE_MODEL
 
 const PARSE_SYSTEM =
   'You parse a free-text Hebrew (or mixed) meal description into ingredients. ' +
   'Return JSON only, no text before or after, in the shape ' +
-  '{"dishEn":string,"ingredients":[{"nameHe":string,"nameEn":string,"grams":number,"count":number|null,"unit":string|null,"cookingMethod":string|null,"confidence":number}],"note":string}. ' +
-  'dishEn is one English sentence under 25 words naming the concrete foods, cooking method, and plating. ' +
-  'nameEn is a short English food name for that ingredient. Both must be English, never Hebrew. ' +
+  '{"dishEn":string,"ingredients":[{"nameHe":string,"nameEn":string,"grams":number,"count":number|null,"unit":string|null,"role":"food"|"marinade"|"frying_oil","cookingMethod":string|null,"confidence":number}],"note":string}. ' +
+  'dishEn is under 25 English words and must describe preparation and plating, not a bare shopping list. ' +
+  'Example: "pan-fried soy-marinated chicken fillet strips, not breaded, in a white roll with tahini and amba visible". ' +
+  'If the text does not say breaded, schnitzel, or coated, dishEn must say the chicken is not breaded. ' +
+  'nameEn is a short English food name. Both must be English, never Hebrew. ' +
+  'Each ingredient has role "food", "marinade", or "frying_oil". A sauce used as מרינדה is role marinade. Oil used for מטוגנים ב is role frying_oil. ' +
   'Do not output calories, protein, carbs, fat, sodium, or vitamin values. Nutrition is computed later from a food database. ' +
   'Rules: split compound phrases — "4 חתיכות של פילה עוף מרינדת כף רוטב סויה" is chicken pieces AND 1 tbsp soy sauce. ' +
   '"מרינדה/מרינדת/במרינדה" is a method, not a food. "מטוגנים בכף שמן זית" is 1 tbsp olive oil plus a fried cookingMethod on the food. ' +
@@ -33,6 +38,7 @@ export function anthropicMessagesBody(model, system, user, maxTokens) {
   return {
     model,
     max_tokens: maxTokens || 1024,
+    temperature: 0,
     system,
     messages: [{ role: 'user', content: user }]
   };
@@ -65,7 +71,8 @@ function stripNutrition(ing) {
     grams: Number(ing.grams),
     count: ing.count == null ? null : Number(ing.count),
     unit: ing.unit ? String(ing.unit).slice(0, 20) : null,
-    cookingMethod: ing.cookingMethod ? String(ing.cookingMethod).slice(0, 20) : null,
+    cookingMethod: ing.cookingMethod ? String(ing.cookingMethod).slice(0, 40) : null,
+    role: ing.role ? String(ing.role).slice(0, 20) : null,
     confidence: ing.confidence == null ? null : Number(ing.confidence)
   };
 }
@@ -141,9 +148,9 @@ function scaleFromCode(pack, food, grams) {
   };
 }
 
-function applyOfficial(ingredients, pack, note) {
+function applyOfficial(ingredients, pack, note, sourceText) {
   const items = (ingredients || []).map((ing) => {
-    const grams = Number(ing.grams);
+    const coded = Object.assign({}, ing);
     const cands = candidatesFor(pack, ing.nameHe, ing.nameEn);
     let code = preferredCode(ing.nameHe);
     let via = code ? 'preferred-map' : null;
@@ -155,10 +162,15 @@ function applyOfficial(ingredients, pack, note) {
       code = cands[0].code;
       via = 'top-candidate';
     }
+    coded.govilCode = code;
+    const stable = stabilizeIngredient(coded, sourceText);
+    const grams = Number(stable.grams);
     const food = code != null ? pack.byCode[code] : null;
     const item = {
       nameHe: ing.nameHe, nameEn: ing.nameEn || '',
       grams: isFinite(grams) ? grams : null,
+      gramsStated: stable.gramsStated,
+      role: stable.role,
       count: ing.count, unit: ing.unit, cookingMethod: ing.cookingMethod,
       confidence: ing.confidence,
       candidates: cands.map(c => ({ code: c.code, name: c.name })),
@@ -214,8 +226,9 @@ export async function handleParseMeal(body, env) {
   };
   const ingredients = (parsed.parsed.ingredients || []).map(stripNutrition).filter(i => i.nameHe && i.grams > 0);
   ingredients.forEach(ing => { ing.nameEn = latinOnly(ing.nameEn); });
-  const meal = applyOfficial(ingredients, indexed, parsed.parsed.note || '');
-  meal.dishEn = latinOnly(parsed.parsed.dishEn).split(/\s+/).filter(Boolean).slice(0, 25).join(' ');
+  const meal = applyOfficial(ingredients, indexed, parsed.parsed.note || '', text);
+  const modelDish = latinOnly(parsed.parsed.dishEn).split(/\s+/).filter(Boolean).slice(0, 25).join(' ');
+  meal.dishEn = describeDish(text, ingredients) || modelDish;
   return { error: false, parsed: meal };
 }
 
@@ -238,11 +251,22 @@ export function mealImagePrompt(body) {
   }).filter(w => w.length >= 3);
   const subject = (dish.split(/\s+/).filter(Boolean).length >= 2 ? dish : foods.join(', ')).slice(0, 400);
   if (!subject || !/[A-Za-z]{3}/.test(subject)) return null;
+  const cues = [];
+  if (/chicken/i.test(subject) && !/breaded|schnitzel|coated/i.test(subject)) {
+    cues.push('The chicken is plain fillet strips, not breaded and not a schnitzel.');
+  }
+  if (/tahini|amba|mustard|sauce/i.test(subject)) {
+    cues.push('The sauces are visible on the filling.');
+  }
+  const framing = /roll|sandwich|pita/i.test(subject)
+    ? 'A realistic close-up food photograph of this sandwich with the filling visible, on a plain off-white surface: '
+    : 'A realistic overhead food photograph of exactly this meal on one plain off-white plate: ';
   return (
-    'A realistic overhead food photograph of exactly this meal on one plain off-white plate: ' + subject + '. ' +
+    framing + subject + '. ' +
+    cues.join(' ') + ' ' +
     'Show only those foods, cooked and plated as described. Natural window light, shallow depth of field, ' +
     'no text, no logo, no watermark, no people, no extra dishes, no garnish that was not named.'
-  ).slice(0, 2048);
+  ).replace(/\s+/g, ' ').trim().slice(0, 2048);
 }
 
 export async function mealImageKey(body) {

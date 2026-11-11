@@ -387,6 +387,14 @@
       if (govilCode && G && G.food) {
         const gf = G.food(govilCode);
         if (gf && gf.e && !comp.queryEn) comp.queryEn = gf.e;
+        const srcText = next.text || next.name || '';
+        if (gf && comp.grams != null && /מרינד|מושרה/.test(srcText) && /סויה/.test(comp.name || '')) {
+          comp.gramsStated = comp.grams; comp.role = 'marinade';
+          comp.grams = Math.round(comp.grams * 0.25 * 10) / 10;
+        } else if (gf && comp.grams != null && /מטוגנ/.test(srcText) && /שמן/.test(comp.name || '')) {
+          comp.gramsStated = comp.grams; comp.role = 'frying_oil';
+          comp.grams = Math.round(comp.grams * 0.4 * 10) / 10;
+        }
         if (gf && comp.grams != null) {
           applyOfficial(comp, G.per100(gf), comp.grams, {
             name: comp.name, source: 'govil', govilCode: gf.c, sml: gf.s,

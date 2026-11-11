@@ -6,6 +6,7 @@ import fs from 'fs';
 import vm from 'vm';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
+import { stabilizeIngredient } from '../worker/portions.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const V57 = process.env.EXCERLY_V57 || path.resolve(HERE, '..');
@@ -98,14 +99,17 @@ export function applyOfficial(ingredients, opts) {
   const G = ctx.ExcerlyGovil;
   const N = ctx.ExcerlyNutrients;
   const items = (ingredients || []).map((ing, i) => {
-    const grams = Number(ing.grams);
     const cands = candidatesFor(G, ing.nameHe, ing.nameEn, 6);
     const pick = pickCode(G, ing, cands);
+    const stable = stabilizeIngredient(Object.assign({}, ing, { govilCode: pick.code }), (opts && opts.sourceText) || '');
+    const grams = Number(stable.grams);
     const item = {
       id: 'c' + i,
       nameHe: ing.nameHe,
       nameEn: ing.nameEn || '',
       grams: isFinite(grams) ? grams : null,
+      gramsStated: stable.gramsStated,
+      role: stable.role,
       count: ing.count ?? null,
       unit: ing.unit || null,
       cookingMethod: ing.cookingMethod || null,
@@ -164,7 +168,7 @@ export function parseWithMock(mock) {
     }
     return rest;
   });
-  return applyOfficial(clean, { note: mock.note || '' });
+  return applyOfficial(clean, { note: mock.note || '', sourceText: mock.text || '' });
 }
 
 export { loadEngine, PREFERRED, candidatesFor };
