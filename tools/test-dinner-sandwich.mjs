@@ -87,18 +87,18 @@ await test('resolves with sane totals; 222.8 g protein / 1437 kcal must not recu
   assert.notEqual(meal.protein, 222.8);
   assert.notEqual(meal.kcal, 1437);
   if (mode === 'v56') {
-    // Roll 44 g + chicken 140 g + tahini 30 g from USDA core; amba unmatched (not in core).
+    // Roll 80 g + chicken 140 g + tahini 30 g from USDA core; amba unmatched (not in core).
     assert.equal(meal.status, 'partial');
     assert.equal(meal.components[3].questionKey, 'noMatch');
     // Partial rollup uses rounded per-item kcal (tahini 178.5 → 179) so the header is 533;
     // the unrounded nutrient table energy is 532.26 → displayed 532.
-    assert.equal(meal.kcal, 533);
-    assert.equal(meal.protein, 52.8);
-    assert.equal(meal.carbs, 28.5); // rounded component sum (table 28.4) because amba is open
-    assert.equal(meal.fat, 22.8);
-    assert.ok(Math.abs(meal.provenance.nutrients.energy.amount - 532.26) < 0.05);
+    assert.equal(meal.kcal, 633);
+    assert.equal(meal.protein, 56.3);
+    assert.equal(meal.carbs, 46.5);
+    assert.equal(meal.fat, 24.2);
+    assert.ok(Math.abs(meal.provenance.nutrients.energy.amount - 632.7) < 0.05);
     const na = meal.provenance.nutrients.sodium.amount;
-    assert.ok(Math.abs(na - 355.46) < 0.05, na);
+    assert.ok(Math.abs(na - 533.3) < 0.05, na);
   } else {
     const amba = meal.components[3];
     assert.equal(amba.coreKey, 'amba');
@@ -109,11 +109,11 @@ await test('resolves with sane totals; 222.8 g protein / 1437 kcal must not recu
     assert.equal(meal.status, 'confirmed');
     assert.equal(meal.kcalIncomplete, false);
     assert.equal(meal.provenance.source, 'govil');
-    // 140 g chicken 805 + 44 g roll 10124 + 30 g tahini 1898 + 11 g amba 3267
-    assert.equal(meal.kcal, 549);
-    assert.equal(meal.protein, 53.1);
-    assert.equal(meal.carbs, 24.4);
-    assert.equal(meal.fat, 24.8);
+    // 140 g chicken 805 + 80 g roll 10124 + 30 g tahini 1898 + 11 g amba 3267
+    assert.equal(meal.kcal, 649);
+    assert.equal(meal.protein, 56.1);
+    assert.equal(meal.carbs, 43);
+    assert.equal(meal.fat, 26);
   }
 });
 

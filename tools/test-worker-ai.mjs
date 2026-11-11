@@ -23,6 +23,7 @@ const TINY = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxISEhU
 await test('Haiku request body has no effort, output_config, or thinking', () => {
   const body = anthropicMessagesBody('claude-haiku-4-5', 'sys', 'user', 200);
   assert.equal(body.model, 'claude-haiku-4-5');
+  assert.equal(body.temperature, 0);
   assert.equal(body.max_tokens, 200);
   assert.equal('effort' in body, false);
   assert.equal('output_config' in body, false);

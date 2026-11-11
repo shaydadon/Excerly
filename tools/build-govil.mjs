@@ -74,7 +74,7 @@ const KIND_PREFERRED_UNIT = {
 // Auto suggestions are written to govil-map.json for review; curated wins.
 const CURATED = {
   entrecote: { code: 610, why: 'grilled rib-eye / אנטריקוט צלוי — cooked, matches a lunch steak' },
-  roll: { code: 10124, why: 'לחמניה לבנה (not toasted). No unit weight in GovIL; app keeps a labelled default.' },
+  roll: { code: 10124, why: 'לחמניה לבנה (not toasted). No unit weight in GovIL; the app uses a fixed 80 g roll.' },
   iceberg: { code: 3807, why: 'חסה אייסברג' },
   wheatBread: { code: 1995, why: 'לחם מחיטה מלאה, אנגל / לחם חי — common whole-wheat loaf, not toasted' },
   whiteBread: { code: 1919, why: 'לחם לבן, ברמן/אנג׳ל — not the toasted variant the auto-ranker preferred' },

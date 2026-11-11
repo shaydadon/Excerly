@@ -61,13 +61,13 @@ const dinner = parseWithMock(mocks.newDinner);
 const lunch = parseWithMock(mocks.entrecoteLunch);
 const oldD = parseWithMock(mocks.oldChickenSandwich);
 
-test('new dinner is confirmed at 654 kcal / 54.6 g protein / 35.5 g fat / 1624 mg sodium', () => {
+test('new dinner is 696 kcal with an 80 g roll after absorbing soy and frying oil (was 596 at 44 g, and 654 before absorption)', () => {
   assertEq(dinner.status, 'confirmed');
-  assertEq(dinner.kcal, 654);
-  assertEq(dinner.protein, 54.6);
-  assertEq(dinner.carbs, 25.5);
-  assertEq(dinner.fat, 35.5);
-  assertEq(dinner.sodium, 1624);
+  assertEq(dinner.kcal, 696);
+  assertEq(dinner.protein, 56.8);
+  assertEq(dinner.carbs, 43.8);
+  assertEq(dinner.fat, 30.5);
+  assertEq(dinner.sodium, 1288.7);
   assertEq(dinner.items.length, 7);
 });
 test('chicken is 4 pieces × 35 g = 140 g of GovIL 805, not 656 g', () => {
@@ -81,22 +81,28 @@ test('soy sauce and mustard are their own GovIL rows', () => {
   const soy = dinner.items.find(i => i.govilCode === 1706);
   const must = dinner.items.find(i => i.govilCode === 4273);
   assert(soy && must, 'both present');
-  assertEq(soy.grams, 11);
+  assertEq(soy.gramsStated, 11);
+  assertEq(soy.grams, 2.8);
+  assertEq(soy.role, 'marinade');
   assertEq(must.grams, 14);
+  const oil = dinner.items.find(i => i.govilCode === 4443);
+  assertEq(oil.gramsStated, 10);
+  assertEq(oil.grams, 4);
+  assertEq(oil.role, 'frying_oil');
   assertEq(soy.source, 'govil');
   assertEq(must.source, 'govil');
 });
-test('entrecote lunch stays 674 kcal (old meals not recalculated into a new truth)', () => {
+test('entrecote lunch is 774 kcal with an 80 g roll (was 674 at 44 g)', () => {
   assertEq(lunch.status, 'confirmed');
-  assertEq(lunch.kcal, 674);
-  assert(Math.abs(lunch.protein - 24.5) < 0.15, 'protein ' + lunch.protein);
-  assertEq(lunch.fat, 53.5);
+  assertEq(lunch.kcal, 774);
+  assert(Math.abs(lunch.protein - 27.5) < 0.15, 'protein ' + lunch.protein);
+  assertEq(lunch.fat, 54.6);
 });
-test('earlier chicken sandwich stays ~549–550 kcal / 53.1 g protein', () => {
+test('earlier chicken sandwich is 650 kcal / 56 g protein with an 80 g roll (was 550 / 53.1 g at 44 g)', () => {
   assertEq(oldD.status, 'confirmed');
-  assert(oldD.kcal === 549 || oldD.kcal === 550, 'kcal ' + oldD.kcal);
-  assertEq(oldD.protein, 53.1);
-  assertEq(oldD.fat, 24.8);
+  assertEq(oldD.kcal, 650);
+  assertEq(oldD.protein, 56);
+  assertEq(oldD.fat, 25.9);
 });
 test('LLM-supplied kcal/protein are ignored; GovIL wins', () => {
   const poisoned = parseWithMock({

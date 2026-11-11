@@ -274,4 +274,4 @@ if (failed) {
 }
 console.log('ok', gymCases.length, 'gym cases,', visualCases.length, 'visual cases,',
   auditedOk, 'audited names with files,', Object.keys(W.EX).length, 'gym bank ids,',
-  Object.keys(D.EXERCISES).length, 'home bank ids, cache expected excerly-v58');
+  Object.keys(D.EXERCISES).length, 'home bank ids, cache expected excerly-v62');

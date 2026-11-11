@@ -32,7 +32,7 @@ const per100 = (key, id) => CORE.foods[key].per100g[id] ? CORE.foods[key].per100
 await test('exact meal splits into 5 items with Hebrew units', () => {
   const c = MC.splitComponents(EXACT);
   assert.deepEqual(plain(c.map(x => x.coreKey)), ['entrecote', 'roll', 'oliveOil', 'mayo', 'lettuce']);
-  assert.deepEqual(plain(c.map(x => x.grams)), [100, 44, 27, 27.6, 18]); // 4×25g thin slice, 1 roll (USDA 44g), 2 tbsp oil (USDA 13.5g), 2 tbsp mayo (USDA 13.8g), 3 inner leaves (USDA 6g)
+  assert.deepEqual(plain(c.map(x => x.grams)), [100, 80, 27, 27.6, 18]); // 4×25g thin slice, 1 roll (fixed 80g), 2 tbsp oil (USDA 13.5g), 2 tbsp mayo (USDA 13.8g), 3 inner leaves (USDA 6g)
   assert.equal(c[0].unitKind, 'thinSlice');
   assert.equal(c[2].quantityState, 'usda-portion');
   assert.equal(c[0].portionAssumed, true); // per-slice weight is an assumption → "לאישור"
@@ -62,7 +62,7 @@ await test('every item resolves (no "no clear match"), all from USDA fdcIds, no 
 
 await test('totals equal Σ grams × per100g / 100 from the USDA snapshot', async () => {
   const meal = await MC.resolveMeal(MC.createPending({ id: 'm2', text: EXACT, slot: 'lunch' }), offlineApi, N);
-  const parts = [['entrecote', 100], ['roll', 44], ['oliveOil', 27], ['mayo', 27.6], ['lettuce', 18]];
+  const parts = [['entrecote', 100], ['roll', 80], ['oliveOil', 27], ['mayo', 27.6], ['lettuce', 18]];
   const sum = id => parts.reduce((s, [k, g]) => s + (per100(k, id) || 0) * g / 100, 0);
   assert.equal(meal.kcal, Math.round(sum('1008')));
   assert.equal(meal.protein, Math.round(sum('1003') * 10) / 10);

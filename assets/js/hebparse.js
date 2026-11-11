@@ -49,6 +49,8 @@
         comp.fat = built.fat;
         comp.nutrients = built.provenance && built.provenance.nutrients;
         comp.candidate = { source: 'govil', govilCode: food.c, sml: food.s, description: food.n, dataset: G.DATASET };
+        if (it.gramsStated != null) comp.gramsStated = it.gramsStated;
+        if (it.role) comp.role = it.role;
         if (!comp.queryEn && food.e) comp.queryEn = food.e;
       } else if (it.candidates && it.candidates.length) {
         comp.matchState = 'ambiguous';
