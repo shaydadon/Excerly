@@ -12,7 +12,8 @@
   const LIBRARY = [
     { id: 'entrecote-sandwich', src: 'assets/meal-img/entrecote-sandwich.jpg', all: ['entrecote'], any: ['roll', 'whiteBread', 'wheatBread', 'pita'] }
   ];
-  const GENERIC = { id: 'generic-plate', src: 'assets/meal-img/generic-plate.jpg' };
+  // No unmatched meal may inherit a photo of a different dish (generic-plate is grilled vegetables + buckwheat + arugula).
+  const GENERIC = { id: 'no-photo', src: null, kind: 'placeholder' };
 
   function keysOf(meal) {
     return (meal && meal.components || []).map(c => c.coreKey).filter(Boolean);
@@ -26,7 +27,7 @@
       const okAny = !e.any || e.any.some(k => keys.indexOf(k) !== -1);
       if (okAll && okAny) return { src: e.src, kind: 'representative', id: e.id };
     }
-    return { src: GENERIC.src, kind: 'generic', id: GENERIC.id };
+    return { src: GENERIC.src, kind: GENERIC.kind || 'placeholder', id: GENERIC.id };
   }
 
   function forMeal(meal) {

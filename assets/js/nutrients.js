@@ -97,6 +97,13 @@
     return map;
   }
 
+  // GovIL: כל הרכיבים שבקטלוג, כולל ויטמינים ומינרלים. חוסר נשאר חוסר.
+  function per100FromGovil(food) {
+    const G = global.ExcerlyGovil;
+    if (G && G.per100) return G.per100(food);
+    return null;
+  }
+
   // צמרת: רק מאקרו/נתרן/סוכר/סיבים. אין ויטמינים — לא ממלאים 0.
   function per100FromTzameret(food) {
     if (!food) return null;
@@ -175,7 +182,9 @@
       provenance: {
         source: meta.source || 'fdc',
         fdcId: meta.fdcId || null,
-        tzameretCode: meta.tzameretCode || null,
+        govilCode: meta.govilCode || null,
+        sml: meta.sml || null,
+        tzameretCode: meta.tzameretCode || meta.govilCode || null,
         description: meta.description || meta.name || '',
         dataType: meta.dataType || null,
         grams: g,
@@ -184,7 +193,7 @@
         per100g: per100,
         nutrients: nutrients,
         retrievedAt: meta.retrievedAt || new Date().toISOString(),
-        dataset: meta.dataset || (meta.source === 'tzameret' ? 'MOH Tzameret' : 'USDA FoodData Central')
+        dataset: meta.dataset || (meta.source === 'govil' || meta.source === 'tzameret' ? 'משרד הבריאות — מאגר התזונה הלאומי הישראלי' : 'USDA FoodData Central')
       }
     };
   }
@@ -202,6 +211,8 @@
       name: meal.name,
       source: p.source,
       fdcId: p.fdcId,
+      govilCode: p.govilCode,
+      sml: p.sml,
       tzameretCode: p.tzameretCode,
       description: p.description,
       dataType: p.dataType,
@@ -236,8 +247,8 @@
     let fdcMeals = 0;
     list.forEach(m => {
       const incompleteMeal = m && (m.status === 'pending' || m.status === 'partial' || m.kcalIncomplete);
-      const official = m && m.provenance && m.provenance.per100g && (m.provenance.source === 'fdc' || m.provenance.source === 'tzameret');
-      if (m && m.provenance && m.provenance.source === 'fdc' && !incompleteMeal) fdcMeals++;
+      const official = m && m.provenance && m.provenance.per100g && (m.provenance.source === 'fdc' || m.provenance.source === 'tzameret' || m.provenance.source === 'govil' || m.provenance.source === 'mixed');
+      if (m && m.provenance && (m.provenance.source === 'fdc' || m.provenance.source === 'govil') && !incompleteMeal) fdcMeals++;
       CATALOG.forEach(spec => {
         const bucket = acc[spec.key];
         const n = m && m.provenance && m.provenance.nutrients && m.provenance.nutrients[spec.key];
@@ -303,6 +314,7 @@
     roundMicro: roundMicro,
     indexFoodNutrients: indexFoodNutrients,
     per100FromTzameret: per100FromTzameret,
+    per100FromGovil: per100FromGovil,
     scaleCatalog: scaleCatalog,
     mealFromOfficial: mealFromOfficial,
     applyGramEdit: applyGramEdit,

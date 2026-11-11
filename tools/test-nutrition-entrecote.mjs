@@ -133,11 +133,13 @@ await test('photo items keep the AI portion as an estimate (was discarded → "h
   assert.equal(comps[1].queryEn, 'quinoa cooked');
 });
 
-await test('meal image slot: user photo > saved image > representative > generic (never the bag icon)', async () => {
+await test('meal image slot: user photo > saved image > representative > placeholder (never a different dish)', async () => {
   const meal = await MC.resolveMeal(MC.createPending({ id: 'm8', text: SANDWICH, slot: 'lunch' }), offlineApi, N);
   assert.equal(IMG.forMeal(meal).src, 'assets/meal-img/entrecote-sandwich.jpg');
   assert.equal(IMG.forMeal(Object.assign({}, meal, { photo: 'data:x', photoKind: 'user' })).kind, 'user');
-  assert.equal(IMG.forMeal({ components: [] }).kind, 'generic');
+  const empty = IMG.forMeal({ components: [] });
+  assert.equal(empty.kind, 'placeholder');
+  assert.ok(!empty.src);
 });
 
 if (failed) { console.error('\n' + failed + ' failed'); process.exit(1); }
