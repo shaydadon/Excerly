@@ -63,7 +63,8 @@
       .sort((a, b) => a.extra - b.extra);
     if (!ranked.length) return { state: 'none', options: [] };
     if (ranked.length > 1 && (ranked[1].extra === ranked[0].extra || ranked[0].extra > 0)) {
-      return { state: 'ambiguous', options: [] };
+      // לא בוחרים בשקט — מציעים למשתמש עד 4 אפשרויות (קודם הוחזרה רשימה ריקה ולא הייתה דרך לבחור)
+      return { state: 'ambiguous', options: ranked.slice(0, 4).map(f => ({ fdcId: f.fdcId, description: f.description, dataType: f.dataType })) };
     }
     return { state: 'matched', food: ranked[0], options: [] };
   }
@@ -81,11 +82,24 @@
     return Math.round((hits[0].gramWeight / amount) * n);
   }
 
+  // מסיר כמויות ויחידות משאילתת החיפוש ("quinoa cooked 150 g" → "quinoa cooked")
+  function cleanQuery(text) {
+    return String(text || '').replace(/\d+(?:[.,]\d+)?/g, ' ')
+      .replace(/\b(?:g|gr|grams?|kg|ml|oz|cups?|tbsp|tsp|slices?|pieces?)\b/gi, ' ')
+      .replace(/גרם|גר׳|גר'|כפות|כפיות|כף|כפית|פרוסות|פרוסה|יחידות|יחידה/g, ' ')
+      .replace(/\s+/g, ' ').trim();
+  }
+
   function splitComponents(text) {
     const clean = String(text || '').replace(/\s+/g, ' ').trim();
     if (!clean) return [];
     const parts = clean.split(/\s+עם\s+|\s+ו(?=\S)|\s*,\s*|\s+\+\s+|\s+and\s+/i).map(s => s.trim()).filter(Boolean);
-    return parts.map((chunk, i) => parseChunk(chunk, i));
+    const FM = global.ExcerlyFoodMap;
+    const BREADS = { roll: 1, whiteBread: 1, wheatBread: 1, pita: 1 };
+    // "כריך" לבד הוא מכל: אם כבר יש לחם/לחמנייה בארוחה — לא סופרים אותו פעמיים
+    const hasBread = FM ? parts.some(p => !FM.isContainer(p) && (FM.resolve(p).food || {}).key in BREADS) : false;
+    const kept = parts.filter(p => !(FM && hasBread && FM.isContainer(p)));
+    return kept.map((chunk, i) => parseChunk(chunk, i));
   }
 
   function parseChunk(chunk, i) {
@@ -110,7 +124,21 @@
     let gramsValue = null;
     let count = null;
     let unitKind = null;
-    if (grams && qty) { gramsValue = qty; quantityState = 'explicit'; }
+    let coreKey = null;
+    let portionAssumed = false;
+    const FM = global.ExcerlyFoodMap;
+    const hit = FM ? FM.resolve(chunk) : null;
+    if (hit && hit.food) {
+      coreKey = hit.food.key;
+      queryEn = hit.food.en;
+      gramsValue = hit.grams;
+      count = hit.count;
+      unitKind = hit.unit;
+      quantityState = hit.portionSrc === 'explicit' ? 'explicit' : hit.portionSrc === 'usda' && !hit.countAssumed ? 'usda-portion' : 'default-portion';
+      portionAssumed = quantityState === 'default-portion';
+    }
+    if (coreKey) { /* כבר טופל דרך מילון המזון */ }
+    else if (grams && qty) { gramsValue = qty; quantityState = 'explicit'; }
     else if (egg && qty) { count = qty; unitKind = 'egg'; quantityState = 'count'; }
     else if (slice) { count = qty || 1; unitKind = 'slice'; quantityState = 'slice'; }
     else if (tub) { quantityState = 'container'; }
@@ -118,6 +146,8 @@
       id: 'c' + i,
       name: chunk,
       queryEn: queryEn,
+      coreKey: coreKey,
+      portionAssumed: portionAssumed,
       grams: gramsValue,
       count: count,
       unitKind: unitKind,
@@ -177,7 +207,8 @@
       fdcId: meta.fdcId,
       description: meta.description,
       dataType: meta.dataType || '',
-      dataset: 'USDA FoodData Central'
+      dataset: meta.dataset || 'USDA FoodData Central',
+      via: meta.via || 'search'
     };
     comp.error = null;
     return comp;
@@ -194,6 +225,8 @@
     const all = comps.length > 0 && confirmed.length === comps.length;
     meal.status = !comps.length ? 'pending' : all ? 'confirmed' : (confirmed.length ? 'partial' : 'pending');
     meal.kcalIncomplete = meal.status !== 'confirmed';
+    // ערכים חושבו, אבל חלק מהמנות הן הנחת ברירת מחדל — מסומן "לאישור" עד שהמשתמש מאשר/עורך
+    meal.needsReview = meal.status !== 'confirmed' || (!meal.reviewed && comps.some(c => c.portionAssumed));
     const nutrients = {};
     if (confirmed.length && confirmed[0].nutrients) {
       Object.keys(confirmed[0].nutrients).forEach(key => {
@@ -214,6 +247,14 @@
         };
         if (nutrients[key].status === 'missing') nutrients[key].amount = null;
       });
+    }
+    // סכום מדויק מהערכים הלא-מעוגלים, כדי שהכותרת והטבלה יציגו אותו מספר (837 ולא 838)
+    const exact = (k, d) => nutrients[k] && nutrients[k].status === 'known' && nutrients[k].amount != null ? Math.round(nutrients[k].amount * d) / d : null;
+    if (all) {
+      if (exact('energy', 1) != null) meal.kcal = exact('energy', 1);
+      if (exact('protein', 10) != null) meal.protein = exact('protein', 10);
+      if (exact('carbs', 10) != null) meal.carbs = exact('carbs', 10);
+      if (exact('fat', 10) != null) meal.fat = exact('fat', 10);
     }
     meal.provenance = confirmed.length ? {
       source: all ? 'fdc' : 'partial',
@@ -236,6 +277,7 @@
     const comp = next.components.find(c => c.id === compId);
     if (!comp) return { ok: false, reason: 'component', meal: meal };
     if (!isFinite(g) || g <= 0) return { ok: false, reason: 'grams', meal: meal };
+    comp.portionAssumed = false;
     if (!comp.per100g || !Nutrients) {
       comp.grams = g;
       comp.quantityState = 'explicit';
@@ -249,8 +291,11 @@
       source: 'fdc',
       fdcId: comp.candidate && comp.candidate.fdcId,
       description: comp.candidate && comp.candidate.description,
-      dataType: comp.candidate && comp.candidate.dataType
+      dataType: comp.candidate && comp.candidate.dataType,
+      dataset: comp.candidate && comp.candidate.dataset,
+      via: comp.candidate && comp.candidate.via
     }, Nutrients);
+    comp.quantityState = 'explicit';
     return { ok: true, meal: rollup(next), nutrients: true };
   }
 
@@ -277,8 +322,28 @@
     }
     for (let i = 0; i < next.components.length; i++) {
       const comp = next.components[i];
+      if (componentConfirmed(comp)) continue;
+      if (comp.coreKey && api.core && comp.grams != null) {
+        let core = null;
+        try { core = await api.core(comp.coreKey); } catch (e) { core = null; }
+        if (core && core.ok) {
+          applyOfficial(comp, core.per100g, comp.grams, {
+            name: comp.name, source: 'fdc', fdcId: core.fdcId, description: core.description,
+            dataType: core.dataType, dataset: core.dataset, via: 'core'
+          }, Nutrients);
+          continue;
+        }
+      }
+      if (!comp.queryEn && /[\u0590-\u05FF]/.test(comp.name)) {
+        // FDC מאונדקס באנגלית בלבד; חיפוש בעברית מחזיר 0 תוצאות. לא שולחים, מבקשים הבהרה.
+        comp.matchState = 'none';
+        comp.questionKey = 'noMatch';
+        comp.error = 'untranslated';
+        continue;
+      }
+      const query = comp.queryEn || cleanQuery(comp.name);
       let found;
-      try { found = await api.search(comp.queryEn || comp.name); }
+      try { found = await api.search(query); }
       catch (e) { found = { ok: false, error: 'offline' }; }
       if (!found || !found.ok) {
         comp.matchState = 'unavailable';
@@ -286,7 +351,7 @@
         comp.error = (found && found.error) || 'offline';
         continue;
       }
-      const decision = decideMatch(comp.queryEn || comp.name, found.foods || []);
+      const decision = decideMatch(query, found.foods || []);
       if (decision.state === 'none') {
         comp.matchState = 'none';
         comp.questionKey = 'noMatch';
@@ -294,8 +359,8 @@
       }
       if (decision.state === 'ambiguous') {
         comp.matchState = 'ambiguous';
-        comp.questionKey = 'noMatch';
-        comp.options = [];
+        comp.questionKey = 'whichFood';
+        comp.options = decision.options || [];
         continue;
       }
       comp.candidate = { fdcId: decision.food.fdcId, description: decision.food.description, dataType: decision.food.dataType || '' };
@@ -335,7 +400,24 @@
     return rollup(next);
   }
 
+  function componentsFromItems(items) {
+    const list = (items || []).filter(it => it && it.name);
+    return list.map((it, i) => {
+      const c = parseChunk(String(it.name), i);
+      if (!c.coreKey && it.queryEn) c.queryEn = String(it.queryEn);
+      const g = Number(it.grams);
+      if (isFinite(g) && g > 0 && c.quantityState !== 'explicit') {
+        c.grams = Math.round(g);
+        c.quantityState = 'ai-estimate';
+        c.portionAssumed = true;
+      }
+      return c;
+    });
+  }
+
   global.ExcerlyMealCard = {
+    componentsFromItems: componentsFromItems,
+    cleanQuery: cleanQuery,
     slotForHour: slotForHour,
     scoreMatch: scoreMatch,
     decideMatch: decideMatch,

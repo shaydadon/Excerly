@@ -1,21 +1,20 @@
 # Excerly visual manifest
 
-Reviewed 6 Nov 2026 on branch `cursor/nutrition-meal-cards-4811`, local HEAD `13016fef` plus the four original motion diagrams. Every file below was opened and judged this session. A missing label is not a pass. Verdicts are pass only when the still matches the exercise definition.
+Reviewed 6 Nov 2026 on branch `cursor/nutrition-meal-cards-4811`, then updated 11 Nov 2026 (preview only, not published): spinal-twist photographs replace the twist diagrams; shoulder-roll diagrams are unreferenced and not shown in the app. A missing label is not a pass. Verdicts are pass only when the still matches the exercise definition.
 
-Palette stays paper `#F2EADC`, charcoal `#24211F`, terracotta `#B96D50` for the diagrams. The 66 photographs stay the warm dark-gym photos already on this branch. Illustration gender is `localStorage excerly.fig` (`male` default), independent of profile/BMI gender.
+Palette stays paper `#F2EADC`, charcoal `#24211F`, terracotta `#B96D50`. The photographs stay the warm dark-gym photos. Illustration gender is `localStorage excerly.fig` (`male` default), independent of profile/BMI gender.
 
-## Motion diagrams (original construction)
+## Shoulder rolls and spinal twist
 
-Shoulder rolls and the standing spinal twist are original three-frame vector diagrams drawn for Excerly, rendered to JPEG. Source files live in `assets/exercise-img/diagrams/`. They are not photographs and they are not a trace or adaptation of the Cancer Research UK shoulder-roll diagram (that file was a pose reference only and is not shipped). No third-party license attaches to these four assets.
+Shoulder-roll motion diagrams (`shoulders-m.jpg` / `shoulders-f.jpg` and their SVG sources) must not appear in the app, the service-worker precache, or `EXIMG`. The exercise and its instructions stay; the UI uses the no-image fallback (dark tile + icon), never a cream or empty gray box.
 
-Each diagram is a vertical strip so the tall training hero (center-width crop, full height) still shows all three frames, and the wide detail crop (center height) shows the key middle frame. At 54px the sequence is only a silhouette.
+Spinal twist uses approved realistic photos in `twist-m.jpg` and `twist-f.jpg` (owner-approved a3, 11 Nov 2026). Diagram JPEG/SVG sources for twist are unreferenced and removed.
 
 | File | What is visible | Verdict |
 | --- | --- | --- |
-| `shoulders-m.jpg` | Male, short hair, short sleeves, shorts. Frame 1: arms hanging, small upward arrows, neck visible. Frame 2: shoulder caps raised to the ears, arms hanging straight, circular terracotta arrows outside the caps. Frame 3: shoulders lower and wider, arrows pointing down and back. Hips and feet stay planted. | PASS |
-| `shoulders-f.jpg` | Same joint sequence. Female marker is a bun on the crown, long sleeves, and leggings. The bun is not drawn as an arm. | PASS |
-| `twist-m.jpg` | Male, standing. Frame 1: square torso, two separate hands at chest height, horizontal terracotta hip bar, both feet and both kneecaps toward the viewer. Frames 2 and 3: ribcage and head turn (screen-right, then screen-left), near shoulder larger, far shoulder smaller, curved arrow across the chest, hip bar and feet stay square. Not a prayer, kneel, lunge, or whole-body turn. | PASS |
-| `twist-f.jpg` | Same standing twist. Female marker is a bun, long sleeves, and leggings. Hip bar and feet stay square in every frame. | PASS |
+| `shoulders-m.jpg` / `shoulders-f.jpg` | Not shown. No verified photo yet. | UNREFERENCED |
+| `twist-m.jpg` | Approved realistic photo, male standing spinal twist (a3). | PENDING LIVE (preview) |
+| `twist-f.jpg` | Approved realistic photo, female standing spinal twist (a3). | PENDING LIVE (preview) |
 
 ## Home stretches (photographs)
 
@@ -99,14 +98,25 @@ Every `workout.js` exercise id has a `GYM_FILE` entry and both gender files.
 
 - Home stretch files: 28 (14 exercises × 2). All 14 keys are in `EXIMG`.
 - Gym files: 42 (21 exercises × 2). All 21 `workout.js` ids are in `GYM_FILE`.
-- Motion diagrams added this change: 4 JPEG plus 4 SVG sources.
+- Shoulder-roll diagrams are unreferenced and not precached. Spinal twist uses approved photos. Diagram SVG sources are removed.
 - Total judged images: 70. Pass: 70. Fail: 0. Missing label: not used.
 
 ## Known limits
 
-- The four new assets are diagrams, by the approved style change. The other 66 stay photographs.
+- 72 photograph slots (66 existing + 2 approved twist photos + 4 new gym photos: rdl and warmup, male and female). Shoulder rolls have no verified photo (2 slots hidden).
 - A 54px thumb shows the three-frame silhouette, not fine joint detail. The hero and the player square show the sequence; the wide detail crop shows the middle frame.
 - `quad-f` is a kneeling heel-to-glute variant of the standing quad stretch.
 - `gym-cardio-m` is standing on the treadmill rather than mid-stride.
 - `gym-pulldown-f` is the top of the pull; `gym-pulldown-m` is the bar at the chest.
 - `gym-legext` is barefoot in both photos. The machine and the straight-leg pose are still a leg extension.
+
+## New gym photographs (preview, 11 Nov 2026)
+
+Owner-approved additions for AI-plan names that had no image. Same dark-gym style as the existing 66 photographs. Shoulder-roll diagrams stay unreferenced.
+
+| File | What is visible | Verdict |
+| --- | --- | --- |
+| `gym-rdl-m.jpg` | Male, hip hinge, flat back, slight knee bend, one dumbbell in each hand at mid-shin to knee height. | PASS (a1) |
+| `gym-rdl-f.jpg` | Female, same Romanian-deadlift hinge, two dumbbells at mid-shin to knee. | PASS (a2) |
+| `gym-warmup-m.jpg` | Male riding an upright stationary bike (saddle, no recumbent backrest), hands on the bars, feet on the pedals. | PASS (a2; a1 was a recumbent bike and was rejected) |
+| `gym-warmup-f.jpg` | Female riding an upright stationary bike, same setup. | PASS (a1) |

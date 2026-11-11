@@ -32,8 +32,118 @@
     hammer: { he: 'כפיפת פטיש', en: 'Hammer curl' },
     rearDelt: { he: 'פרפר הפוך (כתף אחורית)', en: 'Rear-delt fly' },
     plank: { he: 'פלאנק', en: 'Plank' },
-    cardio: { he: 'קרדיו קל לסיום (הליכון/אופניים)', en: 'Light finisher cardio (treadmill/bike)' }
+    cardio: { he: 'קרדיו קל לסיום (הליכון/אופניים)', en: 'Light finisher cardio (treadmill/bike)' },
+    rdl: { he: 'דדליפט רומני עם משקולות', en: 'Romanian deadlift with dumbbells' },
+    warmup: { he: 'חימום: אופניים נייחים + סיבובי כתפיים', en: 'Warm-up: stationary bike + shoulder circles' }
   };
+
+  /* נירמול שם תרגיל לצורך התאמה לתמונה: AI לא מחזיר id, והשמות לעיתים
+     שונים במקצת משמות הבנק (למשל בלי סוגריים, או «במשקולות»). */
+  function foldName(s) {
+    return String(s || '')
+      .toLowerCase()
+      .replace(/[\"׳'`]/g, '')
+      .replace(/[()[\]{}]/g, ' ')
+      .replace(/[/\\+|–—_-]+/g, ' ')
+      .replace(/[.:;!?]/g, ' ')
+      .replace(/\b(עם|של|על|machine|with|and|the|a)\b/g, ' ')
+      .replace(/\b(dumbbells?|db|משקולות|משקולת|במשקולות)\b/g, ' ')
+      .replace(/\b(במכונה|מכונה)\b/g, ' ')
+      .replace(/(^|\s)[\u05D0-\u05EA](?=\s|$)/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  // כינויים נפוצים (בעיקר מתוכניות AI) למזהה בנק קיים. לא כולל סיבובי כתפיים.
+  const NAME_ALIASES = {
+    squat: ['barbell squat', 'back squat', 'סקוואט מוט'],
+    legPress: ['leg press', 'leg press machine', 'לחיצת רגליים', 'לחיצת רגליים במכונה'],
+    legCurl: ['leg curl', 'lying leg curl', 'seated leg curl', 'כפיפת ברך'],
+    legExt: ['leg extension', 'פשיטת ברך'],
+    calf: ['calf raise', 'standing calf raise', 'הרמות עקב', 'הרמת עקבים'],
+    hipThrust: ['hip thrust', 'barbell hip thrust', 'היפ טראסט', 'היפ תראסט'],
+    lunge: ['dumbbell lunge', 'db lunges', 'walking lunge', 'מספריים'],
+    bench: ['bench press', 'barbell bench press', 'לחיצת חזה', 'לחיצת חזה במוט'],
+    inclineDb: [
+      'incline db press', 'incline db chest press', 'incline dumbbell press',
+      'incline dumbbell chest press', 'incline chest press',
+      'לחיצת חזה בשיפוע', 'לחיצת חזה בשיפוע במשקולות'
+    ],
+    fly: ['cable fly', 'cable flyes', 'pec fly', 'פרפר בכבלים'],
+    ohp: ['overhead press', 'shoulder press', 'military press', 'לחיצת כתפיים'],
+    lateral: [
+      'lateral raise', 'db lateral raise', 'dumbbell lateral raise',
+      'side lateral raise', 'side raise',
+      'הרחקת כתף', 'הרחקות צד', 'הרחקת כתף בצדדים', 'הרחקת כתף בצדדים עם משקולות'
+    ],
+    pushdown: ['triceps pushdown', 'cable pushdown', 'פשיטת מרפק בפולי'],
+    pulldown: [
+      'lat pulldown', 'lat pull down', 'lat pull-down',
+      'assisted pull-up', 'assisted pull up', 'assisted chin-up',
+      'פולי עליון', 'משיכת פולי עליון',
+      'מתח בעזרת מכונת סיוע', 'מתח בעזרת מכונת סיוע / פולי עליון'
+    ],
+    row: ['seated cable row', 'cable row', 'חתירה בישיבה'],
+    facePull: ['face pull', 'face pulls', 'משיכת פנים'],
+    curl: [
+      'biceps curl', 'bicep curl', 'cable curl', 'cable curls',
+      'כפיפת מרפק', 'כפיפת מרפקים', 'כפיפת מרפקים בכבל', 'כפיפת מרפק בכבל'
+    ],
+    hammer: ['hammer curl', 'hammer curls', 'כפיפת פטיש'],
+    rearDelt: ['rear delt fly', 'rear-delt fly', 'reverse fly', 'פרפר הפוך'],
+    plank: ['front plank', 'פלנק'],
+    cardio: ['light finisher cardio', 'treadmill'],
+    rdl: ['romanian deadlift', 'dumbbell rdl', 'db rdl', 'rdl', 'דדליפט רומני'],
+    warmup: ['upright bike', 'stationary upright bike', 'אופניים נייחים', 'חימום אופניים']
+  };
+
+  function resolveGymId(ex) {
+    if (ex == null) return null;
+    if (typeof ex === 'string') {
+      if (EX[ex]) return ex;
+      ex = { name: ex };
+    }
+    if (ex.id && EX[ex.id]) return ex.id;
+    const name = typeof ex.name === 'string' ? ex.name : '';
+    if (!name) return null;
+    for (const k of Object.keys(EX)) {
+      if (EX[k].he === name || EX[k].en === name) return k;
+    }
+    const n = foldName(name);
+    if (!n) return null;
+    const cands = {};
+    const add = (k, s) => {
+      const f = foldName(s);
+      if (f) (cands[k] || (cands[k] = new Set())).add(f);
+    };
+    for (const k of Object.keys(EX)) {
+      add(k, EX[k].he);
+      add(k, EX[k].en);
+      (NAME_ALIASES[k] || []).forEach(a => add(k, a));
+    }
+    for (const k of Object.keys(cands)) {
+      if (cands[k].has(n)) return k;
+    }
+    const hits = [];
+    for (const k of Object.keys(cands)) {
+      for (const cand of cands[k]) {
+        const distinctive = cand.length >= 8 || cand.split(' ').length >= 2;
+        // Query may contain a bank/alias phrase (AI names). A short query
+        // must not match just because it is a suffix of a longer name
+        // (e.g. «סיבובי כתפיים» must not map to the bike warm-up).
+        const queryContains = distinctive && n.includes(cand);
+        const almostEqual = distinctive && cand.includes(n) && n.length >= Math.max(8, Math.ceil(cand.length * 0.6));
+        if (queryContains || almostEqual) {
+          hits.push({ k, len: cand.length });
+        }
+      }
+    }
+    if (!hits.length) return null;
+    const best = Math.max.apply(null, hits.map(h => h.len));
+    const unique = hits.filter(h => h.len === best).map(h => h.k).filter((k, i, a) => a.indexOf(k) === i);
+    return unique.length === 1 ? unique[0] : null;
+  }
+
 
   // מרשמי סטים/חזרות/מנוחה לפי דגש האימון (כוח / מסת שריר / סיבולת / כוח מתפרץ)
   function scheme(style) {
@@ -120,11 +230,16 @@
     const days = (out.days || []).map(d => ({
       name: String(d.name || ''),
       focus: String(d.focus || ''),
-      exercises: (d.exercises || []).map(e => ({
-        name: String(e.name || ''), sets: String(e.sets == null ? '' : e.sets),
-        reps: String(e.reps == null ? '' : e.reps), rest: String(e.rest == null ? '' : e.rest),
-        note: String(e.note || '')
-      }))
+      exercises: (d.exercises || []).map(e => {
+        const item = {
+          name: String(e.name || ''), sets: String(e.sets == null ? '' : e.sets),
+          reps: String(e.reps == null ? '' : e.reps), rest: String(e.rest == null ? '' : e.rest),
+          note: String(e.note || '')
+        };
+        const id = resolveGymId(item);
+        if (id) item.id = id;
+        return item;
+      })
     }));
     return { title: String(out.title || ''), note: String(out.note || ''), days, source: 'ai' };
   }
@@ -186,5 +301,5 @@
     return normalize(JSON.parse(m[0]));
   }
 
-  global.ExcerlyWorkout = { planLocal, planViaProxy, planAI, EX };
+  global.ExcerlyWorkout = { planLocal, planViaProxy, planAI, EX, resolveGymId, foldName };
 })(window);

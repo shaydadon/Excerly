@@ -383,17 +383,23 @@ button.train-row { cursor: pointer; }
 .train-check.on { background: var(--ok); color: #fff; border-color: var(--ok); }
 .ex-missing {
   display: grid; place-items: center; width: 100%; height: 100%; min-height: 54px; padding: 4px;
-  text-align: center; font-size: 11px; line-height: 1.25; font-weight: 700; color: var(--muted); background: var(--card-2);
+  text-align: center; font-size: 11px; line-height: 1.25; font-weight: 700; color: #E7D7CC; background: #2a2623;
 }
+.ex-missing-icon { width: 26px; height: 26px; display: block; }
+.ex-thumb .ex-missing-label, .player-anim .ex-missing-label { display: none; }
+.ex-missing-label { margin-top: 6px; font-size: 13px; font-weight: 700; }
 .train-hero-missing .ex-missing { min-height: 248px; color: #E7D7CC; background: #2a2623; font-size: 14px; }
+.train-hero-missing .ex-missing-icon { width: 48px; height: 48px; }
+.gym-hero .ex-missing, .detail-stage .ex-missing { min-height: 120px; color: #E7D7CC; background: #2a2623; }
+.gym-hero .ex-missing-icon, .detail-stage .ex-missing-icon { width: 40px; height: 40px; }
 .ex-list { display: flex; flex-direction: column; gap: 8px; }
 .ex-item, .gym-ex {
   display: flex; gap: 8px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 8px;
 }
 .ex-open { flex: 1; display: flex; gap: 8px; align-items: center; background: none; border: 0; text-align: start; cursor: pointer; color: inherit; }
-.ex-thumb, .ex-photo { width: 54px; height: 54px; border-radius: 12px; background: var(--card-2); overflow: hidden; display: grid; place-items: center; }
+.ex-thumb, .ex-photo { width: 54px; height: 54px; border-radius: 12px; background: #2a2623; overflow: hidden; display: grid; place-items: center; }
 .ex-thumb img, .ex-photo { width: 100%; height: 100%; object-fit: cover; }
-.player-anim { width: 96px; height: 96px; border-radius: 16px; overflow: hidden; }
+.player-anim { width: 96px; height: 96px; border-radius: 16px; overflow: hidden; background: #2a2623; }
 .player-anim img, .detail-stage img, .sheet-hero { width: 100%; height: 100%; object-fit: cover; }
 .detail-stage img, .sheet-hero { max-height: 220px; border-radius: 18px; }
 .gym-ex { flex: 1; min-width: 0; }
@@ -406,7 +412,7 @@ button.train-row { cursor: pointer; }
 .pex { display: flex; gap: 8px; align-items: center; }
 .pex .pex-name { flex: 1; }
 .sheet-hero, .detail-stage, .gym-hero {
-  background: var(--card-2); border-radius: 18px; min-height: 120px; display: grid; place-items: center; margin-bottom: 8px;
+  background: #2a2623; border-radius: 18px; min-height: 120px; display: grid; place-items: center; margin-bottom: 8px;
 }
 img.sheet-hero, .detail-stage img { width: 100%; height: 180px; object-fit: cover; }
 
@@ -470,7 +476,7 @@ img.sheet-hero, .detail-stage img { width: 100%; height: 180px; object-fit: cove
 .p-track { fill: none; stroke: #3a342f; stroke-width: 8; }
 .p-prog { fill: none; stroke: var(--accent); stroke-width: 8; stroke-linecap: round; }
 .player-core { position: absolute; inset: 16%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.player-anim { width: 96px; height: 96px; border-radius: 16px; overflow: hidden; }
+.player-anim { width: 96px; height: 96px; border-radius: 16px; overflow: hidden; background: #2a2623; }
 .player-time { font-size: 40px; font-weight: 800; letter-spacing: -0.04em; color: var(--hero-text); margin: 0; font-variant-numeric: tabular-nums; }
 .player-name { font-size: 22px; font-weight: 800; margin: 8px 0 0; }
 .player-help { background: none; border: 0; color: #E7D7CC; cursor: pointer; margin-top: 4px; }
@@ -688,3 +694,67 @@ html[data-skin="classic"] .btn-primary { color: var(--on-accent); }
 @media (prefers-reduced-motion: reduce) {
   .ex-anim * { animation: none !important; }
 }
+
+/* ---------- nutrition screen (mockup Nov 11): ring card, input, add button, meal tiles ---------- */
+.nutri-screen .screen-title { margin-bottom: 14px; }
+.nutri-screen .nutri-hero {
+  grid-template-columns: 1fr 132px; gap: 12px; padding: 16px 20px 16px 16px; border-radius: 16px;
+  min-height: 166px; margin-bottom: 22px;
+}
+.nutri-screen .nh-copy { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.nutri-screen .nh-nums .iso-num { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; color: var(--hero-text); line-height: 1.1; white-space: nowrap; }
+.nutri-screen .nutri-hero .unit { font-size: 19px; font-weight: 400; color: #E7D7CC; margin-top: 10px; }
+.nutri-screen .nh-ring { width: 132px; height: 132px; }
+.nutri-screen .nh-ring::after { inset: 10px; }
+.nutri-screen .nh-fig { position: relative; z-index: 1; width: 62px; height: 62px; color: var(--accent); }
+.nutri-screen .ask { font-size: 21px; font-weight: 700; margin: 0 0 10px; color: var(--ink); }
+.nutri-screen .food-field { position: relative; display: block; margin-bottom: 10px; }
+.nutri-screen .food-field textarea {
+  display: block; width: 100%; box-sizing: border-box; min-height: 54px; height: 54px; resize: none;
+  border: 1px solid #B9B1A6; border-radius: 8px; background: #fff; padding: 14px 14px 14px 60px; font-size: 16px; line-height: 1.5;
+}
+.nutri-screen .food-field textarea::placeholder { color: transparent; }
+.nutri-screen .food-field textarea:focus::placeholder { color: var(--muted); }
+.nutri-screen .food-field .icon-btn {
+  position: absolute; inset-inline-end: 6px; top: 50%; transform: translateY(-50%);
+  width: 44px; height: 44px; border: 0; background: transparent; color: var(--ink);
+}
+.nutri-screen .food-field .icon-btn svg { width: 30px; height: 30px; }
+.nutri-screen .btn-add-meal {
+  display: block; width: 100%; height: 44px; border-radius: 10px; font-size: 18px; font-weight: 500;
+  box-shadow: 0 2px 4px rgba(122, 67, 48, .25); margin-bottom: 18px;
+}
+.meal-tile {
+  display: grid; grid-template-columns: 1fr 150px; gap: 12px; align-items: center; cursor: pointer;
+  background: var(--card); border: 1.5px solid #3A342F; border-radius: 14px; padding: 10px 14px 10px 10px; margin: 0 0 12px; min-height: 112px;
+}
+.meal-tile:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+.mt-copy { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.mt-title { font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.2; }
+.chip-review { display: inline-block; background: var(--accent); color: var(--on-accent); border-radius: 6px; padding: 2px 10px; font-size: 15px; font-weight: 500; }
+.mt-kcal { font-size: 15px; font-weight: 700; color: var(--ink); }
+.mt-kcal span { font-weight: 400; color: var(--muted); }
+.mc-macros { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12.5px; color: var(--muted); }
+.mt-img { width: 150px; height: 96px; object-fit: cover; border-radius: 12px; display: block; background: var(--card-2); }
+.nutri-more { margin-top: 18px; display: grid; gap: 10px; }
+.nutri-more .ai-badge { justify-self: start; }
+/* meal detail sheet */
+.meal-sheet { position: fixed; inset: 0; z-index: 60; background: rgba(36, 33, 31, .45); display: flex; align-items: flex-end; justify-content: center; }
+.meal-sheet[hidden] { display: none; }
+.ms-panel {
+  background: var(--bg); width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; box-sizing: border-box;
+  border-radius: 22px 22px 0 0; padding: 14px 16px 28px;
+}
+.ms-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.ms-slot { font-size: 20px; font-weight: 800; flex: 1; }
+.ms-close { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: #fff; cursor: pointer; }
+.ms-img { width: 100%; height: 190px; object-fit: cover; border-radius: 14px; display: block; }
+.ms-name { font-size: 16px; font-weight: 700; margin: 10px 0 4px; overflow-wrap: anywhere; }
+.ms-kcal .iso-num { font-size: 30px; font-weight: 800; }
+.ms-panel h4 { font-size: 15px; font-weight: 800; margin: 16px 0 6px; color: var(--accent-ink); }
+.ms-panel .micro-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+.ms-panel .micro-item { display: flex; justify-content: space-between; gap: 6px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.ms-panel .micro-miss { color: var(--muted); font-size: 12px; }
+.ms-panel .lc-head { display: flex; justify-content: space-between; gap: 8px; }
+.ms-panel .log-cap.src { font-weight: 400; }
+.lq-l { font-size: 13px; color: var(--muted); align-self: center; }
