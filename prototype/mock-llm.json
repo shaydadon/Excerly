@@ -1,0 +1,34 @@
+{
+  "newDinner": {
+    "text": "כריך מלחמניה לבנה עם 2 כפות טחינה , כף עמבה , 4 חתיכות של פילה עוף מרינדת כף רוטב סויה , כף חרדל ,כפית עמבה , מטוגנים בכף שמן זית",
+    "note": "Split the marinade and soy sauce from the chicken. חתיכות are pieces, not whole breasts.",
+    "ingredients": [
+      { "nameHe": "לחמניה לבנה", "nameEn": "white roll", "grams": 44, "count": 1, "unit": "unit", "cookingMethod": "none", "confidence": 0.86 },
+      { "nameHe": "טחינה", "nameEn": "tahini", "grams": 30, "count": 2, "unit": "tbsp", "cookingMethod": "none", "confidence": 0.95 },
+      { "nameHe": "עמבה", "nameEn": "amba", "grams": 14.7, "count": null, "unit": "g", "cookingMethod": "pickled", "confidence": 0.93 },
+      { "nameHe": "פילה עוף", "nameEn": "chicken breast fillet", "grams": 140, "count": 4, "unit": "piece", "cookingMethod": "fried", "confidence": 0.84 },
+      { "nameHe": "רוטב סויה", "nameEn": "soy sauce", "grams": 11, "count": 1, "unit": "tbsp", "cookingMethod": "none", "confidence": 0.92 },
+      { "nameHe": "חרדל", "nameEn": "prepared mustard", "grams": 14, "count": 1, "unit": "tbsp", "cookingMethod": "none", "confidence": 0.9 },
+      { "nameHe": "שמן זית", "nameEn": "olive oil", "grams": 10, "count": 1, "unit": "tbsp", "cookingMethod": "fried", "confidence": 0.94 }
+    ]
+  },
+  "entrecoteLunch": {
+    "text": "4 פרוסות דקות של סטייק אנטריקוט, לחמניה מלחם לבן, 2 כפות שמן זית, 2 כפות מיונז, חסה",
+    "ingredients": [
+      { "nameHe": "סטייק אנטריקוט", "nameEn": "grilled rib-eye / entrecote", "grams": 100, "count": 4, "unit": "thinSlice", "cookingMethod": "grilled", "confidence": 0.9 },
+      { "nameHe": "לחמניה מלחם לבן", "nameEn": "white roll", "grams": 44, "count": 1, "unit": "unit", "cookingMethod": "none", "confidence": 0.88 },
+      { "nameHe": "שמן זית", "nameEn": "olive oil", "grams": 20, "count": 2, "unit": "tbsp", "cookingMethod": "none", "confidence": 0.95 },
+      { "nameHe": "מיונז", "nameEn": "mayonnaise", "grams": 32, "count": 2, "unit": "tbsp", "cookingMethod": "none", "confidence": 0.95 },
+      { "nameHe": "חסה", "nameEn": "lettuce", "grams": 33, "count": 3, "unit": "leaf", "cookingMethod": "raw", "confidence": 0.7 }
+    ]
+  },
+  "oldChickenSandwich": {
+    "text": "כריך מלחמניה לבנה עם ארבע פרוסות חזה עוף במרינדה עם טחינה ועמבה",
+    "ingredients": [
+      { "nameHe": "לחמניה לבנה", "nameEn": "white roll", "grams": 44, "count": 1, "unit": "unit", "cookingMethod": "none", "confidence": 0.86 },
+      { "nameHe": "חזה עוף", "nameEn": "chicken breast", "grams": 140, "count": 4, "unit": "slice", "cookingMethod": "none", "confidence": 0.88 },
+      { "nameHe": "טחינה", "nameEn": "tahini", "grams": 30, "count": 2, "unit": "tbsp", "cookingMethod": "none", "confidence": 0.8 },
+      { "nameHe": "עמבה", "nameEn": "amba", "grams": 11, "count": 1, "unit": "tbsp", "cookingMethod": "pickled", "confidence": 0.85 }
+    ]
+  }
+}
