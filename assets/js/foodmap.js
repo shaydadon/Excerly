@@ -1,8 +1,8 @@
 /* =============================================================
    Excerly – מילון מזון עברי → USDA FoodData Central
    כינויים בעברית, יחידות (פרוסה/כף/כפית/כוס/יחידה) ומנות ברירת מחדל.
-   הערכים התזונתיים עצמם מגיעים מ-assets/data/usda-core.json (USDA, לפי fdcId).
-   מנה "usda" = משקל מנה רשמי מהמאגר; מנה "default" = הנחה סבירה שהמשתמש מאשר/עורך.
+   ערכים ומנות: קודם מאגר התזונה הלאומי (GovIL). USDA core נשאר כגיבוי.
+   מנה "govil"/"usda" = משקל יחידה רשמי מהמאגר; מנה "default" = הנחה סבירה שהמשתמש מאשר/עורך.
    ============================================================= */
 (function (global) {
   'use strict';
@@ -113,20 +113,39 @@
     return { unit: unit, count: count, grams: grams, thin: thin };
   }
 
-  // תוצאה: { food, grams, count, unit, portionSrc: 'explicit'|'usda'|'default' } או null כשהמזון לא מוכר
+  function portionOf(food, unit) {
+    const G = global.ExcerlyGovil;
+    const govilOn = !!(G && G.ready && G.ready());
+    const code = food && (food.govil || (G && G.mapCode && G.mapCode(food.key)));
+    if (govilOn && G.portion && code) {
+      const g = G.portion(code, unit);
+      if (g != null) return { g: g, src: 'govil' };
+      // Official Israeli weight is missing — cite a USDA/default gram weight only as an assumption.
+      if (food.portions && food.portions[unit]) return { g: food.portions[unit].g, src: 'default' };
+    }
+    return (food && food.portions && food.portions[unit]) || null;
+  }
+  function attachGovil(map) {
+    FOODS.forEach(f => {
+      const code = map && (map[f.key] && (map[f.key].code || map[f.key]));
+      if (code) f.govil = Number(code);
+    });
+  }
+
+  // תוצאה: { food, grams, count, unit, portionSrc: 'explicit'|'govil'|'usda'|'default' } או null כשהמזון לא מוכר
   function resolve(text) {
     const food = findFood(text);
     const q = parseQuantity(text);
     if (!food) return { food: null, quantity: q };
     if (q.grams != null && q.grams > 0) return { food: food, grams: Math.round(q.grams), count: null, unit: 'g', portionSrc: 'explicit', countAssumed: false, quantity: q };
     let unit = q.unit && q.unit !== 'grams' ? q.unit : null;
-    if (unit === 'slice' && q.thin && food.portions.thinSlice) unit = 'thinSlice';
-    if (unit && !food.portions[unit]) {
-      if (unit === 'tsp' && food.portions.tbsp) { const p = food.portions.tbsp; return finish(food, (q.count || 1), { g: p.g / 3, src: 'default' }, 'tsp', q); }
-      unit = food.portions.unit ? 'unit' : null;
+    if (unit === 'slice' && q.thin && (portionOf(food, 'thinSlice') || food.portions.thinSlice)) unit = 'thinSlice';
+    if (unit && !portionOf(food, unit)) {
+      if (unit === 'tsp' && portionOf(food, 'tbsp')) { const p = portionOf(food, 'tbsp'); return finish(food, (q.count || 1), { g: p.g / 3, src: p.src === 'govil' ? 'govil' : 'default' }, 'tsp', q); }
+      unit = portionOf(food, 'unit') ? 'unit' : null;
     }
-    if (!unit) unit = q.count != null && food.portions.unit ? 'unit' : food.def;
-    const portion = food.portions[unit] || food.portions[food.def];
+    if (!unit) unit = q.count != null && portionOf(food, 'unit') ? 'unit' : food.def;
+    const portion = portionOf(food, unit) || portionOf(food, food.def) || food.portions[unit] || food.portions[food.def];
     const count = q.count != null ? q.count : (!q.unit && unit === food.def && food.defCount ? food.defCount : 1);
     return finish(food, count, portion, unit, q);
   }
@@ -157,6 +176,7 @@
 
   global.ExcerlyFoodMap = {
     FOODS: FOODS, normalize: normalize, findFood: findFood, parseQuantity: parseQuantity,
-    resolve: resolve, isContainer: isContainer, loadCore: loadCore, setCore: setCore, coreFood: coreFood
+    resolve: resolve, isContainer: isContainer, loadCore: loadCore, setCore: setCore, coreFood: coreFood,
+    portionOf: portionOf, attachGovil: attachGovil
   };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -1338,17 +1338,27 @@
         : c.questionKey === 'whichFood' ? t('qWhich')
         : c.questionKey === 'unavailable' ? t('qUnavailable') : '';
       const known = MC && MC.componentConfirmed(c);
-      const choices = (c.options || []).map(o =>
-        '<button type="button" class="btn btn-ghost log-choice" data-meal="' + m.id + '" data-comp="' + c.id + '" data-fdc="' + o.fdcId + '">' + escapeHtml(o.description) + '</button>').join('');
+      const choices = (c.options || []).map(o => {
+        const pick = o.id || (o.code != null ? 'govil:' + o.code : o.fdcId);
+        return '<button type="button" class="btn btn-ghost log-choice" data-meal="' + m.id + '" data-comp="' + c.id + '" data-pick="' + escapeHtml(String(pick)) + '">' + escapeHtml(o.description) + '</button>';
+      }).join('');
       const grams = (c.questionKey === 'needGrams' || (c.matchState === 'matched' && c.per100g))
         ? '<form class="log-q" data-meal="' + m.id + '" data-comp="' + c.id + '"><label class="lq-l">' + t('gramsLabel') + '</label><input class="log-grams" type="number" min="1" step="1" inputmode="decimal" aria-label="' + t('gramsLabel') + '" value="' + (c.grams || '') + '"/><button class="btn btn-ghost" type="submit">' + t('saveMealAria') + '</button></form>'
         : '';
       const retry = c.questionKey === 'unavailable'
         ? '<button type="button" class="btn btn-ghost log-retry" data-meal="' + m.id + '">' + t('retryMatch') + '</button>' : '';
-      const portion = c.quantityState === 'usda-portion' ? t('portionNote')
+      const portion = (c.quantityState === 'usda-portion' || c.quantityState === 'govil-portion') ? t('portionNote')
         : c.quantityState === 'default-portion' ? t('portionDefault')
         : c.quantityState === 'ai-estimate' ? t('portionAi') : '';
-      const src = c.candidate && known ? 'USDA · ' + escapeHtml(c.candidate.description) + ' · fdcId ' + escapeHtml(String(c.candidate.fdcId)) : '';
+      let src = '';
+      if (c.candidate && known) {
+        if (c.candidate.source === 'govil' || c.candidate.govilCode) {
+          const code = c.candidate.sml || c.candidate.govilCode;
+          src = t('srcItemGovil') + ' · ' + escapeHtml(c.candidate.description) + (code ? ' · ' + t('govilCodeLabel') + ' ' + escapeHtml(String(code)) : '');
+        } else if (c.candidate.fdcId) {
+          src = 'USDA · ' + escapeHtml(c.candidate.description) + ' · fdcId ' + escapeHtml(String(c.candidate.fdcId));
+        }
+      }
       return '<div class="log-comp"><div class="lc-head"><b>' + escapeHtml(c.name) + '</b>' + (known ? '<span class="micro-val"><bdi class="iso-num" dir="ltr">' + c.kcal + '</bdi><span>' + t('goalUnit') + '</span></span>' : '') + '</div>' +
         (known ? '<div class="log-cap"><bdi dir="ltr">' + nf(c.grams) + '</bdi> ' + t('grams') + (portion ? ' · ' + portion : '') + ' · ' + t('protein') + ' <bdi dir="ltr">' + nf(c.protein) + '</bdi> · ' + t('carbs') + ' <bdi dir="ltr">' + nf(c.carbs) + '</bdi> · ' + t('fat') + ' <bdi dir="ltr">' + nf(c.fat) + '</bdi></div>' : '') +
         (src ? '<div class="log-cap src">' + src + '</div>' : '') + (q ? '<div class="section-hint">' + q + '</div>' : '') + choices + grams + retry + '</div>';
@@ -1398,7 +1408,7 @@
       answerComponentGrams(form.dataset.meal, form.dataset.comp, grams);
     }));
     box.querySelectorAll('.log-choice').forEach(btn => btn.addEventListener('click', () => {
-      chooseComponentMatch(btn.dataset.meal, btn.dataset.comp, btn.dataset.fdc);
+      chooseComponentMatch(btn.dataset.meal, btn.dataset.comp, btn.dataset.pick || btn.dataset.fdc);
     }));
     box.querySelectorAll('.log-retry').forEach(btn => btn.addEventListener('click', () => {
       resolveStoredMeal(dateKey(new Date()), btn.dataset.meal);
@@ -1416,16 +1426,37 @@
     setMeals(key, next);
     refreshNutrition();
   }
-  function chooseComponentMatch(mealId, compId, fdcId) {
+  function chooseComponentMatch(mealId, compId, pick) {
     const key = dateKey(new Date());
     const MC = window.ExcerlyMealCard;
     if (!MC) return;
-    const next = getMeals(key).map(m => m.id === mealId ? MC.applyComponentChoice(m, compId, fdcId) : m);
+    const next = getMeals(key).map(m => m.id === mealId ? MC.applyComponentChoice(m, compId, pick) : m);
     setMeals(key, next);
     refreshNutrition();
     const meal = next.find(m => m.id === mealId);
     const comp = meal && (meal.components || []).find(c => c.id === compId);
+    if (comp && comp.matchState === 'matched' && !comp.per100g && comp.candidate && comp.candidate.govilCode && window.ExcerlyGovil) {
+      const gf = ExcerlyGovil.food(comp.candidate.govilCode);
+      if (gf && comp.grams != null) {
+        const again = getMeals(key).map(m => {
+          if (m.id !== mealId) return m;
+          const copy = Object.assign({}, m, { components: m.components.map(c => Object.assign({}, c)) });
+          const target = copy.components.find(c => c.id === compId);
+          if (target) {
+            target.per100g = ExcerlyGovil.per100(gf);
+            target.candidate = Object.assign({}, target.candidate, { source: 'govil', description: gf.n, sml: gf.s });
+            const out = MC.applyComponentGrams(copy, compId, target.grams, window.ExcerlyNutrients);
+            return out.meal || MC.rollup(copy);
+          }
+          return MC.rollup(copy);
+        });
+        setMeals(key, again);
+        refreshNutrition();
+      }
+      return;
+    }
     if (comp && comp.matchState === 'matched' && !comp.per100g && window.ExcerlyUsda) {
+      const fdcId = (pick && String(pick).indexOf('fdc:') === 0) ? String(pick).slice(4) : pick;
       ExcerlyUsda.foodDetail(fdcId).then(det => {
         if (!det.ok) return;
         const again = getMeals(key).map(m => {
@@ -1450,11 +1481,12 @@
     const MC = window.ExcerlyMealCard;
     const meal = getMeals(key).find(m => m.id === id);
     if (!MC || !meal) return;
-    const api = window.ExcerlyUsda ? {
-      search: (q) => ExcerlyUsda.searchFoods(q, q),
-      detail: (fdcId) => ExcerlyUsda.foodDetail(fdcId),
-      core: window.ExcerlyFoodMap ? (k) => ExcerlyFoodMap.coreFood(k) : null
-    } : null;
+    const api = {
+      search: (q) => window.ExcerlyUsda ? ExcerlyUsda.searchFoods(q, q) : Promise.resolve({ ok: false, foods: [] }),
+      detail: (fdcId) => window.ExcerlyUsda ? ExcerlyUsda.foodDetail(fdcId) : Promise.resolve({ ok: false }),
+      core: window.ExcerlyFoodMap ? (k) => ExcerlyFoodMap.coreFood(k) : null,
+      govil: window.ExcerlyGovil || null
+    };
     MC.resolveMeal(meal, api, window.ExcerlyNutrients).then(next => {
       setMeals(key, getMeals(key).map(m => m.id === id ? next : m));
       refreshNutrition();

@@ -1,5 +1,5 @@
 /* Excerly – Service Worker לתמיכה בעבודה לא מקוונת (PWA) */
-const CACHE = 'excerly-v56';
+const CACHE = 'excerly-v57';
 const EX_KEYS = ['neck','arms','sidebend','forwardfold','hamstring',
   'butterfly','quad','hipflexor','calf','catcow','cobra','child','twist'];
 const GYM_KEYS = ['squat','legpress','legcurl','legext','calf','hipthrust','lunge','bench','inclinedb','fly',
@@ -20,10 +20,14 @@ const ASSETS = [
   'assets/js/animations.js',
   'assets/js/nutrition.js',
   'assets/js/config.js',
+  'assets/js/govil.js',
   'assets/js/foodmap.js',
   'assets/js/mealimage.js',
   'assets/js/nutrients.js',
   'assets/data/usda-core.json',
+  'assets/data/govil-foods.json',
+  'assets/data/govil-portions.json',
+  'assets/data/govil-map.json',
   'assets/meal-img/entrecote-sandwich.jpg',
   'assets/meal-img/generic-plate.jpg',
   'assets/js/usda.js',

@@ -134,7 +134,9 @@
       gramsValue = hit.grams;
       count = hit.count;
       unitKind = hit.unit;
-      quantityState = hit.portionSrc === 'explicit' ? 'explicit' : hit.portionSrc === 'usda' && !hit.countAssumed ? 'usda-portion' : 'default-portion';
+      quantityState = hit.portionSrc === 'explicit' ? 'explicit'
+        : (hit.portionSrc === 'usda' || hit.portionSrc === 'govil') && !hit.countAssumed ? hit.portionSrc + '-portion'
+        : 'default-portion';
       portionAssumed = quantityState === 'default-portion';
     }
     if (coreKey) { /* כבר טופל דרך מילון המזון */ }
@@ -204,10 +206,13 @@
     comp.protein = built.protein;
     comp.fat = built.fat;
     comp.candidate = {
-      fdcId: meta.fdcId,
+      fdcId: meta.fdcId || null,
+      govilCode: meta.govilCode || null,
+      sml: meta.sml || null,
       description: meta.description,
       dataType: meta.dataType || '',
-      dataset: meta.dataset || 'USDA FoodData Central',
+      dataset: meta.dataset || (meta.source === 'govil' ? 'משרד הבריאות — מאגר התזונה הלאומי הישראלי' : 'USDA FoodData Central'),
+      source: meta.source || (meta.govilCode ? 'govil' : 'fdc'),
       via: meta.via || 'search'
     };
     comp.error = null;
@@ -256,16 +261,25 @@
       if (exact('carbs', 10) != null) meal.carbs = exact('carbs', 10);
       if (exact('fat', 10) != null) meal.fat = exact('fat', 10);
     }
+    const sources = confirmed.map(c => c.candidate && c.candidate.source).filter(Boolean);
+    const allGovil = all && sources.length && sources.every(s => s === 'govil');
+    const allFdc = all && sources.length && sources.every(s => s === 'fdc');
+    const mealSource = !confirmed.length ? null : allGovil ? 'govil' : allFdc ? 'fdc' : all ? 'mixed' : 'partial';
+    const mealDataset = allGovil ? 'משרד הבריאות — מאגר התזונה הלאומי הישראלי'
+      : allFdc ? 'USDA FoodData Central'
+      : all ? 'מאגר משרד הבריאות + USDA FoodData Central' : null;
     meal.provenance = confirmed.length ? {
-      source: all ? 'fdc' : 'partial',
+      source: mealSource,
       fdcId: confirmed.length === 1 ? confirmed[0].candidate.fdcId : null,
+      govilCode: confirmed.length === 1 ? confirmed[0].candidate.govilCode : null,
+      sml: confirmed.length === 1 ? confirmed[0].candidate.sml : null,
       description: confirmed.map(c => c.candidate && c.candidate.description).filter(Boolean).join('; '),
       grams: null,
       gramsConfirmed: all,
       unit: 'g',
       per100g: all ? { mixed: true } : null,
       nutrients: nutrients,
-      dataset: 'USDA FoodData Central',
+      dataset: mealDataset,
       retrievedAt: new Date().toISOString()
     } : null;
     return meal;
@@ -288,8 +302,10 @@
     }
     applyOfficial(comp, comp.per100g, g, {
       name: comp.name,
-      source: 'fdc',
+      source: (comp.candidate && comp.candidate.source) || (comp.candidate && comp.candidate.govilCode ? 'govil' : 'fdc'),
       fdcId: comp.candidate && comp.candidate.fdcId,
+      govilCode: comp.candidate && comp.candidate.govilCode,
+      sml: comp.candidate && comp.candidate.sml,
       description: comp.candidate && comp.candidate.description,
       dataType: comp.candidate && comp.candidate.dataType,
       dataset: comp.candidate && comp.candidate.dataset,
@@ -299,13 +315,28 @@
     return { ok: true, meal: rollup(next), nutrients: true };
   }
 
-  function applyComponentChoice(meal, compId, fdcId) {
+  function applyComponentChoice(meal, compId, pick) {
     const next = Object.assign({}, meal, { components: (meal.components || []).map(c => Object.assign({}, c, { options: (c.options || []).slice() })) });
     const comp = next.components.find(c => c.id === compId);
     if (!comp) return meal;
-    const opt = (comp.options || []).find(o => String(o.fdcId) === String(fdcId));
+    const key = String(pick);
+    const opt = (comp.options || []).find(o =>
+      String(o.id) === key ||
+      String(o.fdcId) === key ||
+      (o.code != null && ('govil:' + o.code) === key) ||
+      (o.code != null && String(o.code) === key)
+    );
     if (!opt) return meal;
-    comp.candidate = { fdcId: opt.fdcId, description: opt.description, dataType: opt.dataType || '' };
+    const govil = !!(opt.code || (opt.source === 'govil') || (opt.id && String(opt.id).indexOf('govil:') === 0));
+    comp.candidate = {
+      fdcId: opt.fdcId || null,
+      govilCode: opt.code || null,
+      sml: opt.sml || null,
+      description: opt.description,
+      dataType: opt.dataType || '',
+      source: govil ? 'govil' : 'fdc',
+      dataset: govil ? 'משרד הבריאות — מאגר התזונה הלאומי הישראלי' : 'USDA FoodData Central'
+    };
     comp.matchState = 'matched';
     comp.options = [];
     comp.questionKey = comp.grams != null ? null : 'needGrams';
@@ -320,9 +351,56 @@
       next.components.forEach(c => { c.matchState = 'unavailable'; c.questionKey = 'unavailable'; c.error = 'offline'; });
       return rollup(next);
     }
+    const G = (api && api.govil) || global.ExcerlyGovil;
+    if (G && G.load) { try { await G.load(); } catch (e) {} }
+    const FM = global.ExcerlyFoodMap;
     for (let i = 0; i < next.components.length; i++) {
       const comp = next.components[i];
       if (componentConfirmed(comp)) continue;
+      // Refresh default/mapped portions once GovIL data is in memory.
+      if (FM && G && G.ready && G.ready() && comp.quantityState !== 'explicit' && comp.quantityState !== 'ai-estimate') {
+        const hit = FM.resolve(comp.name);
+        if (hit && hit.food && hit.grams != null) {
+          comp.coreKey = hit.food.key;
+          comp.grams = hit.grams;
+          comp.count = hit.count;
+          comp.unitKind = hit.unit;
+          comp.quantityState = hit.portionSrc === 'explicit' ? 'explicit'
+            : (hit.portionSrc === 'usda' || hit.portionSrc === 'govil') && !hit.countAssumed ? hit.portionSrc + '-portion'
+            : 'default-portion';
+          comp.portionAssumed = comp.quantityState === 'default-portion';
+          if (hit.food.en) comp.queryEn = hit.food.en;
+        }
+      }
+      // 1. GovIL mapped food or Hebrew search — no USDA call.
+      let govilCode = (comp.coreKey && G && G.mapCode) ? G.mapCode(comp.coreKey) : (comp.candidate && comp.candidate.govilCode) || null;
+      if (!govilCode && G && G.decide && /[\u0590-\u05FF]/.test(comp.name)) {
+        const decision = G.decide(cleanQuery(comp.name));
+        if (decision.state === 'matched' && decision.food) govilCode = decision.food.c;
+        else if (decision.state === 'ambiguous') {
+          comp.matchState = 'ambiguous';
+          comp.questionKey = 'whichFood';
+          comp.options = decision.options || [];
+          continue;
+        }
+      }
+      if (govilCode && G && G.food) {
+        const gf = G.food(govilCode);
+        if (gf && comp.grams != null) {
+          applyOfficial(comp, G.per100(gf), comp.grams, {
+            name: comp.name, source: 'govil', govilCode: gf.c, sml: gf.s,
+            description: gf.n, dataset: G.DATASET, via: 'govil'
+          }, Nutrients);
+          continue;
+        }
+        if (gf && comp.grams == null) {
+          comp.candidate = { govilCode: gf.c, sml: gf.s, description: gf.n, source: 'govil', dataset: G.DATASET };
+          comp.matchState = 'matched';
+          comp.questionKey = 'needGrams';
+          continue;
+        }
+      }
+      // 2. USDA core fallback (English built-in foods, or GovIL miss).
       if (comp.coreKey && api.core && comp.grams != null) {
         let core = null;
         try { core = await api.core(comp.coreKey); } catch (e) { core = null; }
@@ -335,10 +413,10 @@
         }
       }
       if (!comp.queryEn && /[\u0590-\u05FF]/.test(comp.name)) {
-        // FDC מאונדקס באנגלית בלבד; חיפוש בעברית מחזיר 0 תוצאות. לא שולחים, מבקשים הבהרה.
+        // Hebrew was already searched in GovIL. Do not send raw Hebrew to USDA.
         comp.matchState = 'none';
         comp.questionKey = 'noMatch';
-        comp.error = 'untranslated';
+        comp.error = govilCode == null && G && G.ready && G.ready() ? 'not_in_govil' : 'untranslated';
         continue;
       }
       const query = comp.queryEn || cleanQuery(comp.name);

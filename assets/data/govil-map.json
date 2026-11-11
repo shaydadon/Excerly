@@ -1,0 +1,219 @@
+{
+  "meta": {
+    "source": "משרד הבריאות — מאגר התזונה הלאומי הישראלי",
+    "sourceUrl": "https://data.gov.il/dataset/nutrition-database",
+    "license": "Other (Open)",
+    "credit": "יש לציין את משרד הבריאות כמקור",
+    "package": "nutrition-database",
+    "per": "100g",
+    "dataUpdated": "2022-10-26",
+    "fetchedAt": "2026-11-11T16:57:17.064Z",
+    "count": 4624,
+    "note": "curated codes win over auto-rank suggestions"
+  },
+  "map": {
+    "entrecote": {
+      "code": 610,
+      "via": "curated",
+      "why": "grilled rib-eye / אנטריקוט צלוי — cooked, matches a lunch steak",
+      "name": "סטייק בשר בקר, סטייק עין, אנטריקוט, צלוי, פרבורגר,בלדי",
+      "english": "Beef, steak, rib eye, grilled"
+    },
+    "roll": {
+      "code": 10124,
+      "via": "curated",
+      "why": "לחמניה לבנה (not toasted). No unit weight in GovIL; app keeps a labelled default.",
+      "name": "לחמניה לבנה, ודש, ברמן, טוב טעם, דוידוביץ",
+      "english": "Roll, white, Vadash/Davidovitch"
+    },
+    "iceberg": {
+      "code": 3807,
+      "via": "curated",
+      "why": "חסה אייסברג",
+      "name": "חסה אמריקאית עגולה (ICEBERG)",
+      "english": "Lettuce, Iceberg"
+    },
+    "wheatBread": {
+      "code": 1995,
+      "via": "curated",
+      "why": "לחם מחיטה מלאה, אנגל / לחם חי — common whole-wheat loaf, not toasted",
+      "name": "לחם מחיטה מלאה, אנגל, לחם חי",
+      "english": "Bread, whole wheat, Angel"
+    },
+    "whiteBread": {
+      "code": 1919,
+      "via": "curated",
+      "why": "לחם לבן, ברמן/אנג׳ל — not the toasted variant the auto-ranker preferred",
+      "name": "לחם לבן, ברמן, אנג'ל, דוידוביץ, אילת",
+      "english": "Bread, white, Angel/Berman/Davidowitz/Eilat"
+    },
+    "pita": {
+      "code": 1946,
+      "via": "curated",
+      "why": "פיתה, אנג׳ל/עינת — standard pita 100 g, not toasted",
+      "name": "פיתה, פיתה ביס (50 ג'), אנג'ל, עינת, שמש",
+      "english": "Pita, Angel/Einat/Shemesh"
+    },
+    "oliveOil": {
+      "code": 4443,
+      "via": "curated",
+      "why": "exact name שמן זית, generic (not FFQ, not virgin-only)",
+      "name": "שמן זית",
+      "english": "Oil, olive"
+    },
+    "mayo": {
+      "code": 4466,
+      "via": "curated",
+      "why": "מיונז רגיל — generic ingredient, not \"egg salad with mayo\"",
+      "name": "מיונז רגיל",
+      "english": "Mayonnaise, regular"
+    },
+    "lettuce": {
+      "code": 3588,
+      "via": "curated",
+      "why": "romaine / חסה ערבית, matches previous mapping",
+      "name": "חסה ערבית, חסה מסולסלת ESCAROLE Romaine",
+      "english": "Escarole, romaine lettuce, raw"
+    },
+    "potato": {
+      "code": 3453,
+      "via": "curated",
+      "why": "תפוחי אדמה אפויים, קליפה לא נאכלה — baked, matches the usual logged potato",
+      "name": "תפוחי אדמה, אפויים, קליפה לא נאכלה, עם מלח",
+      "english": "Potatoes, baked, peel not eaten, salted"
+    },
+    "banana": {
+      "code": 3225,
+      "via": "curated",
+      "why": "בננה טריה בלי קליפה — not banana chips",
+      "name": "בננה, טריה, בלי קליפה",
+      "english": "Banana, raw (without skin)"
+    },
+    "apple": {
+      "code": 3201,
+      "via": "curated",
+      "why": "תפוח עץ עם קליפה ללא ליבה — raw, not candied",
+      "name": "תפוח עץ, עם קליפה (ללא ליבה)",
+      "english": "Apple, with peel, raw, without core"
+    },
+    "eggFried": {
+      "code": 1572,
+      "via": "curated",
+      "why": "ביצה או חביתה מטוגנת בשמן קנולה — typical fried egg; no separate \"עין\" row",
+      "name": "ביצה או חביתה מטוגנת בשמן קנולה",
+      "english": "Egg or omelet, fried in canola oil"
+    },
+    "eggScrambled": {
+      "code": 9176,
+      "via": "curated",
+      "why": "ביצה או חביתה עם חלב בשמן קנולה — closest to scrambled; no מקושקשת row",
+      "name": "ביצה או חביתה עם חלב בשמן קנולה",
+      "english": "Egg or omelet with milk in canola oil"
+    },
+    "omelet": {
+      "code": 1573,
+      "via": "curated",
+      "why": "ביצה או חביתה מטוגנת ללא שמן — plain omelet",
+      "name": "ביצה או חביתה מטוגנת ללא שמן",
+      "english": "Egg or omelet, fried without oil"
+    },
+    "eggBoiled": {
+      "code": 1564,
+      "via": "curated",
+      "why": "ביצה קשה שלמה ללא קליפה",
+      "name": "ביצה קשה שלמה, ללא קליפה, עם מלח",
+      "english": "Egg, hard-boiled,wihout shell, added salt"
+    },
+    "chicken": {
+      "code": 805,
+      "via": "curated",
+      "why": "חזה עוף צלוי, ללא עור — roasted skinless breast",
+      "name": "בשר עוף, חזה, ללא עצם, צלוי, נאכל ללא עור",
+      "english": "Chicken, breast, roasted, broiled, or baked, skin not eaten"
+    },
+    "rice": {
+      "code": 2721,
+      "via": "curated",
+      "why": "אורז לבן מבושל ללא תוספת שומן — not raw brown rice",
+      "name": "אורז לבן, מבושל, ללא תוספת שומן בבישול",
+      "english": "Rice, white, cooked, fat not added"
+    },
+    "cottage": {
+      "code": 494,
+      "via": "curated",
+      "why": "קוטג' 5% תנובה — the common Israeli tub",
+      "name": "גבינת קוטג' 5%  שומן, תנובה",
+      "english": "Cheese, cow milk, cottage, 5% fat, Tnuva"
+    },
+    "tomato": {
+      "code": 3663,
+      "via": "curated",
+      "why": "עגבניה טריה",
+      "name": "עגבניה, טריה",
+      "english": "Tomatoes, raw"
+    },
+    "cucumber": {
+      "code": 3793,
+      "via": "curated",
+      "why": "מלפפון טרי עם קליפה",
+      "name": "מלפפון, טרי, עם קליפה",
+      "english": "Cucumber, with peel, raw"
+    },
+    "avocado": {
+      "code": 3223,
+      "via": "curated",
+      "why": "אבוקדו, generic edible portion",
+      "name": "אבוקדו",
+      "english": "Avocado"
+    },
+    "hummus": {
+      "code": 1640,
+      "via": "curated",
+      "why": "סלט חומוס ביתי — the spread, not dried chickpeas",
+      "name": "סלט חומוס, ביתי",
+      "english": "Salad, humus, homemade"
+    },
+    "tahini": {
+      "code": 1898,
+      "via": "curated",
+      "why": "טחינה גולמית לא מדוללת — the paste (15 g per tbsp)",
+      "name": "טחינה גולמית, לא מדוללת",
+      "english": "Tahini, not diluted"
+    },
+    "salmon": {
+      "code": 1308,
+      "via": "curated",
+      "why": "סלמון מבושל במים או אדים — cooked, not smoked",
+      "name": "דג סלמון-אילתית, מבושל במים או אדים, עם מלח",
+      "english": "Fish, salmon, steamed or poached"
+    },
+    "tuna": {
+      "code": 1360,
+      "via": "curated",
+      "why": "טונה משומר במים",
+      "name": "דג טונה, משומר במים",
+      "english": "Fish, tuna, canned in water"
+    },
+    "pasta": {
+      "code": 8552,
+      "via": "curated",
+      "why": "פסטה/אטריות חיטה מבושלות ללא שמן — not dry gluten-free corn pasta",
+      "name": "אטריות/פסטה, חיטה, מבושלות, עם מלח, ללא תוספת שמן בבישול",
+      "english": "Spaghetti, cooked, fat not added"
+    },
+    "yogurt": {
+      "code": 62,
+      "via": "curated",
+      "why": "יוגורט 3% תנובה, טבעי — common plain yogurt",
+      "name": "יוגורט 3% שומן תנובה",
+      "english": "Yoghurt, cow milk, 3% fat, unflavored, Tnuva"
+    },
+    "feta": {
+      "code": 436,
+      "via": "curated",
+      "why": "גבינה בולגרית 16% גד — typical table cheese, not 24%",
+      "name": "גבינה בולגרית 16% שומן, מחלב בקר, גד",
+      "english": "Cheese, cow milk, Bulgarian, 16% fat, Gad"
+    }
+  }
+}
