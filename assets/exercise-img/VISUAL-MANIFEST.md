@@ -6,13 +6,14 @@ Palette stays paper `#F2EADC`, charcoal `#24211F`, terracotta `#B96D50`. The pho
 
 ## Shoulder rolls and spinal twist
 
-Shoulder-roll motion diagrams (`shoulders-m.jpg` / `shoulders-f.jpg` and their SVG sources) must not appear in the app, the service-worker precache, or `EXIMG`. The exercise and its instructions stay; the UI uses the no-image fallback (dark tile + icon), never a cream or empty gray box.
+The old shoulder-roll motion diagrams (cream/line drawings) must never be reused or shown. The Sunday/Saturday home-plan exercise `shoulders` now uses new photorealistic stills in `shoulders-m.jpg` / `shoulders-f.jpg` (hands on the shoulders, elbows out — a classic shoulder-circles warmup). Those files are in `EXIMG` and in the service-worker precache (`excerly-v58`).
 
-Spinal twist uses approved realistic photos in `twist-m.jpg` and `twist-f.jpg` (owner-approved a3, 11 Nov 2026). Diagram JPEG/SVG sources for twist are unreferenced and removed.
+Spinal twist uses approved realistic photos in `twist-m.jpg` and `twist-f.jpg` (owner-approved a3, 11 Nov 2026). Diagram JPEG/SVG sources for twist stay unreferenced.
 
 | File | What is visible | Verdict |
 | --- | --- | --- |
-| `shoulders-m.jpg` / `shoulders-f.jpg` | Not shown. No verified photo yet. | UNREFERENCED |
+| `shoulders-m.jpg` | Photorealistic still, male, hands on both shoulders, elbows out to the sides (a4). Anatomy normal. a1–a3 rejected (neutral stance or broken anatomy). | PASS (a4) |
+| `shoulders-f.jpg` | Same pose, female, long-sleeve shirt, normal neckline (a4). | PASS (a4) |
 | `twist-m.jpg` | Approved realistic photo, male standing spinal twist (a3). | PENDING LIVE (preview) |
 | `twist-f.jpg` | Approved realistic photo, female standing spinal twist (a3). | PENDING LIVE (preview) |
 
@@ -96,14 +97,14 @@ Every `workout.js` exercise id has a `GYM_FILE` entry and both gender files.
 
 ## Counts
 
-- Home stretch files: 28 (14 exercises × 2). All 14 keys are in `EXIMG`.
-- Gym files: 42 (21 exercises × 2). All 21 `workout.js` ids are in `GYM_FILE`.
-- Shoulder-roll diagrams are unreferenced and not precached. Spinal twist uses approved photos. Diagram SVG sources are removed.
-- Total judged images: 70. Pass: 70. Fail: 0. Missing label: not used.
+- Home stretch files: 28 (14 exercises × 2, including the new verified shoulder-roll stills). All 14 keys are in `EXIMG`.
+- Gym files: 64 (32 exercises × 2). All 32 `workout.js` ids are in `GYM_FILE`.
+- Shoulder-roll diagrams stay banned and are not in the tree. Spinal twist uses approved photos.
+- Total judged images: 92. Pass: 92. Fail: 0 (rejected attempts are only under `attempts/`, not shipped).
 
 ## Known limits
 
-- 72 photograph slots (66 existing + 2 approved twist photos + 4 new gym photos: rdl and warmup, male and female). Shoulder rolls have no verified photo (2 slots hidden).
+- 92 photograph slots (72 previously shipped stills + 2 shoulder-roll stills + 18 new gym stills). Cache bump: `excerly-v58` (one above PR #5 / GovIL, which ends on `excerly-v57`).
 - A 54px thumb shows the three-frame silhouette, not fine joint detail. The hero and the player square show the sequence; the wide detail crop shows the middle frame.
 - `quad-f` is a kneeling heel-to-glute variant of the standing quad stretch.
 - `gym-cardio-m` is standing on the treadmill rather than mid-stride.
@@ -120,3 +121,25 @@ Owner-approved additions for AI-plan names that had no image. Same dark-gym styl
 | `gym-rdl-f.jpg` | Female, same Romanian-deadlift hinge, two dumbbells at mid-shin to knee. | PASS (a2) |
 | `gym-warmup-m.jpg` | Male riding an upright stationary bike (saddle, no recumbent backrest), hands on the bars, feet on the pedals. | PASS (a2; a1 was a recumbent bike and was rejected) |
 | `gym-warmup-f.jpg` | Female riding an upright stationary bike, same setup. | PASS (a1) |
+
+## New photographs (11 Nov 2026, all-images prep, not published)
+
+Photorealistic stills in the same warm dark-gym style, 1024×1024 RGB JPEG. Banned shoulder-roll diagrams were not used as a source. Shrug attempts (front and rear) did not show a clear top-of-shrug and were not shipped.
+
+| File | What is visible | Verdict |
+| --- | --- | --- |
+| `shoulders-m.jpg` / `shoulders-f.jpg` | Hands-on-shoulders elbow-circle warmup, mid pose. | PASS (a4) |
+| `gym-smith-m.jpg` / `gym-smith-f.jpg` | Smith machine squat, vertical rails, mid-squat depth. | PASS (a1) |
+| `gym-deadlift-m.jpg` / `gym-deadlift-f.jpg` | Conventional barbell deadlift, hinged, mid-pull. | PASS (a1) |
+| `gym-pullup-m.jpg` | Hanging mid pull-up, feet off the floor. | PASS (a1) |
+| `gym-pullup-f.jpg` | Same hanging mid pull-up. a1 was standing with feet on the floor and was rejected. | PASS (a2) |
+| `gym-dips-m.jpg` / `gym-dips-f.jpg` | Mid parallel-bar dip, feet off the floor. | PASS (a1) |
+| `gym-chestpress-m.jpg` / `gym-chestpress-f.jpg` | Seated plate-loaded chest-press machine. | PASS (a1) |
+| `gym-elliptical-m.jpg` | Standing elliptical, no seat. a1 was a seated hybrid and was rejected. | PASS (a2) |
+| `gym-elliptical-f.jpg` | Standing elliptical, no seat. | PASS (a1) |
+| `gym-crunch-m.jpg` / `gym-crunch-f.jpg` | Mid crunch on a mat, knees bent, upper back off the floor. | PASS (a1) |
+| `gym-pushup-m.jpg` | Push-up near the top of the rep, body straight. | PASS (a1) |
+| `gym-pushup-f.jpg` | Mid push-up, elbows bent, shoes on. a1 had socks and a hoodie and was replaced. | PASS (a2) |
+| `gym-bentrow-m.jpg` / `gym-bentrow-f.jpg` | Bent-over barbell row, hips hinged, flat back. | PASS (a1) |
+
+Mapper notes: equipment words (`מכונה`, `smith`, `סמית`) are no longer stripped, so «לחיצת חזה במכונה» maps to `chestPress` and not to barbell bench. «סיבובי כתפיים» uses the home shoulders stills and never the bike warm-up. Bare «פרפר» stays unmapped.

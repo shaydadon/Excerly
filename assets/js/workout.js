@@ -34,11 +34,24 @@
     plank: { he: 'פלאנק', en: 'Plank' },
     cardio: { he: 'קרדיו קל לסיום (הליכון/אופניים)', en: 'Light finisher cardio (treadmill/bike)' },
     rdl: { he: 'דדליפט רומני עם משקולות', en: 'Romanian deadlift with dumbbells' },
-    warmup: { he: 'חימום: אופניים נייחים + סיבובי כתפיים', en: 'Warm-up: stationary bike + shoulder circles' }
+    warmup: { he: 'חימום: אופניים נייחים + סיבובי כתפיים', en: 'Warm-up: stationary bike + shoulder circles' },
+    smith: { he: 'סקוואט במכונת סמית', en: 'Smith machine squat' },
+    deadlift: { he: 'דדליפט', en: 'Deadlift' },
+    pullup: { he: 'מתח', en: 'Pull-up' },
+    dips: { he: 'מקבילים', en: 'Dips' },
+    chestPress: { he: 'לחיצת חזה במכונה', en: 'Machine chest press' },
+    elliptical: { he: 'אליפטיקל', en: 'Elliptical' },
+    crunch: { he: 'כפיפות בטן', en: 'Crunch' },
+    pushup: { he: 'שכיבות סמיכה', en: 'Push-up' },
+    bentRow: { he: 'חתירה עם מוט', en: 'Barbell row' }
   };
 
   /* נירמול שם תרגיל לצורך התאמה לתמונה: AI לא מחזיר id, והשמות לעיתים
      שונים במקצת משמות הבנק (למשל בלי סוגריים, או «במשקולות»). */
+  // Hebrew letters are not JS \w, so \b never fires around them.
+  const HEB_EDGE = '(^|[^\\u05D0-\\u05EAa-z0-9])';
+  const HEB_END = '(?=$|[^\\u05D0-\\u05EAa-z0-9])';
+  const FINAL_LETTERS = { 'ך': 'כ', 'ם': 'מ', 'ן': 'נ', 'ף': 'פ', 'ץ': 'צ' };
   function foldName(s) {
     return String(s || '')
       .toLowerCase()
@@ -46,56 +59,101 @@
       .replace(/[()[\]{}]/g, ' ')
       .replace(/[/\\+|–—_-]+/g, ' ')
       .replace(/[.:;!?]/g, ' ')
-      .replace(/\b(עם|של|על|machine|with|and|the|a)\b/g, ' ')
-      .replace(/\b(dumbbells?|db|משקולות|משקולת|במשקולות)\b/g, ' ')
-      .replace(/\b(במכונה|מכונה)\b/g, ' ')
+      .replace(new RegExp(HEB_EDGE + '(עם|של|על|machine|with|and|the|a)' + HEB_END, 'g'), '$1')
+      .replace(new RegExp(HEB_EDGE + '(dumbbells?|db|משקולות|משקולת|במשקולות)' + HEB_END, 'g'), '$1')
+      .replace(/[ךםןףץ]/g, ch => FINAL_LETTERS[ch] || ch)
       .replace(/(^|\s)[\u05D0-\u05EA](?=\s|$)/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
   }
+  function nameTokens(s) {
+    return foldName(s).split(' ').filter(Boolean);
+  }
+  // Bank/alias tokens are covered by the query (prefix-friendly so ברך matches ברכיים).
+  // Require the candidate to be covered by the query, not the other way around
+  // («סיבובי כתפיים» must not match the bike warm-up).
+  function tokensCovered(query, cand) {
+    const q = nameTokens(query);
+    const c = nameTokens(cand);
+    if (!q.length || !c.length) return false;
+    return c.every(ct => q.some(qt =>
+      qt === ct ||
+      (ct.length >= 3 && qt.indexOf(ct) === 0) ||
+      (qt.length >= 3 && ct.indexOf(qt) === 0 && qt.length >= Math.ceil(ct.length * 0.6))
+    ));
+  }
 
   // כינויים נפוצים (בעיקר מתוכניות AI) למזהה בנק קיים. לא כולל סיבובי כתפיים.
   const NAME_ALIASES = {
-    squat: ['barbell squat', 'back squat', 'סקוואט מוט'],
-    legPress: ['leg press', 'leg press machine', 'לחיצת רגליים', 'לחיצת רגליים במכונה'],
-    legCurl: ['leg curl', 'lying leg curl', 'seated leg curl', 'כפיפת ברך'],
-    legExt: ['leg extension', 'פשיטת ברך'],
-    calf: ['calf raise', 'standing calf raise', 'הרמות עקב', 'הרמת עקבים'],
+    squat: ['barbell squat', 'back squat', 'סקוואט מוט', 'סקוואט חופשי', 'front squat', 'סקוואט קדמי', 'goblet squat', 'סקוואט גובלט'],
+    legPress: ['leg press', 'leg press machine', 'לחיצת רגליים', 'לחיצת רגליים במכונה', 'hack squat'],
+    legCurl: ['leg curl', 'lying leg curl', 'seated leg curl', 'כפיפת ברך', 'leg curls', 'כפיפת ברכיים', 'כפיפת ברכיים במכונה', 'כפיפת ברך במכונה'],
+    legExt: ['leg extension', 'פשיטת ברך', 'פשיטת ברכיים', 'פשיטת ברכיים במכונה'],
+    calf: ['calf raise', 'standing calf raise', 'seated calf raise', 'הרמות עקב', 'הרמת עקבים', 'הרמת שוקיים'],
     hipThrust: ['hip thrust', 'barbell hip thrust', 'היפ טראסט', 'היפ תראסט'],
-    lunge: ['dumbbell lunge', 'db lunges', 'walking lunge', 'מספריים'],
-    bench: ['bench press', 'barbell bench press', 'לחיצת חזה', 'לחיצת חזה במוט'],
+    lunge: ['dumbbell lunge', 'db lunges', 'walking lunge', 'lunges', 'מספריים', 'bulgarian split squat', 'סקוואט בולגרי'],
+    bench: ['bench press', 'barbell bench press', 'לחיצת חזה', 'לחיצת חזה במוט', 'close grip bench', 'close-grip bench'],
     inclineDb: [
       'incline db press', 'incline db chest press', 'incline dumbbell press',
       'incline dumbbell chest press', 'incline chest press',
       'לחיצת חזה בשיפוע', 'לחיצת חזה בשיפוע במשקולות'
     ],
-    fly: ['cable fly', 'cable flyes', 'pec fly', 'פרפר בכבלים'],
-    ohp: ['overhead press', 'shoulder press', 'military press', 'לחיצת כתפיים'],
+    fly: ['cable fly', 'cable flyes', 'pec fly', 'pec deck', 'pec-deck', 'פרפר בכבלים', 'פרפר במכונה'],
+    ohp: ['overhead press', 'shoulder press', 'military press', 'לחיצת כתפיים', 'לחיצת כתפיים במכונה'],
     lateral: [
       'lateral raise', 'db lateral raise', 'dumbbell lateral raise',
       'side lateral raise', 'side raise',
       'הרחקת כתף', 'הרחקות צד', 'הרחקת כתף בצדדים', 'הרחקת כתף בצדדים עם משקולות'
     ],
-    pushdown: ['triceps pushdown', 'cable pushdown', 'פשיטת מרפק בפולי'],
+    pushdown: ['triceps pushdown', 'cable pushdown', 'פשיטת מרפק בפולי', 'overhead tricep extension', 'overhead triceps extension', 'skull crusher', 'פשיטת מרפק מעל הראש'],
     pulldown: [
       'lat pulldown', 'lat pull down', 'lat pull-down',
       'assisted pull-up', 'assisted pull up', 'assisted chin-up',
       'פולי עליון', 'משיכת פולי עליון',
       'מתח בעזרת מכונת סיוע', 'מתח בעזרת מכונת סיוע / פולי עליון'
     ],
-    row: ['seated cable row', 'cable row', 'חתירה בישיבה'],
+    row: ['seated cable row', 'cable row', 'חתירה בישיבה', 'חתירה בכבלים'],
     facePull: ['face pull', 'face pulls', 'משיכת פנים'],
     curl: [
-      'biceps curl', 'bicep curl', 'cable curl', 'cable curls',
+      'biceps curl', 'bicep curl', 'cable curl', 'cable curls', 'preacher curl',
       'כפיפת מרפק', 'כפיפת מרפקים', 'כפיפת מרפקים בכבל', 'כפיפת מרפק בכבל'
     ],
     hammer: ['hammer curl', 'hammer curls', 'כפיפת פטיש'],
     rearDelt: ['rear delt fly', 'rear-delt fly', 'reverse fly', 'פרפר הפוך'],
     plank: ['front plank', 'פלנק'],
-    cardio: ['light finisher cardio', 'treadmill'],
+    cardio: ['light finisher cardio', 'treadmill', 'הליכון', 'הליכה במסילה', 'חימום: הליכה במסילה', 'חימום: הליכה במסילה + מתיחות דינמיות', 'treadmill walk', 'warm-up: treadmill walk + dynamic stretches', 'warmup: treadmill walk + dynamic stretches', 'קרדיו קל לסיום'],
     rdl: ['romanian deadlift', 'dumbbell rdl', 'db rdl', 'rdl', 'דדליפט רומני'],
-    warmup: ['upright bike', 'stationary upright bike', 'אופניים נייחים', 'חימום אופניים']
+    warmup: ['upright bike', 'stationary upright bike', 'stationary bike', 'אופניים נייחים', 'חימום אופניים'],
+    smith: ['smith squat', 'smith machine squat', 'סקוואט סמית', 'סקוואט במכונת סמית'],
+    deadlift: ['deadlift', 'conventional deadlift', 'barbell deadlift', 'דדליפט קנוונציונלי', 'דדליפט עם מוט'],
+    pullup: ['pull-up', 'pull ups', 'pullups', 'pullup', 'chin-up', 'chin up', 'מתח', 'מתח רחב'],
+    dips: ['dip', 'dips', 'מקבילים', 'שקיעות במקבילים'],
+    chestPress: ['machine chest press', 'chest press machine', 'chest press', 'לחיצת חזה במכונה'],
+    elliptical: ['elliptical', 'אליפטיקל', 'קרוס טריינר', 'cross trainer', 'חימום אליפטיקל', 'חימום: אליפטיקל'],
+    crunch: ['crunch', 'crunches', 'sit-up', 'sit ups', 'sit-ups', 'כפיפות בטן'],
+    pushup: ['push-up', 'push ups', 'push-ups', 'pushup', 'שכיבות סמיכה'],
+    bentRow: ['bent over row', 'bent-over row', 'barbell row', 'חתירה בעמידה', 'חתירה עם מוט']
   };
+
+  // Home-plan stills (shoulders, stretches). Used when a gym/AI name matches a home exercise.
+  // Bare «פרפר» stays unmapped (fly vs butterfly). «סיבובי כתפיים» must not use the bike warm-up.
+  const HOME_ALIASES = {
+    neck: ['neck stretch', 'הטיית ראש', 'מתיחת צוואר'],
+    shoulders: ['shoulder rolls', 'shoulder roll', 'סיבובי כתפיים', 'גלגול כתפיים'],
+    arms: ['arm circles', 'סיבובי ידיים', 'מעגלי זרועות'],
+    sidebend: ['side bend', 'כפיפה הצידה', 'הטיית גו לצד'],
+    twist: ['spinal twist', 'סיבוב עמוד שדרה'],
+    forwardfold: ['forward fold', 'כפיפה קדימה'],
+    hamstring: ['hamstring stretch', 'seated hamstring stretch', 'מתיחת מיתרים', 'מתיחת ירך אחורית בישיבה'],
+    butterfly: ['butterfly stretch', 'מתיחת פרפר'],
+    quad: ['quad stretch', 'מתיחת ארבע ראשי', 'מתיחת ירך קדמית'],
+    hipflexor: ['hip flexor stretch', 'מתיחת מכופפי ירך', 'מתיחת מכופף ירך'],
+    calf: ['calf stretch', 'מתיחת שוק'],
+    catcow: ['cat cow', 'cat-cow', 'חתול פרה', 'חתול-פרה'],
+    cobra: ['cobra', 'cobra pose', 'קוברה', 'תנוחת קוברה'],
+    child: ["child's pose", 'childs pose', 'child pose', 'תנוחת הילד']
+  };
+
 
   function resolveGymId(ex) {
     if (ex == null) return null;
@@ -131,7 +189,7 @@
         // Query may contain a bank/alias phrase (AI names). A short query
         // must not match just because it is a suffix of a longer name
         // (e.g. «סיבובי כתפיים» must not map to the bike warm-up).
-        const queryContains = distinctive && n.includes(cand);
+        const queryContains = distinctive && (n.includes(cand) || tokensCovered(n, cand));
         const almostEqual = distinctive && cand.includes(n) && n.length >= Math.max(8, Math.ceil(cand.length * 0.6));
         if (queryContains || almostEqual) {
           hits.push({ k, len: cand.length });
@@ -142,6 +200,78 @@
     const best = Math.max.apply(null, hits.map(h => h.len));
     const unique = hits.filter(h => h.len === best).map(h => h.k).filter((k, i, a) => a.indexOf(k) === i);
     return unique.length === 1 ? unique[0] : null;
+  }
+
+  function homeBank() {
+    const D = global.ExcerlyData;
+    return (D && D.EXERCISES) || {};
+  }
+
+  function matchFromCands(n, cands) {
+    for (const k of Object.keys(cands)) {
+      if (cands[k].has(n)) return k;
+    }
+    const hits = [];
+    for (const k of Object.keys(cands)) {
+      for (const cand of cands[k]) {
+        const distinctive = cand.length >= 8 || cand.split(' ').length >= 2;
+        const queryContains = distinctive && (n.includes(cand) || tokensCovered(n, cand));
+        const almostEqual = distinctive && cand.includes(n) && n.length >= Math.max(8, Math.ceil(cand.length * 0.6));
+        if (queryContains || almostEqual) hits.push({ k, len: cand.length });
+      }
+    }
+    if (!hits.length) return null;
+    const best = Math.max.apply(null, hits.map(h => h.len));
+    const unique = hits.filter(h => h.len === best).map(h => h.k).filter((k, i, a) => a.indexOf(k) === i);
+    return unique.length === 1 ? unique[0] : null;
+  }
+
+  function resolveHomeId(ex) {
+    if (ex == null) return null;
+    if (typeof ex === 'string') {
+      const bank = homeBank();
+      if (bank[ex]) return ex;
+      ex = { name: ex };
+    }
+    const bank = homeBank();
+    if (ex.id && bank[ex.id]) return ex.id;
+    if (ex.animation && bank[ex.animation]) return ex.animation;
+    const name = typeof ex.name === 'string' ? ex.name : '';
+    if (!name) return null;
+    for (const k of Object.keys(bank)) {
+      const nm = bank[k].name || {};
+      if (nm.he === name || nm.en === name) return k;
+    }
+    const n = foldName(name);
+    if (!n) return null;
+    const cands = {};
+    const add = (k, s) => {
+      const f = foldName(s);
+      if (f) (cands[k] || (cands[k] = new Set())).add(f);
+    };
+    for (const k of Object.keys(bank)) {
+      const nm = bank[k].name || {};
+      if (nm.he) add(k, nm.he);
+      if (nm.en) add(k, nm.en);
+      (HOME_ALIASES[k] || []).forEach(a => add(k, a));
+    }
+    // Aliases still apply when data.js has not been loaded (tests that only load workout.js).
+    if (!Object.keys(bank).length) {
+      for (const k of Object.keys(HOME_ALIASES)) {
+        (HOME_ALIASES[k] || []).forEach(a => add(k, a));
+      }
+    }
+    return matchFromCands(n, cands);
+  }
+
+  // Gym first (so «לחיצת חזה» is bench, not a stretch). Then home, so
+  // «סיבובי כתפיים» uses the home shoulders photo and never the bike warm-up.
+  function resolveVisual(ex) {
+    const gid = resolveGymId(ex);
+    if (gid) return { id: gid, kind: 'gym' };
+    const hid = resolveHomeId(ex);
+    if (hid) return { id: hid, kind: 'home' };
+    return null;
   }
 
 
@@ -301,5 +431,5 @@
     return normalize(JSON.parse(m[0]));
   }
 
-  global.ExcerlyWorkout = { planLocal, planViaProxy, planAI, EX, resolveGymId, foldName };
+  global.ExcerlyWorkout = { planLocal, planViaProxy, planAI, EX, resolveGymId, resolveHomeId, resolveVisual, foldName, NAME_ALIASES, HOME_ALIASES };
 })(window);

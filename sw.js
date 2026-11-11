@@ -1,9 +1,10 @@
 /* Excerly – Service Worker לתמיכה בעבודה לא מקוונת (PWA) */
-const CACHE = 'excerly-v57';
+const CACHE = 'excerly-v58';
 const EX_KEYS = ['neck','arms','sidebend','forwardfold','hamstring',
-  'butterfly','quad','hipflexor','calf','catcow','cobra','child','twist'];
+  'butterfly','quad','hipflexor','calf','catcow','cobra','child','twist','shoulders'];
 const GYM_KEYS = ['squat','legpress','legcurl','legext','calf','hipthrust','lunge','bench','inclinedb','fly',
-  'ohp','lateral','pushdown','pulldown','row','facepull','curl','hammer','reardelt','plank','cardio','rdl','warmup'];
+  'ohp','lateral','pushdown','pulldown','row','facepull','curl','hammer','reardelt','plank','cardio','rdl','warmup',
+  'smith','deadlift','pullup','dips','chestpress','elliptical','crunch','pushup','bentrow'];
 const EX_IMGS = EX_KEYS.flatMap((k) => [
   `assets/exercise-img/${k}-m.jpg`,
   `assets/exercise-img/${k}-f.jpg`

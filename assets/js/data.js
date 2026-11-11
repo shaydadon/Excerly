@@ -260,13 +260,12 @@
 
   /* תמונות שאומתו ויזואלית (זכר/נקבה).
      קבצים: assets/exercise-img/<key>-m.jpg ו-<key>-f.jpg
-     סיבובי כתפיים בלי תמונה מאומתת — תרשימי התנועה הוסרו מהתצוגה
-     ואינם במפתח הזה, כדי שלא יוצגו ולא יישמרו במטמון.
+     סיבובי כתפיים: תצלום מאושר (ידיים על הכתפיים, מרפקים בצד — לא תרשים התנועה הישן).
      סיבוב עמוד שדרה: תצלום מאושר (לא תרשים). */
   const EXIMG = {
     neck: 1, arms: 1, sidebend: 1, forwardfold: 1,
     hamstring: 1, butterfly: 1, quad: 1, hipflexor: 1, calf: 1, catcow: 1, cobra: 1, child: 1,
-    twist: 1
+    twist: 1, shoulders: 1
   };
 
   global.ExcerlyData = {

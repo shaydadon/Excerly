@@ -72,7 +72,10 @@
     pulldown: 'gym-pulldown', row: 'gym-row', facePull: 'gym-facepull',
     curl: 'gym-curl', hammer: 'gym-hammer', rearDelt: 'gym-reardelt',
     plank: 'gym-plank', cardio: 'gym-cardio',
-    rdl: 'gym-rdl', warmup: 'gym-warmup'
+    rdl: 'gym-rdl', warmup: 'gym-warmup',
+    smith: 'gym-smith', deadlift: 'gym-deadlift', pullup: 'gym-pullup',
+    dips: 'gym-dips', chestPress: 'gym-chestpress', elliptical: 'gym-elliptical',
+    crunch: 'gym-crunch', pushup: 'gym-pushup', bentRow: 'gym-bentrow'
   };
 
   /* ---------- שכבת ויזואל לתרגיל: Lottie (אם הוגדר) או SVG מובנה ----------
@@ -109,7 +112,7 @@
   // התמונה הראשונה ביום שיש לה מיפוי — לא בהכרח התרגיל הראשון (חימום בלי תמונה).
   function firstGymImg(list) {
     for (const e of list || []) {
-      const src = gymImg(gymIdOf(e));
+      const src = gymImg(gymIdOf(e)) || homeImgFromName(e);
       if (src) return src;
     }
     return null;
@@ -128,10 +131,31 @@
     const g = figGender() === 'female' ? 'f' : 'm';
     return `assets/exercise-img/${file}-${g}.jpg`;
   }
+  function homeIdOf(ex) {
+    if (W && typeof W.resolveHomeId === 'function') return W.resolveHomeId(ex);
+    if (!ex) return null;
+    if (ex.animation && (D.EXERCISES || {})[ex.animation]) return ex.animation;
+    if (ex.id && (D.EXERCISES || {})[ex.id]) return ex.id;
+    const name = typeof ex.name === 'string' ? ex.name : '';
+    const bank = D.EXERCISES || {};
+    for (const k of Object.keys(bank)) {
+      const nm = bank[k].name || {};
+      if (nm.he === name || nm.en === name) return k;
+    }
+    return null;
+  }
+  function homeImgFromName(ex) {
+    const id = homeIdOf(ex);
+    if (!id || !(D.EXIMG || {})[id]) return null;
+    const g = figGender() === 'female' ? 'f' : 'm';
+    return `assets/exercise-img/${id}-${g}.jpg`;
+  }
   function gymVisual(ex) {
     const id = gymIdOf(ex);
     const img = id ? gymImg(id) : null;
     if (img) return `<img class="ex-photo" src="${img}" alt="" loading="lazy">`;
+    const home = homeImgFromName(ex);
+    if (home) return `<img class="ex-photo" src="${home}" alt="" loading="lazy">`;
     return missingFrame();
   }
   // מחזיר HTML לויזואל התרגיל: Lottie (מסך גדול) > תמונה מאומתת > מסגרת חסרה.
