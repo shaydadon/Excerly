@@ -7,6 +7,8 @@ import {
   anthropicMessagesBody,
   handleMealImage,
   mealImagePrompt,
+  mealImageKey,
+  IMAGE_CACHE_VERSION,
   resetMealImageState
 } from '../worker/parse-meal-route.js';
 
@@ -30,14 +32,40 @@ await test('Haiku request body has no effort, output_config, or thinking', () =>
   assert.equal(flat.includes('output_config'), false);
 });
 
-await test('prompt uses English name, grams, and method', () => {
+await test('prompt is built from dishEn, with no Hebrew and no grams', () => {
   const prompt = mealImagePrompt({
-    name: 'עוף',
-    items: [{ queryEn: 'grilled chicken breast', grams: 140, cookingMethod: 'grilled' }, { nameEn: 'olive oil', grams: 10 }]
+    name: 'חזה עוף 150 גרם עם אורז',
+    dishEn: 'roasted chicken breast beside a mound of white rice on a plate',
+    items: [{ name: 'חזה עוף', queryEn: 'chicken breast', grams: 150, cookingMethod: 'roasted' }]
   });
-  assert.match(prompt, /140 g grilled grilled chicken breast/);
-  assert.match(prompt, /10 g olive oil/);
-  assert.ok(prompt.length <= 2048);
+  assert.match(prompt, /roasted chicken breast beside a mound of white rice/);
+  assert.equal(/[\u0590-\u05FF]/.test(prompt), false);
+  assert.equal(/\d+\s*g\b/i.test(prompt), false);
+});
+
+await test('Hebrew-only fallback is skipped instead of sending a wrong prompt', async () => {
+  resetMealImageState();
+  const r = await handleMealImage({
+    name: 'שקשוקה עם לחם',
+    items: [{ name: 'שקשוקה', grams: 200 }, { name: 'לחם', grams: 40 }]
+  }, { AI: { run: async () => { throw new Error('should not generate'); } } }, 'ip-he');
+  assert.equal(r.status, 400);
+  assert.equal(r.detail, 'no English food description');
+});
+
+await test('English item names are used when dishEn is missing', () => {
+  const prompt = mealImagePrompt({
+    name: 'סלט טונה',
+    items: [{ queryEn: 'tuna salad', grams: 120 }, { nameEn: 'boiled egg' }]
+  });
+  assert.match(prompt, /tuna salad/);
+  assert.match(prompt, /boiled egg/);
+  assert.equal(/[\u0590-\u05FF]/.test(prompt), false);
+});
+
+await test('image cache key version changed so old pictures are not reused', async () => {
+  const key = await mealImageKey({ dishEn: 'chicken and rice on a plate' });
+  assert.ok(key.startsWith(IMAGE_CACHE_VERSION + '-'));
 });
 
 await test('missing AI binding is a clean 501', async () => {
@@ -54,7 +82,7 @@ await test('mocked Flux returns a data URL and the second call is cached', async
     AI: { run: async (model, input) => {
       calls++;
       assert.equal(model, '@cf/black-forest-labs/flux-1-schnell');
-      assert.equal(input.steps, 4);
+      assert.equal(input.steps, 6);
       assert.match(input.prompt, /chicken/);
       return { image: TINY.split(',')[1] };
     } }
@@ -96,6 +124,16 @@ await test('representative library still wins for the entrecote sandwich', () =>
   const empty = ctx.ExcerlyMealImage.forMeal({ components: [{ coreKey: 'chicken' }] });
   assert.equal(empty.kind, 'placeholder');
   assert.equal(empty.src, null);
+  const stale = ctx.ExcerlyMealImage.forMeal({
+    components: [{ coreKey: 'chicken' }],
+    image: { src: 'data:image/jpeg;base64,AAAA', kind: 'generated' }
+  });
+  assert.equal(stale.kind, 'placeholder');
+  const fresh = ctx.ExcerlyMealImage.forMeal({
+    components: [{ coreKey: 'chicken' }],
+    image: { src: 'data:image/jpeg;base64,BBBB', kind: 'generated', v: 2 }
+  });
+  assert.equal(fresh.src, 'data:image/jpeg;base64,BBBB');
 });
 
 if (failed) {

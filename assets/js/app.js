@@ -1713,15 +1713,27 @@
       img.src = src;
     });
   }
+  function englishBits(meal) {
+    return (meal.components || []).map(c => String(c.queryEn || '').replace(/[^\u0000-\u024F]+/g, ' ').trim()).filter(s => /[A-Za-z]{3}/.test(s));
+  }
   function queueMealImage(key, id) {
-    const meal = getMeals(key).find(m => m.id === id);
+    let meal = getMeals(key).find(m => m.id === id);
     if (!meal || !window.ExcerlyMealImage) return;
+    if (meal.image && meal.image.kind === 'generated' && meal.image.v !== 2) {
+      meal = Object.assign({}, meal, { image: null });
+      setMeals(key, getMeals(key).map(m => m.id === id ? meal : m));
+      refreshNutrition();
+    }
+    if (!meal.dishEn) {
+      const bits = englishBits(meal);
+      if (bits.length) meal = Object.assign({}, meal, { dishEn: bits.join(', ') });
+    }
     ExcerlyMealImage.requestFromProvider(meal).then(img => {
       if (!img || !img.src) return null;
       return shrinkMealImage(img.src).then(small => {
         if (!small) return;
-        const next = getMeals(key).map(m => m.id === id ? Object.assign({}, m, {
-          image: { src: small, kind: 'generated', provider: 'workers-ai' }
+        const next = getMeals(key).map(m => m.id === id ? Object.assign({}, m, meal.dishEn ? { dishEn: meal.dishEn } : {}, {
+          image: { src: small, kind: 'generated', provider: 'workers-ai', v: 2 }
         }) : m);
         if (JSON.stringify(next).length > 1200000) return;
         setMeals(key, next);

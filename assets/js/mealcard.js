@@ -386,6 +386,7 @@
       }
       if (govilCode && G && G.food) {
         const gf = G.food(govilCode);
+        if (gf && gf.e && !comp.queryEn) comp.queryEn = gf.e;
         if (gf && comp.grams != null) {
           applyOfficial(comp, G.per100(gf), comp.grams, {
             name: comp.name, source: 'govil', govilCode: gf.c, sml: gf.s,

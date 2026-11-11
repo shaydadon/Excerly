@@ -9,7 +9,9 @@ const PARSE_MODEL_DEFAULT = 'claude-haiku-4-5'; // cheap, Hebrew is strong; over
 const PARSE_SYSTEM =
   'You parse a free-text Hebrew (or mixed) meal description into ingredients. ' +
   'Return JSON only, no text before or after, in the shape ' +
-  '{"ingredients":[{"nameHe":string,"nameEn":string,"grams":number,"count":number|null,"unit":string|null,"cookingMethod":string|null,"confidence":number}],"note":string}. ' +
+  '{"dishEn":string,"ingredients":[{"nameHe":string,"nameEn":string,"grams":number,"count":number|null,"unit":string|null,"cookingMethod":string|null,"confidence":number}],"note":string}. ' +
+  'dishEn is one English sentence under 25 words naming the concrete foods, cooking method, and plating. ' +
+  'nameEn is a short English food name for that ingredient. Both must be English, never Hebrew. ' +
   'Do not output calories, protein, carbs, fat, sodium, or vitamin values. Nutrition is computed later from a food database. ' +
   'Rules: split compound phrases — "4 חתיכות של פילה עוף מרינדת כף רוטב סויה" is chicken pieces AND 1 tbsp soy sauce. ' +
   '"מרינדה/מרינדת/במרינדה" is a method, not a food. "מטוגנים בכף שמן זית" is 1 tbsp olive oil plus a fried cookingMethod on the food. ' +
@@ -178,8 +180,19 @@ function applyOfficial(ingredients, pack, note) {
     source: 'govil',
     status: !items.length ? 'pending' : all ? 'confirmed' : (confirmed.length ? 'partial' : 'pending'),
     kcal: sum('kcal', 0), protein: sum('protein', 1), carbs: sum('carbs', 1), fat: sum('fat', 1), sodium: sum('sodium', 1),
-    items, note: note || ''
+    items, note: note || '', dishEn: ''
   };
+}
+
+export const IMAGE_CACHE_VERSION = 'v2';
+const IMAGE_STEPS = 6;
+
+export function latinOnly(s) {
+  return String(s || '')
+    .replace(/[^\u0000-\u024F]+/g, ' ')
+    .replace(/\b\d+(?:[.,]\d+)?\s*(?:g|gr|grams?|kg|ml|oz)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 export async function handleParseMeal(body, env) {
@@ -200,7 +213,9 @@ export async function handleParseMeal(body, env) {
     nutrients: (pack.foods && pack.foods.meta && pack.foods.meta.nutrients) || []
   };
   const ingredients = (parsed.parsed.ingredients || []).map(stripNutrition).filter(i => i.nameHe && i.grams > 0);
+  ingredients.forEach(ing => { ing.nameEn = latinOnly(ing.nameEn); });
   const meal = applyOfficial(ingredients, indexed, parsed.parsed.note || '');
+  meal.dishEn = latinOnly(parsed.parsed.dishEn).split(/\s+/).filter(Boolean).slice(0, 25).join(' ');
   return { error: false, parsed: meal };
 }
 
@@ -213,27 +228,28 @@ export function resetMealImageState() {
 }
 
 export function mealImagePrompt(body) {
+  const dish = latinOnly(body && (body.dishEn || ''));
   const items = Array.isArray(body && body.items) ? body.items.slice(0, 12) : [];
-  const bits = items.map(it => {
-    if (it == null) return '';
-    if (typeof it === 'string') return it.slice(0, 80);
-    const name = String(it.queryEn || it.nameEn || it.name || '').slice(0, 80);
-    const grams = Number(it.grams);
-    const g = isFinite(grams) && grams > 0 ? Math.round(grams) + ' g' : '';
-    const method = String(it.cookingMethod || it.method || '').slice(0, 40);
-    return [g, method, name].filter(Boolean).join(' ');
-  }).filter(Boolean);
-  return [
-    'Photorealistic overhead photo of this homemade meal on a plain ceramic plate, natural daylight, no text, no logo, no watermark, no people.',
-    body && body.name ? 'The meal is: ' + String(body.name).slice(0, 180) + '.' : '',
-    bits.length ? 'Visible food: ' + bits.join('; ') + '.' : ''
-  ].filter(Boolean).join(' ').slice(0, 2048);
+  const foods = items.map(it => {
+    if (it == null || typeof it === 'string') return latinOnly(typeof it === 'string' ? it : '');
+    const method = latinOnly(it.cookingMethod || it.method || '');
+    const name = latinOnly(it.queryEn || it.nameEn || '');
+    return [method, name].filter(Boolean).join(' ');
+  }).filter(w => w.length >= 3);
+  const subject = (dish.split(/\s+/).filter(Boolean).length >= 2 ? dish : foods.join(', ')).slice(0, 400);
+  if (!subject || !/[A-Za-z]{3}/.test(subject)) return null;
+  return (
+    'A realistic overhead food photograph of exactly this meal on one plain off-white plate: ' + subject + '. ' +
+    'Show only those foods, cooked and plated as described. Natural window light, shallow depth of field, ' +
+    'no text, no logo, no watermark, no people, no extra dishes, no garnish that was not named.'
+  ).slice(0, 2048);
 }
 
 export async function mealImageKey(body) {
   const text = mealImagePrompt(body);
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  if (!text) return null;
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(IMAGE_CACHE_VERSION + '\n' + text));
+  return IMAGE_CACHE_VERSION + '-' + [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 function imageLimited(ip, limit, windowMs) {
@@ -262,7 +278,7 @@ export async function handleMealImage(body, env, ip) {
     return { error: true, status: 501, detail: 'Workers AI binding missing' };
   }
   const prompt = mealImagePrompt(body);
-  if (!prompt || prompt.length < 20) return { error: true, status: 400, detail: 'missing meal description' };
+  if (!prompt) return { error: true, status: 400, detail: 'no English food description' };
   const key = await mealImageKey(body);
   if (imageMem.has(key)) return { error: false, parsed: { src: imageMem.get(key), cached: true } };
   try {
@@ -278,7 +294,7 @@ export async function handleMealImage(body, env, ip) {
   if (imageLimited(who, limit)) return { error: true, status: 429, detail: 'rate_limited' };
   let result;
   try {
-    result = await env.AI.run('@cf/black-forest-labs/flux-1-schnell', { prompt, steps: 4 });
+    result = await env.AI.run('@cf/black-forest-labs/flux-1-schnell', { prompt, steps: IMAGE_STEPS });
   } catch (e) {
     return { error: true, status: 502, detail: 'image_failed' };
   }
