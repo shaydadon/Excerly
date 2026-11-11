@@ -22,7 +22,7 @@
     "roll": {
       "code": 10124,
       "via": "curated",
-      "why": "לחמניה לבנה (not toasted). No unit weight in GovIL; app keeps a labelled default.",
+      "why": "לחמניה לבנה (not toasted). No unit weight in GovIL; the app uses a fixed 80 g roll.",
       "name": "לחמניה לבנה, ודש, ברמן, טוב טעם, דוידוביץ",
       "english": "Roll, white, Vadash/Davidovitch"
     },

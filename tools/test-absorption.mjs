@@ -45,7 +45,7 @@ test('repeated parses with different gram guesses produce the same kcal', () => 
   const a = run([85, 40, 20, 160, 45, 15, 5, 15]);
   const b = run([44, 30, 11, 140, 33, 14, 4, 10]);
   assert.equal(kcalOf(a), kcalOf(b));
-  assert.equal(a[0].grams, 44);
+  assert.equal(a[0].grams, 80);
   assert.equal(a[3].grams, 140);
   assert.equal(a[4].gramsStated, 33);
   assert.equal(a[4].grams, 8.3);

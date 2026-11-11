@@ -16,11 +16,11 @@
 export const ABSORB = { marinade: 0.25, frying_oil: 0.4 };
 
 /* GovIL household weights (assets/data/govil-portions.json), except the white
-   roll: code 10124 has no gram weight in GovIL, so the fixed weight stays 44 g,
-   the same USDA roll already used for the 674 kcal and 549 kcal meals.
+   roll: code 10124 has no gram weight in GovIL. The fixed white-roll weight is 80 g
+   (a typical Israeli לחמניה; the older USDA roll figure was 44 g).
    A chicken piece is the labelled 35 g slice, not the 164 g whole breast. */
 export const UNIT_G = {
-  10124: { unit: 44 },
+  10124: { unit: 80 },
   1898: { tbsp: 15, tsp: 5 },
   3267: { tbsp: 11, tsp: 11 / 3 },
   1706: { tbsp: 11, tsp: 4 },

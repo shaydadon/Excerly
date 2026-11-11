@@ -79,8 +79,8 @@ await test('exact lunch splits with GovIL unit weights where they exist', () => 
   assert.equal(c[0].unitKind, 'thinSlice');
   assert.equal(c[0].quantityState, 'default-portion');
   assert.equal(c[0].portionAssumed, true);
-  // roll: no GovIL unit weight → labelled default 44 g
-  assert.equal(c[1].grams, 44);
+  // roll: no GovIL unit weight → fixed 80 g
+  assert.equal(c[1].grams, 80);
   assert.equal(c[1].quantityState, 'default-portion');
   // oil / mayo: GovIL tbsp weights 10 g and 16 g
   assert.equal(c[2].grams, 20);
@@ -121,7 +121,7 @@ await test('totals equal Σ grams × GovIL per100g / 100 (macros, sat fat, sugar
   usdaCalls = 0;
   const meal = await MC.resolveMeal(MC.createPending({ id: 'g2', text: EXACT, slot: 'lunch' }), api, N);
   assert.equal(usdaCalls, 0);
-  const parts = [[610, 100], [10124, 44], [4443, 20], [4466, 32], [3588, 33]];
+  const parts = [[610, 100], [10124, 80], [4443, 20], [4466, 32], [3588, 33]];
   const sum = key => parts.reduce((s, [code, g]) => s + (per100(code, key) || 0) * g / 100, 0);
   assert.equal(meal.kcal, Math.round(sum('energy')));
   assert.equal(meal.protein, Math.round(sum('protein') * 10) / 10);

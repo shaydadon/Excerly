@@ -12,7 +12,8 @@
     { key: 'entrecote', he: ['סטייק אנטריקוט', 'אנטריקוט', 'אנטרקוט', 'ריב איי', 'סטייק'], en: 'beef rib eye steak cooked grilled',
       portions: { slice: { g: 35, src: 'default' }, thinSlice: { g: 25, src: 'default' }, unit: { g: 150, src: 'default' } }, def: 'unit' },
     { key: 'roll', he: ['לחמנייה', 'לחמניה', 'לחמניות', 'לחמנית', 'בגט', 'באגט', 'כריך', 'סנדוויץ׳', "סנדוויץ'", 'סנדביץ׳', "סנדביץ'"], en: 'roll white plain',
-      portions: { unit: { g: 44, src: 'usda' } }, def: 'unit' },
+      // GovIL 10124 has no unit weight. Fixed at 80 g (was the 44 g USDA roll).
+      portions: { unit: { g: 80, src: 'default' } }, def: 'unit' },
     { key: 'iceberg', he: ['חסה אייסברג', 'אייסברג'], en: 'lettuce iceberg raw',
       portions: { leaf: { g: 15, src: 'usda' }, cup: { g: 72, src: 'usda' }, unit: { g: 15, src: 'usda' } }, def: 'leaf', defCount: 2 },
     { key: 'wheatBread', he: ['לחם מלא', 'לחם חיטה מלאה', 'לחם חיטה'], en: 'bread whole wheat',

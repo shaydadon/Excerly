@@ -61,13 +61,13 @@ const dinner = parseWithMock(mocks.newDinner);
 const lunch = parseWithMock(mocks.entrecoteLunch);
 const oldD = parseWithMock(mocks.oldChickenSandwich);
 
-test('new dinner is 596 kcal after absorbing the soy marinade and the frying oil (was 654 / 54.6 g protein / 35.5 g fat / 1624 mg sodium)', () => {
+test('new dinner is 696 kcal with an 80 g roll after absorbing soy and frying oil (was 596 at 44 g, and 654 before absorption)', () => {
   assertEq(dinner.status, 'confirmed');
-  assertEq(dinner.kcal, 596);
-  assertEq(dinner.protein, 53.9);
-  assertEq(dinner.carbs, 25.1);
-  assertEq(dinner.fat, 29.4);
-  assertEq(dinner.sodium, 1173.5);
+  assertEq(dinner.kcal, 696);
+  assertEq(dinner.protein, 56.8);
+  assertEq(dinner.carbs, 43.8);
+  assertEq(dinner.fat, 30.5);
+  assertEq(dinner.sodium, 1288.7);
   assertEq(dinner.items.length, 7);
 });
 test('chicken is 4 pieces × 35 g = 140 g of GovIL 805, not 656 g', () => {
@@ -92,17 +92,17 @@ test('soy sauce and mustard are their own GovIL rows', () => {
   assertEq(soy.source, 'govil');
   assertEq(must.source, 'govil');
 });
-test('entrecote lunch stays 674 kcal (old meals not recalculated into a new truth)', () => {
+test('entrecote lunch is 774 kcal with an 80 g roll (was 674 at 44 g)', () => {
   assertEq(lunch.status, 'confirmed');
-  assertEq(lunch.kcal, 674);
-  assert(Math.abs(lunch.protein - 24.5) < 0.15, 'protein ' + lunch.protein);
-  assertEq(lunch.fat, 53.5);
+  assertEq(lunch.kcal, 774);
+  assert(Math.abs(lunch.protein - 27.5) < 0.15, 'protein ' + lunch.protein);
+  assertEq(lunch.fat, 54.6);
 });
-test('earlier chicken sandwich stays ~549–550 kcal / 53.1 g protein', () => {
+test('earlier chicken sandwich is 650 kcal / 56 g protein with an 80 g roll (was 550 / 53.1 g at 44 g)', () => {
   assertEq(oldD.status, 'confirmed');
-  assert(oldD.kcal === 549 || oldD.kcal === 550, 'kcal ' + oldD.kcal);
-  assertEq(oldD.protein, 53.1);
-  assertEq(oldD.fat, 24.8);
+  assertEq(oldD.kcal, 650);
+  assertEq(oldD.protein, 56);
+  assertEq(oldD.fat, 25.9);
 });
 test('LLM-supplied kcal/protein are ignored; GovIL wins', () => {
   const poisoned = parseWithMock({
