@@ -93,7 +93,7 @@
   function splitComponents(text) {
     const clean = String(text || '').replace(/\s+/g, ' ').trim();
     if (!clean) return [];
-    const parts = clean.split(/\s+עם\s+|\s+ו(?=\S)|\s*,\s*|\s+\+\s+|\s+and\s+/i).map(s => s.trim()).filter(Boolean);
+    const parts = clean.split(/\s+עם\s+|\s+ו(?=\S)|\s*,\s*|\s+\+\s+|\s+and\s+|\s*מרינדת\s+|\s+במרינדה\s+|\s+מטוגנים\s+ב/i).map(s => s.trim()).filter(Boolean);
     const FM = global.ExcerlyFoodMap;
     const BREADS = { roll: 1, whiteBread: 1, wheatBread: 1, pita: 1 };
     // "כריך" לבד הוא מכל: אם כבר יש לחם/לחמנייה בארוחה — לא סופרים אותו פעמיים

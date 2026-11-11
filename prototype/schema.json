@@ -1,0 +1,27 @@
+{
+  "$id": "excerly-parse-meal-llm",
+  "title": "LLM meal parse (no nutrition)",
+  "type": "object",
+  "required": ["ingredients"],
+  "additionalProperties": false,
+  "properties": {
+    "ingredients": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["nameHe", "grams"],
+        "properties": {
+          "nameHe": { "type": "string" },
+          "nameEn": { "type": "string" },
+          "grams": { "type": "number", "exclusiveMinimum": 0 },
+          "count": { "type": ["number", "null"] },
+          "unit": { "type": ["string", "null"], "description": "tbsp, tsp, piece, slice, unit, g, cup, leaf" },
+          "cookingMethod": { "type": ["string", "null"], "description": "raw, fried, grilled, roasted, boiled, pickled, none" },
+          "role": { "type": ["string", "null"], "description": "food | condiment | oil | container-ignored" },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "note": { "type": "string" }
+  }
+}

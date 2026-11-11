@@ -1705,6 +1705,17 @@
     const input = $('#food-text');
     if (input) input.value = '';
     clearPhotoResult();
+    const proxy = (window.EXCERLY_CONFIG && EXCERLY_CONFIG.fdcProxy) || (aiCfg().proxyUrl);
+    if (window.ExcerlyHebParse && proxy) {
+      ExcerlyHebParse.parseViaProxy(text, proxy).then(res => {
+        if (!res.ok) { resolveStoredMeal(key, meal.id); return; }
+        const next = ExcerlyHebParse.toMeal(res.data, window.ExcerlyNutrients, window.ExcerlyGovil, meal.id, meal.slot);
+        if (photo) { next.photo = photo; next.photoKind = 'user'; }
+        setMeals(key, getMeals(key).map(m => m.id === meal.id ? next : m));
+        refreshNutrition();
+      }).catch(() => resolveStoredMeal(key, meal.id));
+      return;
+    }
     resolveStoredMeal(key, meal.id);
   }
   async function calcFood() {

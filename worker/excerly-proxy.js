@@ -1,3 +1,5 @@
+import { handleParseMeal } from './parse-meal-route.js';
+
 /* =============================================================
    Excerly – Cloudflare Worker proxy ל-Claude
    מחזיק את מפתח ה-Anthropic כסוד בצד השרת, כך שהאפליקציה הסטטית
@@ -383,6 +385,8 @@ export default {
     let body;
     try { body = await request.json(); }
     catch (e) { return json({ error: 'Bad JSON body' }, 400, origin); }
+    const path = new URL(request.url).pathname.replace(/\/+$/, '');
+    if (body && path === '/parse-meal') body.action = 'parse_meal';
     if (body && (body.action === 'fdc_search' || body.action === 'fdc_food')) {
       return handleFdc(body, env, origin, request.headers.get('CF-Connecting-IP') || 'anon');
     }
@@ -424,7 +428,11 @@ export default {
       : ' החזר את כל השדות name/label/note בעברית.');
 
     let out;
-    if (body.action === 'estimate') {
+    if (body.action === 'parse_meal') {
+      const r = await handleParseMeal(body, env);
+      out = r.error ? { error: true, status: r.status || 502, detail: r.detail || 'parse_meal failed' }
+                    : { error: false, parsed: r.parsed };
+    } else if (body.action === 'estimate') {
       const text = String(body.text || '').slice(0, 2000).trim();
       if (!text) return json({ error: 'missing text' }, 400, origin);
       const tz = await loadTz(env);

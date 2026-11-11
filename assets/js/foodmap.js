@@ -44,6 +44,10 @@
     { key: 'hummus', he: ['חומוס'], en: 'hummus', portions: { tbsp: { g: 15, src: 'usda' }, cup: { g: 246, src: 'usda' } }, def: 'tbsp', defCount: 4 },
     { key: 'tahini', he: ['טחינה'], en: 'tahini', portions: { tbsp: { g: 15, src: 'usda' } }, def: 'tbsp', defCount: 2 },
     { key: 'amba', he: ['עמבה'], en: 'amba pickled mango', portions: { tbsp: { g: 11, src: 'default' }, tsp: { g: 3.7, src: 'default' } }, def: 'tbsp', defCount: 1 },
+    { key: 'soySauce', he: ['רוטב סויה'], en: 'soy sauce',
+      portions: { tbsp: { g: 11, src: 'default' }, tsp: { g: 4, src: 'default' } }, def: 'tbsp' },
+    { key: 'mustard', he: ['חרדל'], en: 'mustard prepared',
+      portions: { tbsp: { g: 14, src: 'default' }, tsp: { g: 5, src: 'default' } }, def: 'tbsp' },
     { key: 'salmon', he: ['סלמון'], en: 'salmon cooked', portions: { unit: { g: 150, src: 'default' } }, def: 'unit' },
     { key: 'tuna', he: ['טונה'], en: 'tuna canned in water', portions: { unit: { g: 112, src: 'default' }, tbsp: { g: 15, src: 'default' } }, def: 'unit' },
     { key: 'pasta', he: ['פסטה', 'ספגטי'], en: 'pasta cooked', portions: { cup: { g: 124, src: 'usda' } }, def: 'cup', defCount: 1.5 },
@@ -59,6 +63,7 @@
     { unit: 'tbsp', rx: /כפות|כף|tbsp|tablespoon/i },
     { unit: 'cup', rx: /כוסות|כוס|cup/i },
     { unit: 'slice', rx: /פרוסות|פרוסה|פרוסת|slices?/i },
+    { unit: 'slice', rx: /חתיכות|חתיכה|נתחים|נתח(?!\s*של)/i },
     { unit: 'leaf', rx: /עלים|עלה|עלי|leaf|leaves/i },
     { unit: 'unit', rx: /יחידות|יחידה|units?|pieces?/i }
   ];

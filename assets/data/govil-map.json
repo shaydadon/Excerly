@@ -187,6 +187,20 @@
       "name": "עמבה",
       "english": "Mango, Amba, pickled, homemade"
     },
+    "soySauce": {
+      "code": 1706,
+      "via": "curated",
+      "why": "רוטב סויה, the generic sauce, 11 g per tablespoon.",
+      "name": "רוטב סויה",
+      "english": "Soy sauce"
+    },
+    "mustard": {
+      "code": 4273,
+      "via": "curated",
+      "why": "חרדל מוכן לאכילה, 14 g per tablespoon.",
+      "name": "חרדל, מוכן לאכילה",
+      "english": "Mustard, prepared"
+    },
     "salmon": {
       "code": 1308,
       "via": "curated",
