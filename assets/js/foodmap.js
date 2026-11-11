@@ -35,7 +35,7 @@
     { key: 'eggScrambled', he: ['ביצים מקושקשות', 'ביצה מקושקשת'], en: 'egg scrambled', portions: { unit: { g: 61, src: 'usda' } }, def: 'unit', defCount: 2 },
     { key: 'omelet', he: ['חביתה', 'חביתת', 'אומלט'], en: 'egg omelet', portions: { unit: { g: 61, src: 'usda' } }, def: 'unit', defCount: 2 },
     { key: 'eggBoiled', he: ['ביצה קשה', 'ביצים קשות', 'ביצה', 'ביצים'], en: 'egg hard boiled', portions: { unit: { g: 50, src: 'usda' } }, def: 'unit' },
-    { key: 'chicken', he: ['חזה עוף', 'עוף'], en: 'chicken breast roasted', portions: { unit: { g: 172, src: 'usda' } }, def: 'unit' },
+    { key: 'chicken', he: ['חזה עוף', 'עוף'], en: 'chicken breast roasted', portions: { slice: { g: 35, src: 'default' }, thinSlice: { g: 25, src: 'default' }, unit: { g: 172, src: 'usda' } }, def: 'unit' },
     { key: 'rice', he: ['אורז'], en: 'rice white cooked', portions: { cup: { g: 158, src: 'usda' }, tbsp: { g: 10, src: 'default' } }, def: 'cup' },
     { key: 'cottage', he: ["קוטג'", 'קוטג׳', 'קוטג'], en: 'cottage cheese', portions: { unit: { g: 250, src: 'default' }, tbsp: { g: 15, src: 'default' }, cup: { g: 226, src: 'usda' } }, def: 'tbsp', defCount: 3 },
     { key: 'tomato', he: ['עגבנייה', 'עגבניה', 'עגבניות', 'עגבניית'], en: 'tomato raw', portions: { unit: { g: 123, src: 'usda' }, slice: { g: 20, src: 'usda' } }, def: 'unit' },
@@ -43,6 +43,7 @@
     { key: 'avocado', he: ['אבוקדו'], en: 'avocado raw', portions: { unit: { g: 201, src: 'usda' }, slice: { g: 25, src: 'default' }, tbsp: { g: 15, src: 'default' } }, def: 'unit', defCount: 0.5 },
     { key: 'hummus', he: ['חומוס'], en: 'hummus', portions: { tbsp: { g: 15, src: 'usda' }, cup: { g: 246, src: 'usda' } }, def: 'tbsp', defCount: 4 },
     { key: 'tahini', he: ['טחינה'], en: 'tahini', portions: { tbsp: { g: 15, src: 'usda' } }, def: 'tbsp', defCount: 2 },
+    { key: 'amba', he: ['עמבה'], en: 'amba pickled mango', portions: { tbsp: { g: 11, src: 'default' }, tsp: { g: 3.7, src: 'default' } }, def: 'tbsp', defCount: 1 },
     { key: 'salmon', he: ['סלמון'], en: 'salmon cooked', portions: { unit: { g: 150, src: 'default' } }, def: 'unit' },
     { key: 'tuna', he: ['טונה'], en: 'tuna canned in water', portions: { unit: { g: 112, src: 'default' }, tbsp: { g: 15, src: 'default' } }, def: 'unit' },
     { key: 'pasta', he: ['פסטה', 'ספגטי'], en: 'pasta cooked', portions: { cup: { g: 124, src: 'usda' } }, def: 'cup', defCount: 1.5 },
@@ -142,6 +143,10 @@
     if (unit === 'slice' && q.thin && (portionOf(food, 'thinSlice') || food.portions.thinSlice)) unit = 'thinSlice';
     if (unit && !portionOf(food, unit)) {
       if (unit === 'tsp' && portionOf(food, 'tbsp')) { const p = portionOf(food, 'tbsp'); return finish(food, (q.count || 1), { g: p.g / 3, src: p.src === 'govil' ? 'govil' : 'default' }, 'tsp', q); }
+      // "פרוסה" is not a whole fruit/breast/fillet. A missing slice weight is a labelled default, never the item's unit weight.
+      if (unit === 'slice' || unit === 'thinSlice') {
+        return finish(food, (q.count || 1), { g: unit === 'thinSlice' ? 25 : 35, src: 'default' }, unit, q);
+      }
       unit = portionOf(food, 'unit') ? 'unit' : null;
     }
     if (!unit) unit = q.count != null && portionOf(food, 'unit') ? 'unit' : food.def;

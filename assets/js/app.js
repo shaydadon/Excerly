@@ -1275,12 +1275,17 @@
   function placeholderSvg() {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 10h16v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 10c0-3 2-5 4-5s4 2 4 5"/></svg>';
   }
+  function emptyPlateSvg() {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><ellipse cx="12" cy="13.5" rx="8.5" ry="5.2"/><ellipse cx="12" cy="13.5" rx="5" ry="2.8"/></svg>';
+  }
   function slotLabel(slot) {
     return t(slot === 'lunch' ? 'slotLunch' : slot === 'dinner' ? 'slotDinner' : slot === 'snack' ? 'slotSnack' : 'slotBreakfast');
   }
   function mealImageHtml(m, cls) {
     const img = window.ExcerlyMealImage ? ExcerlyMealImage.forMeal(m) : null;
-    if (!img) return '<div class="' + cls + ' log-ph">' + placeholderSvg() + '</div>';
+    if (!img || !img.src || img.kind === 'placeholder') {
+      return '<div class="' + cls + ' log-ph" data-img-kind="placeholder" role="img" aria-label="' + escapeHtml(t('imgNone')) + '">' + emptyPlateSvg() + '</div>';
+    }
     const cap = img.kind === 'user' ? t('userPhotoCap') : t('imgRepresentative');
     return '<img class="' + cls + '" alt="' + escapeHtml(cap) + '" title="' + escapeHtml(cap) + '" data-img-kind="' + img.kind + '" src="' + escapeHtml(img.src) + '"/>';
   }
@@ -1364,7 +1369,7 @@
         (src ? '<div class="log-cap src">' + src + '</div>' : '') + (q ? '<div class="section-hint">' + q + '</div>' : '') + choices + grams + retry + '</div>';
     }).join('');
     const img = window.ExcerlyMealImage ? ExcerlyMealImage.forMeal(m) : null;
-    const imgCap = img ? (img.kind === 'user' ? t('userPhotoCap') : t('imgRepresentative')) : '';
+    const imgCap = !img || !img.src || img.kind === 'placeholder' ? '' : (img.kind === 'user' ? t('userPhotoCap') : t('imgRepresentative'));
     const review = m.needsReview || m.status !== 'confirmed';
     const confirmBtn = m.status === 'confirmed' && m.needsReview ? '<button type="button" class="btn btn-primary ms-confirm" data-id="' + m.id + '">' + t('confirmMeal') + '</button>' : '';
     const statusLine = m.status !== 'confirmed' ? '<div class="tag warn">' + t(m.status === 'partial' ? 'logPartial' : 'logPending') + '</div>' : (review ? '<div class="section-hint">' + t('reviewHint') + '</div>' : '');

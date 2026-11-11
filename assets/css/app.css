@@ -736,6 +736,10 @@ html[data-skin="classic"] .btn-primary { color: var(--on-accent); }
 .mt-kcal span { font-weight: 400; color: var(--muted); }
 .mc-macros { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12.5px; color: var(--muted); }
 .mt-img { width: 150px; height: 96px; object-fit: cover; border-radius: 12px; display: block; background: var(--card-2); }
+.mt-img.log-ph, .ms-img.log-ph { display: grid; place-items: center; color: var(--olive); background: var(--card-2); }
+.mt-img.log-ph svg { width: 44px; height: 44px; }
+.ms-img.log-ph { height: 120px; }
+.ms-img.log-ph svg { width: 56px; height: 56px; }
 .nutri-more { margin-top: 18px; display: grid; gap: 10px; }
 .nutri-more .ai-badge { justify-self: start; }
 /* meal detail sheet */

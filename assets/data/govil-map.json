@@ -180,6 +180,13 @@
       "name": "טחינה גולמית, לא מדוללת",
       "english": "Tahini, not diluted"
     },
+    "amba": {
+      "code": 3267,
+      "via": "curated",
+      "why": "עמבה ביתית (מנגו כבוש). Official tbsp = 11 g. Prefer the generic homemade row over the Kuz-Bnei Atarot brand.",
+      "name": "עמבה",
+      "english": "Mango, Amba, pickled, homemade"
+    },
     "salmon": {
       "code": 1308,
       "via": "curated",
