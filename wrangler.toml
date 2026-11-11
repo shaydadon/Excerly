@@ -9,6 +9,9 @@ compatibility_date = "2024-11-01"
 MODEL = "claude-opus-5"
 
 # הגבלת קצב אמינה דרך Durable Object (12 בקשות ב-60 שניות לכל IP).
+[ai]
+binding = "AI"
+
 [[durable_objects.bindings]]
 name = "RATE_LIMITER_DO"
 class_name = "RateLimiter"

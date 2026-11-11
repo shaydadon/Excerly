@@ -14,6 +14,9 @@ SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 AI_DAILY_LIMIT = "25"
 
 # הגבלת קצב אמינה דרך Durable Object (12 בקשות ב-60 שניות לכל IP).
+[ai]
+binding = "AI"
+
 [[durable_objects.bindings]]
 name = "RATE_LIMITER_DO"
 class_name = "RateLimiter"

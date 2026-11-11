@@ -1,4 +1,4 @@
-import { handleParseMeal } from './parse-meal-route.js';
+import { handleParseMeal, handleMealImage } from './parse-meal-route.js';
 
 /* =============================================================
    Excerly – Cloudflare Worker proxy ל-Claude
@@ -387,6 +387,13 @@ export default {
     catch (e) { return json({ error: 'Bad JSON body' }, 400, origin); }
     const path = new URL(request.url).pathname.replace(/\/+$/, '');
     if (body && path === '/parse-meal') body.action = 'parse_meal';
+    if (body && (path === '/meal-image' || path === '/meal_image')) body.action = 'meal_image';
+    if (body && body.action === 'meal_image') {
+      const ip = request.headers.get('CF-Connecting-IP') || 'anon';
+      const r = await handleMealImage(body, env, ip);
+      if (r.error) return json({ error: r.detail || 'image_failed' }, r.status || 502, origin);
+      return json(r.parsed, 200, origin);
+    }
     if (body && (body.action === 'fdc_search' || body.action === 'fdc_food')) {
       return handleFdc(body, env, origin, request.headers.get('CF-Connecting-IP') || 'anon');
     }
