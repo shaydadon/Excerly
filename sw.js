@@ -1,9 +1,9 @@
 /* Excerly – Service Worker לתמיכה בעבודה לא מקוונת (PWA) */
-const CACHE = 'excerly-v55';
+const CACHE = 'excerly-v56';
 const EX_KEYS = ['neck','arms','sidebend','forwardfold','hamstring',
-  'butterfly','quad','hipflexor','calf','catcow','cobra','child','shoulders','twist'];
+  'butterfly','quad','hipflexor','calf','catcow','cobra','child','twist'];
 const GYM_KEYS = ['squat','legpress','legcurl','legext','calf','hipthrust','lunge','bench','inclinedb','fly',
-  'ohp','lateral','pushdown','pulldown','row','facepull','curl','hammer','reardelt','plank','cardio'];
+  'ohp','lateral','pushdown','pulldown','row','facepull','curl','hammer','reardelt','plank','cardio','rdl','warmup'];
 const EX_IMGS = EX_KEYS.flatMap((k) => [
   `assets/exercise-img/${k}-m.jpg`,
   `assets/exercise-img/${k}-f.jpg`
@@ -20,8 +20,12 @@ const ASSETS = [
   'assets/js/animations.js',
   'assets/js/nutrition.js',
   'assets/js/config.js',
+  'assets/js/foodmap.js',
+  'assets/js/mealimage.js',
   'assets/js/nutrients.js',
   'assets/data/usda-core.json',
+  'assets/meal-img/entrecote-sandwich.jpg',
+  'assets/meal-img/generic-plate.jpg',
   'assets/js/usda.js',
   'assets/js/mealcard.js',
   'assets/js/workout.js',

@@ -71,7 +71,8 @@
     ohp: 'gym-ohp', lateral: 'gym-lateral', pushdown: 'gym-pushdown',
     pulldown: 'gym-pulldown', row: 'gym-row', facePull: 'gym-facepull',
     curl: 'gym-curl', hammer: 'gym-hammer', rearDelt: 'gym-reardelt',
-    plank: 'gym-plank', cardio: 'gym-cardio'
+    plank: 'gym-plank', cardio: 'gym-cardio',
+    rdl: 'gym-rdl', warmup: 'gym-warmup'
   };
 
   /* ---------- שכבת ויזואל לתרגיל: Lottie (אם הוגדר) או SVG מובנה ----------
@@ -85,7 +86,8 @@
     return e[figGender()] || e.male || e.female || null;
   }
   function missingFrame() {
-    return `<span class="ex-missing" role="img" aria-label="${escapeHtml(t('figMissing'))}">${escapeHtml(t('figMissing'))}</span>`;
+    const label = escapeHtml(t('figMissing'));
+    return `<span class="ex-missing" role="img" aria-label="${label}"><svg class="ex-missing-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8.5" cy="10" r="1.2" fill="currentColor"/><path d="M7 16.5 10.5 13l2.2 2.2L16 12l4 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="ex-missing-label">${label}</span></span>`;
   }
   // תמונת תרגיל ביתי שאומתה. תרגיל בלי תמונה מאומתת לא נופל לדמות הכחולה.
   function exImg(ex) {
@@ -94,12 +96,29 @@
     return `assets/exercise-img/${ex.animation}-${g}.jpg`;
   }
   function gymIdOf(ex) {
+    if (W && typeof W.resolveGymId === 'function') return W.resolveGymId(ex);
     if (!ex) return null;
     if (ex.id && (W.EX || {})[ex.id]) return ex.id;
     const name = typeof ex.name === 'string' ? ex.name : '';
     const bank = W.EX || {};
     for (const k of Object.keys(bank)) {
       if (bank[k].he === name || bank[k].en === name) return k;
+    }
+    return null;
+  }
+  // התמונה הראשונה ביום שיש לה מיפוי — לא בהכרח התרגיל הראשון (חימום בלי תמונה).
+  function firstGymImg(list) {
+    for (const e of list || []) {
+      const src = gymImg(gymIdOf(e));
+      if (src) return src;
+    }
+    return null;
+  }
+  function firstHomeImg(ids) {
+    for (const id of ids || []) {
+      const ex = D.EXERCISES[id];
+      const src = ex ? exImg(ex) : null;
+      if (src) return src;
     }
     return null;
   }
@@ -113,8 +132,7 @@
     const id = gymIdOf(ex);
     const img = id ? gymImg(id) : null;
     if (img) return `<img class="ex-photo" src="${img}" alt="" loading="lazy">`;
-    if (id) return missingFrame();
-    return '';
+    return missingFrame();
   }
   // מחזיר HTML לויזואל התרגיל: Lottie (מסך גדול) > תמונה מאומתת > מסגרת חסרה.
   function exVisual(ex, big) {
@@ -528,8 +546,7 @@
       </div>`;
     }).join('');
     const dc = doneCount(prog, key);
-    const heroEx = prog.exercises && prog.exercises.length ? D.EXERCISES[prog.exercises[0]] : null;
-    const heroSrc = heroEx ? exImg(heroEx) : null;
+    const heroSrc = firstHomeImg(prog.exercises);
     const heroImg = heroSrc ? `<img class="sheet-hero" src="${heroSrc}" alt="" />` : '';
 
     sheet.innerHTML = `
@@ -651,7 +668,7 @@
       <div class="sheet-head">
         <div class="row">
           <div class="sheet-head-main">
-            ${(() => { const p0 = day.exercises[0] ? gymImg(gymIdOf(day.exercises[0])) : null; return p0 ? `<img class="sheet-hero" src="${p0}" alt="" />` : `<div class="gym-hero">${missingFrame()}</div>`; })()}
+            ${(() => { const p0 = firstGymImg(day.exercises); return p0 ? `<img class="sheet-hero" src="${p0}" alt="" />` : `<div class="gym-hero">${missingFrame()}</div>`; })()}
             <div>
               <div class="sheet-date">${dayLabel}</div>
               <div class="sheet-title">${escapeHtml(day.name || sched.plan.title || t('gymDayChip'))}</div>
@@ -981,9 +998,7 @@
     const el = document.getElementById('hero-fig');
     if (!el) return;
     const prog = D.programForDate(new Date());
-    const firstId = prog && prog.exercises && prog.exercises[0];
-    const ex = firstId ? D.EXERCISES[firstId] : D.EXERCISES.child;
-    const src = ex ? exImg(ex) : null;
+    const src = firstHomeImg(prog && prog.exercises) || exImg(D.EXERCISES.child);
     if (src) { el.src = src; el.hidden = false; } else { el.hidden = true; }
   }
 
@@ -1187,6 +1202,7 @@
   // רענון כל התצוגות שתלויות בתזונה — עקביות מלאה בין המסכים והממוצע
   function refreshNutrition() {
     renderDayMeals();
+    renderMealSheet();
     renderHistory();
     renderHomeDash();
     if (sheet.classList.contains('open') && sheetDate) renderWorkout(sheetDate);
@@ -1206,11 +1222,11 @@
     const kn = window.ExcerlyNutrients ? ExcerlyNutrients.knownKcal(meals) : { total: meals.reduce((s, m) => s + (m.kcal || 0), 0), incomplete: false };
     const total = kn.total;
     const target = N.targetCalories();
-    const rows = meals.map(m => m.components ? renderLogCard(m) : `
+    const rows = meals.slice().reverse().map(m => m.components ? renderLogCard(m) : `
       <div class="dm-row" data-id="${m.id}">
         <button class="dm-del" data-id="${m.id}" aria-label="${t('removeMealAria')}" title="${t('removeMealAria')}">✕</button>
         <button class="dm-edit" data-id="${m.id}" aria-label="${t('editMealAria')}" title="${t('editMealAria')}">✎</button>
-        <span class="dm-name">${escapeHtml(m.name)}${m.provenance && m.provenance.source === 'fdc' ? ' <span class="tag">USDA</span>' : ''}${m.provenance && m.provenance.source === 'tzameret' ? ' <span class="tag">צמרת</span>' : ''}${!m.provenance ? ' <span class="tag miss">' + t('microMissing') + '</span>' : ''}</span>
+        <span class="dm-name">${escapeHtml(m.name)}</span>
         <span class="dm-kcal"><bdi class="iso-num" dir="ltr">${m.kcal == null ? '—' : m.kcal}</bdi><span>${t('goalUnit')}</span></span>
       </div>`).join('');
     let summary;
@@ -1236,16 +1252,19 @@
       summary = `<div class="nutri-numbers" style="margin-top:8px"><b>${nf(total)}</b> ${t('goalUnit')}</div>`;
     }
     // סיכום מקרו-נוטריאנטים לכל היום
-    const carbs = meals.reduce((s, m) => s + (m.carbs || 0), 0);
-    const protein = meals.reduce((s, m) => s + (m.protein || 0), 0);
-    const fat = meals.reduce((s, m) => s + (m.fat || 0), 0);
+    const r1 = v => Math.round(v * 10) / 10;
+    const carbs = r1(meals.reduce((s, m) => s + (m.carbs || 0), 0));
+    const protein = r1(meals.reduce((s, m) => s + (m.protein || 0), 0));
+    const fat = r1(meals.reduce((s, m) => s + (m.fat || 0), 0));
     const macroRow = (carbs || protein || fat) ? `
       <div class="dm-macros">
         <span class="dm-mac c"><span>${t('carbs')}</span><bdi class="iso-num" dir="ltr">${carbs}</bdi><span>${t('grams')}</span></span>
         <span class="dm-mac p"><span>${t('protein')}</span><bdi class="iso-num" dir="ltr">${protein}</bdi><span>${t('grams')}</span></span>
         <span class="dm-mac f"><span>${t('fat')}</span><bdi class="iso-num" dir="ltr">${fat}</bdi><span>${t('grams')}</span></span>
       </div>` : '';
-    box.innerHTML = `<div class="dm-title">${t('dayMealsTitle')}</div><div class="dm-hint">${t('editDayHint')}</div><div class="dm-list">${rows}</div>${macroRow}${summary}`;
+    // סיכום היום כבר מוצג בטבעת למעלה; כאן רק הכרטיסים ושורת המאקרו
+    void summary;
+    box.innerHTML = `<div class="dm-list">${rows}</div>${macroRow}${kn.incomplete ? '<p class="section-hint">' + t('logPending') + '</p>' : ''}`;
     renderMicroSummary(meals);
     box.classList.add('show');
     box.querySelectorAll('.dm-del').forEach(b => b.addEventListener('click', () => removeMeal(b.dataset.id)));
@@ -1256,37 +1275,123 @@
   function placeholderSvg() {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 10h16v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 10c0-3 2-5 4-5s4 2 4 5"/></svg>';
   }
+  function slotLabel(slot) {
+    return t(slot === 'lunch' ? 'slotLunch' : slot === 'dinner' ? 'slotDinner' : slot === 'snack' ? 'slotSnack' : 'slotBreakfast');
+  }
+  function mealImageHtml(m, cls) {
+    const img = window.ExcerlyMealImage ? ExcerlyMealImage.forMeal(m) : null;
+    if (!img) return '<div class="' + cls + ' log-ph">' + placeholderSvg() + '</div>';
+    const cap = img.kind === 'user' ? t('userPhotoCap') : t('imgRepresentative');
+    return '<img class="' + cls + '" alt="' + escapeHtml(cap) + '" title="' + escapeHtml(cap) + '" data-img-kind="' + img.kind + '" src="' + escapeHtml(img.src) + '"/>';
+  }
+  // כרטיס ארוחה במסך התזונה (לפי המוקאפ): תמונה, שם הארוחה, צ'יפ "לאישור", קק"ל ומאקרו. לחיצה = פירוט מלא.
   function renderLogCard(m) {
+    const review = m.needsReview || m.status !== 'confirmed';
+    const chip = review ? '<span class="chip-review">' + t('toConfirm') + '</span>' : '';
+    const kcal = m.kcal == null ? '—' : m.kcal;
+    const macros = m.kcal == null ? '' : '<div class="mc-macros"><span>' + t('protein') + ' <bdi dir="ltr">' + nf(m.protein) + '</bdi></span><span>' + t('carbs') + ' <bdi dir="ltr">' + nf(m.carbs) + '</bdi></span><span>' + t('fat') + ' <bdi dir="ltr">' + nf(m.fat) + '</bdi></span></div>';
+    return '<article class="meal-tile" data-id="' + m.id + '" role="button" tabindex="0" aria-label="' + escapeHtml(slotLabel(m.slot) + ' — ' + m.name) + '">' +
+      '<div class="mt-copy"><div class="mt-title">' + slotLabel(m.slot) + '</div>' + chip +
+      '<div class="mt-kcal"><bdi class="iso-num" dir="ltr">' + kcal + '</bdi> <span>' + t('goalUnit') + '</span></div>' + macros + '</div>' +
+      mealImageHtml(m, 'mt-img') + '</article>';
+  }
+  // missing במקור ≠ 0 ≠ כישלון: "לא דווח במקור" רק כשהארוחה חושבה; אחרת "לא זמין"
+  function nutrientRow(n, label, computed) {
+    const R = window.ExcerlyNutrients;
+    let val;
+    if (!n || n.status === 'missing' || n.amount == null) val = '<span class="micro-miss">' + t(computed ? 'notReported' : 'microMissing') + '</span>';
+    else {
+      const small = ['protein', 'carbs', 'fat', 'fiber', 'sugar', 'satFat'];
+      const amt = n.key === 'energy' ? R.roundKcal(n.amount) : small.indexOf(n.key) !== -1 ? R.roundMacro(n.amount) : R.roundMicro(n.amount);
+      val = '<span class="micro-val"><bdi class="iso-num" dir="ltr">' + amt + '</bdi><span class="micro-unit">' + escapeHtml(n.unit || '') + '</span></span>' + (n.status === 'partial' ? ' <span class="tag warn">' + t('microPartial') + '</span>' : '');
+    }
+    return '<div class="micro-item"><span class="micro-name">' + escapeHtml(label) + '</span>' + val + '</div>';
+  }
+  let openMealId = null;
+  function openMealSheet(id) {
+    openMealId = id;
+    renderMealSheet();
+  }
+  function closeMealSheet() {
+    openMealId = null;
+    const box = $('#meal-sheet');
+    if (box) { box.hidden = true; box.innerHTML = ''; }
+  }
+  function renderMealSheet() {
+    const box = $('#meal-sheet');
+    if (!box || !openMealId) return;
+    const key = dateKey(new Date());
+    const m = getMeals(key).find(x => x.id === openMealId);
+    if (!m) { closeMealSheet(); return; }
     const MC = window.ExcerlyMealCard;
-    const slotName = t(m.slot === 'lunch' ? 'slotLunch' : m.slot === 'dinner' ? 'slotDinner' : m.slot === 'snack' ? 'slotSnack' : 'slotBreakfast');
-    const photo = m.photoKind === 'user' && m.photo
-      ? '<img class="log-photo" alt="' + t('userPhotoCap') + '" src="' + m.photo + '"/><span class="log-cap">' + t('userPhotoCap') + '</span>'
-      : '<div class="log-ph">' + placeholderSvg() + '</div><span class="log-cap">' + t('placeholderCap') + '</span>';
+    const R = window.ExcerlyNutrients;
+    const prov = m.provenance && m.provenance.nutrients || {};
+    const label = spec => (I18n.lang === 'en' ? spec.en : spec.he);
+    const byKey = {};
+    (R ? R.CATALOG : []).forEach(spec => { byKey[spec.key] = Object.assign({ key: spec.key }, prov[spec.key] || { status: 'missing', amount: null, unit: spec.fallbackUnit }); });
+    const macroKeys = ['energy', 'protein', 'carbs', 'sugar', 'fat', 'satFat', 'fiber', 'sodium'];
+    const macros = (R ? R.CATALOG : []).filter(sp => macroKeys.indexOf(sp.key) !== -1).sort((a, b) => macroKeys.indexOf(a.key) - macroKeys.indexOf(b.key)).map(sp => nutrientRow(byKey[sp.key], label(sp), m.kcal != null)).join('');
+    const micros = (R ? R.CATALOG : []).filter(sp => macroKeys.indexOf(sp.key) === -1).map(sp => nutrientRow(byKey[sp.key], label(sp), m.kcal != null)).join('');
     const comps = (m.components || []).map(c => {
       const q = c.questionKey === 'needGrams' ? t('qNeedGrams')
-        : c.questionKey === 'noMatch' ? t('qNoMatch')
+        : c.questionKey === 'noMatch' ? (c.error === 'untranslated' ? t('qNoMatchHe') : t('qNoMatch'))
         : c.questionKey === 'whichFood' ? t('qWhich')
         : c.questionKey === 'unavailable' ? t('qUnavailable') : '';
       const known = MC && MC.componentConfirmed(c);
-      const vals = known
-        ? '<div class="micro-val"><bdi class="iso-num" dir="ltr">' + c.kcal + '</bdi><span>' + t('goalUnit') + '</span></div>'
-        : '';
       const choices = (c.options || []).map(o =>
-        '<button type="button" class="btn btn-ghost log-choice" data-meal="' + m.id + '" data-comp="' + c.id + '" data-fdc="' + o.fdcId + '">' + escapeHtml(o.description) + '</button>'
-      ).join('');
+        '<button type="button" class="btn btn-ghost log-choice" data-meal="' + m.id + '" data-comp="' + c.id + '" data-fdc="' + o.fdcId + '">' + escapeHtml(o.description) + '</button>').join('');
       const grams = (c.questionKey === 'needGrams' || (c.matchState === 'matched' && c.per100g))
-        ? '<form class="log-q" data-meal="' + m.id + '" data-comp="' + c.id + '"><input class="log-grams" type="number" min="1" step="1" inputmode="decimal" aria-label="' + t('gramsLabel') + '" value="' + (c.grams || '') + '"/><button class="btn btn-primary" type="submit">' + t('saveMealAria') + '</button></form>'
+        ? '<form class="log-q" data-meal="' + m.id + '" data-comp="' + c.id + '"><label class="lq-l">' + t('gramsLabel') + '</label><input class="log-grams" type="number" min="1" step="1" inputmode="decimal" aria-label="' + t('gramsLabel') + '" value="' + (c.grams || '') + '"/><button class="btn btn-ghost" type="submit">' + t('saveMealAria') + '</button></form>'
         : '';
       const retry = c.questionKey === 'unavailable'
         ? '<button type="button" class="btn btn-ghost log-retry" data-meal="' + m.id + '">' + t('retryMatch') + '</button>' : '';
-      const portion = c.quantityState === 'usda-portion' ? '<div class="log-cap">' + t('portionNote') + '</div>' : '';
-      return '<div class="log-comp"><b>' + escapeHtml(c.name) + '</b>' + (c.candidate && known ? '<div class="log-cap">USDA · ' + escapeHtml(c.candidate.description) + '</div>' : '') + portion + (q ? '<div class="section-hint">' + q + '</div>' : '') + vals + choices + grams + retry + '</div>';
+      const portion = c.quantityState === 'usda-portion' ? t('portionNote')
+        : c.quantityState === 'default-portion' ? t('portionDefault')
+        : c.quantityState === 'ai-estimate' ? t('portionAi') : '';
+      const src = c.candidate && known ? 'USDA · ' + escapeHtml(c.candidate.description) + ' · fdcId ' + escapeHtml(String(c.candidate.fdcId)) : '';
+      return '<div class="log-comp"><div class="lc-head"><b>' + escapeHtml(c.name) + '</b>' + (known ? '<span class="micro-val"><bdi class="iso-num" dir="ltr">' + c.kcal + '</bdi><span>' + t('goalUnit') + '</span></span>' : '') + '</div>' +
+        (known ? '<div class="log-cap"><bdi dir="ltr">' + nf(c.grams) + '</bdi> ' + t('grams') + (portion ? ' · ' + portion : '') + ' · ' + t('protein') + ' <bdi dir="ltr">' + nf(c.protein) + '</bdi> · ' + t('carbs') + ' <bdi dir="ltr">' + nf(c.carbs) + '</bdi> · ' + t('fat') + ' <bdi dir="ltr">' + nf(c.fat) + '</bdi></div>' : '') +
+        (src ? '<div class="log-cap src">' + src + '</div>' : '') + (q ? '<div class="section-hint">' + q + '</div>' : '') + choices + grams + retry + '</div>';
     }).join('');
-    const banner = m.status === 'confirmed' ? '' : '<div class="tag warn">' + t(m.status === 'partial' ? 'logPartial' : 'logPending') + '</div>';
-    const kcal = m.kcal == null ? '—' : m.kcal;
-    return '<article class="log-card ' + (m.status === 'confirmed' ? '' : 'pending') + '" data-id="' + m.id + '"><div>' + photo + '</div><div><div class="log-actions"><button type="button" class="dm-del" data-id="' + m.id + '" aria-label="' + t('removeMealAria') + '">✕</button></div><div class="log-slot">' + slotName + '</div><div class="log-name">' + escapeHtml(m.name) + '</div>' + banner + '<div class="micro-val"><bdi class="iso-num" dir="ltr">' + kcal + '</bdi><span>' + t('goalUnit') + '</span></div>' + comps + '</div></article>';
+    const img = window.ExcerlyMealImage ? ExcerlyMealImage.forMeal(m) : null;
+    const imgCap = img ? (img.kind === 'user' ? t('userPhotoCap') : t('imgRepresentative')) : '';
+    const review = m.needsReview || m.status !== 'confirmed';
+    const confirmBtn = m.status === 'confirmed' && m.needsReview ? '<button type="button" class="btn btn-primary ms-confirm" data-id="' + m.id + '">' + t('confirmMeal') + '</button>' : '';
+    const statusLine = m.status !== 'confirmed' ? '<div class="tag warn">' + t(m.status === 'partial' ? 'logPartial' : 'logPending') + '</div>' : (review ? '<div class="section-hint">' + t('reviewHint') + '</div>' : '');
+    box.innerHTML = '<div class="ms-panel">' +
+      '<div class="ms-top"><button type="button" class="ms-close" aria-label="' + t('closeAria') + '">✕</button><div class="ms-slot">' + slotLabel(m.slot) + '</div>' + (review ? '<span class="chip-review">' + t('toConfirm') + '</span>' : '') + '</div>' +
+      mealImageHtml(m, 'ms-img') + (imgCap ? '<div class="log-cap">' + imgCap + '</div>' : '') +
+      '<h3 class="ms-name">' + escapeHtml(m.name) + '</h3>' + statusLine +
+      '<div class="ms-kcal"><bdi class="iso-num" dir="ltr">' + (m.kcal == null ? '—' : m.kcal) + '</bdi> <span>' + t('goalUnit') + '</span></div>' +
+      '<h4>' + t('nutriFacts') + '</h4><div class="micro-list">' + macros + '</div>' +
+      '<h4>' + t('vitMinTitle') + '</h4><div class="micro-list">' + micros + '</div>' +
+      '<h4>' + t('itemsTitle') + '</h4>' + comps +
+      '<p class="log-cap src">' + t('srcFooter') + '</p>' +
+      '<div class="btn-row">' + confirmBtn + '<button type="button" class="btn btn-ghost ms-del" data-id="' + m.id + '">' + t('removeMealAria') + '</button></div>' +
+      '</div>';
+    box.hidden = false;
+    $('.ms-close', box).addEventListener('click', closeMealSheet);
+    const cb = $('.ms-confirm', box);
+    if (cb) cb.addEventListener('click', () => confirmMealReview(m.id));
+    $('.ms-del', box).addEventListener('click', () => { closeMealSheet(); removeMeal(m.id); });
+    bindLogCards(box);
+  }
+  function confirmMealReview(id) {
+    const key = dateKey(new Date());
+    const MC = window.ExcerlyMealCard;
+    setMeals(key, getMeals(key).map(m => {
+      if (m.id !== id) return m;
+      const copy = Object.assign({}, m, { reviewed: true, components: (m.components || []).map(c => Object.assign({}, c, { portionAssumed: false })) });
+      return MC ? MC.rollup(copy) : copy;
+    }));
+    refreshNutrition();
   }
   function bindLogCards(box) {
+    box.querySelectorAll('.meal-tile').forEach(card => {
+      const open = () => openMealSheet(card.dataset.id);
+      card.addEventListener('click', open);
+      card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+    });
     box.querySelectorAll('.log-q').forEach(form => form.addEventListener('submit', (e) => {
       e.preventDefault();
       const grams = form.querySelector('.log-grams').value;
@@ -1327,7 +1432,13 @@
           if (m.id !== mealId) return m;
           const copy = Object.assign({}, m, { components: m.components.map(c => Object.assign({}, c)) });
           const target = copy.components.find(c => c.id === compId);
-          if (target) target.per100g = det.per100g;
+          if (target) {
+            target.per100g = det.per100g;
+            if (target.grams != null) {
+              const out = MC.applyComponentGrams(copy, compId, target.grams, window.ExcerlyNutrients);
+              return out.meal || MC.rollup(copy);
+            }
+          }
           return MC.rollup(copy);
         });
         setMeals(key, again);
@@ -1341,7 +1452,8 @@
     if (!MC || !meal) return;
     const api = window.ExcerlyUsda ? {
       search: (q) => ExcerlyUsda.searchFoods(q, q),
-      detail: (fdcId) => ExcerlyUsda.foodDetail(fdcId)
+      detail: (fdcId) => ExcerlyUsda.foodDetail(fdcId),
+      core: window.ExcerlyFoodMap ? (k) => ExcerlyFoodMap.coreFood(k) : null
     } : null;
     MC.resolveMeal(meal, api, window.ExcerlyNutrients).then(next => {
       setMeals(key, getMeals(key).map(m => m.id === id ? next : m));
@@ -1608,14 +1720,7 @@
     setPhotoBusy(false);
     if (myReq !== photoReqId) return;
     if (pendingId && window.ExcerlyMealCard) {
-      const comps = ExcerlyMealCard.splitComponents((res.items || []).map(i => i.name).filter(Boolean).join(' עם '));
-      (res.items || []).forEach((it, idx) => {
-        if (!comps[idx]) return;
-        comps[idx].name = it.name || comps[idx].name;
-        if (it.queryEn) comps[idx].queryEn = it.queryEn;
-        comps[idx].grams = null;
-        comps[idx].quantityState = 'unknown';
-      });
+      const comps = ExcerlyMealCard.componentsFromItems(res.items || []);
       const cur = getMeals(key).map(m => m.id === pendingId ? Object.assign({}, m, { name: (res.items || []).map(i => i.name).join(' · ') || m.name, components: comps.length ? comps : m.components }) : m);
       setMeals(key, cur);
       resolveStoredMeal(key, pendingId);
@@ -2200,11 +2305,8 @@
     const target = N.targetCalories();
     const nums = $('#nutri-hero-nums');
     if (nums) {
-      const eaten = '<div class="pair-item"><bdi class="iso-num" dir="ltr">' + nf(kn.total || 0) + '</bdi><span>' + t('ateLabel') + '</span></div>';
-      const goal = target
-        ? '<div class="pair-item"><bdi class="iso-num" dir="ltr">' + nf(target) + '</bdi><span>' + t('targetLabel') + '</span></div>'
-        : '<div class="pair-item"><bdi class="iso-num" dir="ltr">—</bdi><span>' + t('targetLabel') + '</span></div>';
-      nums.innerHTML = eaten + goal;
+      nums.innerHTML = '<bdi class="iso-num" dir="ltr">' + String(kn.total || 0) + ' / ' + (target ? String(target) : '—') + '</bdi>';
+      nums.setAttribute('aria-label', t('ateLabel') + ' ' + (kn.total || 0) + ', ' + t('targetLabel') + ' ' + (target || '—'));
     }
     const ring = $('#nutri-ring');
     const pct = target ? Math.max(6, Math.min(100, Math.round(((kn.total || 0) / target) * 100))) : 6;
@@ -2306,8 +2408,7 @@
       const gym = scheduledDay(now);
       if (!gym) { box.innerHTML = '<div class="empty">' + t('planHint') + '</div>'; return; }
       const list = gym.day.exercises || [];
-      const first = list[0];
-      const photo = first ? gymImg(gymIdOf(first)) : null;
+      const photo = firstGymImg(list);
       const media = photo ? '<img alt="" src="' + photo + '">' : heroMedia('');
       const doneN = list.filter((_, i) => isExDone(key, 'gym:' + gym.dayIdx + ':' + i)).length;
       const rows = list.map((e, i) => {
@@ -2320,8 +2421,7 @@
       return;
     }
     const ids = (prog && prog.exercises) || [];
-    const first = ids[0] ? D.EXERCISES[ids[0]] : null;
-    const photo = first ? exImg(first) : null;
+    const photo = firstHomeImg(ids);
     const media = photo ? '<img alt="" src="' + photo + '">' : heroMedia('');
     const mins = D.estimatedMinutes(prog);
     const doneN = doneCount(prog, key);

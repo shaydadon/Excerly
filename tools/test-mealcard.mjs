@@ -70,7 +70,8 @@ test('ambiguous close matches do not auto-pick', () => {
   ];
   const d = M.decideMatch('bread', foods);
   assert.equal(d.state, 'ambiguous');
-  assert.equal(d.options.length, 0);
+  // still no silent auto-pick, but the user now gets the choices (was an empty list = dead end)
+  assert.deepEqual(d.options.map(o => o.fdcId).sort(), [10, 11]);
 });
 
 test('explicit grams scale USDA values and missing stays null', () => {
