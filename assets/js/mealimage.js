@@ -32,7 +32,7 @@
 
   function forMeal(meal) {
     if (meal && meal.photoKind === 'user' && meal.photo) return { src: meal.photo, kind: 'user' };
-    if (meal && meal.image && meal.image.src) return meal.image;
+    if (meal && meal.image && meal.image.src && !(meal.image.kind === 'generated' && meal.image.v !== 2)) return meal.image;
     return representative(meal);
   }
 
@@ -45,15 +45,13 @@
       const res = await fetch(conf.mealImageProvider, {
         method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-        action: 'meal_image',
-        name: meal.name,
-        items: (meal.components || []).map(c => ({
-          name: c.name || '',
-          queryEn: c.queryEn || '',
-          grams: c.grams,
-          cookingMethod: c.cookingMethod || c.method || ''
-        }))
-      })
+          action: 'meal_image',
+          dishEn: meal.dishEn || '',
+          items: (meal.components || []).map(c => ({
+            queryEn: c.queryEn || '',
+            cookingMethod: c.cookingMethod || c.method || ''
+          }))
+        })
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data || !data.src) return null;
