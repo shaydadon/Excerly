@@ -6,10 +6,10 @@
 
 | קובץ | מה זה |
 |---|---|
-| `dist/Etsy-Upload/` | **חמשת הקבצים שמעלים ל-Etsy** (המגבלה של Etsy: 5 קבצים, עד 20MB לכל אחד) |
-| `The-Wedding-Planner_Digital-Hyperlinked.pdf` | 116 עמודים, טאבים לחיצים בכל עמוד, לטאבלט (GoodNotes / Notability) |
+| `dist/Etsy-Upload/` | **חמשת הקבצים שמעלים ל-Etsy** (המגבלה של Etsy: 5 קבצים, עד 20MB לכל אחד): START HERE, דיגיטלי, Letter, A4, ו-zip עם ההזמנות והגיליון |
+| `The-Wedding-Planner_Digital-Hyperlinked.pdf` | 117 עמודים, טאבים לחיצים בכל עמוד, לטאבלט (GoodNotes / Notability) |
 | `The-Wedding-Planner_Printable_US-Letter.pdf` / `_A4.pdf` | גרסת הדפסה על רקע לבן (חוסכת דיו) |
-| `Invitation-Suite/` | 30 עיצובים: 3 סגנונות × 10 פריטים, בגדלי הדפסה אמיתיים |
+| `Invitation-Suite/` | 40 עיצובים: 4 סגנונות × 10 פריטים (Garden Rose בצבעי מים, Ivory Classic, Modern Minimal, Botanical Line), בגדלי הדפסה אמיתיים |
 | `The-Wedding-Planner_Spreadsheet.xlsx` | תקציב, אורחים, RSVP, מנות, ספקים, הושבה, צ'קליסט ודשבורד עם נוסחאות |
 | `00-START-HERE.pdf` | מדריך לקונה עם כל הקישורים (Canva, ספקים) ותנאי שימוש |
 | `Etsy-Listing-Images/` | 8 תמונות מודעה ב-2700×2025 (הגודל ש-Etsy ממליצה עליו) |
@@ -35,7 +35,7 @@
 > ⚠️ ברשימה יש כרגע 5 ספקים **לדוגמה בלבד** (מסומנים "Sample listing"). לא הכנסתי ספקים אמיתיים, כי רשימה כזו צריכה להיות מאומתת ותלויה באזור שאליו אתם מוכרים. מחקו את הדוגמאות והוסיפו רק ספקים שבדקתם, רצוי בהסכמתם. כל עוד אין ספקים בקטגוריה, האתר מציג "New vendors in this category are coming soon".
 
 ### 3. צרו את תבניות ה-Canva וקבלו קישורים
-לכל אחד מ-30 העיצובים (`dist/Invitation-Suite/...`):
+לכל אחד מ-40 העיצובים (`dist/Invitation-Suite/...`):
 1. ב-Canva: **Create a design → Import file**, ומעלים את ה-PDF. Canva הופך אותו לעיצוב שאפשר לערוך.
 2. בודקים שהגופנים הם **Cormorant Garamond** ו-**Jost** (שניהם קיימים ב-Canva בחינם) ומתקנים אם צריך.
 3. **Share → More → Template link** (בחלק מהחשבונות זה דורש Canva Pro), ומעתיקים את הקישור.
@@ -56,7 +56,7 @@ npm run all      # PDFs + גיליון + תמונות מודעה + אריזה ל
 
 **Title**
 ```
-Wedding Planner Printable & Digital Bundle, 116 Page Hyperlinked GoodNotes Planner, Budget Spreadsheet, Canva Invitation Templates
+Wedding Planner Printable & Digital Bundle, 117 Page Hyperlinked GoodNotes Planner, Budget Spreadsheet, Canva Invitation Templates
 ```
 
 **13 Tags** (כל אחד עד 20 תווים)
@@ -68,12 +68,12 @@ wedding planner, digital planner, wedding checklist, wedding budget, goodnotes p
 ```
 Plan your whole wedding calmly, from yes to ever after.
 
-The Wedding Planner is a complete, beautifully minimal planning system: a 116-page planner in printable and digital versions, 30 invitation templates you edit in Canva, a budget and guest-list spreadsheet that does the math, and access to our regularly updated vendor directory.
+The Wedding Planner is a complete, beautifully minimal planning system, illustrated with fine-art botanical paintings and a soft color for every section: a 117-page planner in printable and digital versions, 40 invitation templates you edit in Canva, a budget and guest-list spreadsheet that does the math, and access to our regularly updated vendor directory.
 
 WHAT'S INCLUDED
-• Digital planner: 116 hyperlinked pages with tabs for GoodNotes, Notability, Noteshelf, Xodo and more
+• Digital planner: 117 hyperlinked pages with tabs for GoodNotes, Notability, Noteshelf, Xodo and more
 • Printable planner: US Letter and A4 PDFs
-• Invitation suite: 30 Canva templates in 3 styles (save the date, invitation, RSVP, details, program, menu, table number, place card, welcome sign, thank-you card)
+• Invitation suite: 40 Canva templates in 4 styles (save the date, invitation, RSVP, details, program, menu, table number, place card, welcome sign, thank-you card)
 • Spreadsheet: budget, guest list, RSVPs, meals, vendors, seating and checklist, with an automatic dashboard (Excel, Google Sheets, Numbers)
 • Live vendor directory, updated regularly
 • Start-here guide with every link
@@ -111,6 +111,8 @@ PLEASE NOTE
 ---
 
 ## הערות חשובות
+- **תמונות:** האיורים הם ציורים בוטניים מהמאות ה-16 עד ה-19 (רדוטה ואחרים), מאוסף Open Access של מוזיאון המטרופוליטן. הרישיון שלהם הוא CC0, נחלת הכלל, ומותר להשתמש בהם מסחרית ללא קרדיט. בכל זאת מצוין קרדיט קטן בעמודי הפתיחה של הפרקים. המקורות והקישורים נמצאים ב-`art/src/CREDITS.json`. הסקריפט `art/cutout.py` מנקה את רקע הנייר ומכין PNG שקופים.
+- **צבעים:** לכל פרק צבע משלו (קורל, לילך, משמש, סגול-ורוד, מרווה, ורוד, מנטה, כחול מאובק ושמפניה), שמופיע בטאבים, בכותרות ובתיבות. אפשר לשנות אותם ב-`THEMES` שבקובץ `build/planner.js`.
 - **רישוי:** הגופנים (Cormorant Garamond, Jost) הם תחת רישיון SIL Open Font License, שמתיר שימוש מסחרי והטמעה ב-PDF. כל העיצובים והאיורים נוצרו כאן מאפס.
 - **מספרים מקומיים:** חלוקת התקציב והטיפים מוצגים במוצר כ"נקודת פתיחה מקובלת". הם מבוססים על מנהגים מארה"ב ואירופה, ובמוצר כתוב במפורש שהם משתנים לפי מדינה.
 - **גרסה בעברית:** כל הטקסט נמצא ב-`build/content.js` וב-`build/planner.js`, כך שאפשר להפיק גרסה עברית לשוק הישראלי.

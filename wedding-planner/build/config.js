@@ -53,6 +53,18 @@ module.exports = {
       welcomeSign: 'https://www.canva.com/',
       thankYou: 'https://www.canva.com/',
     },
+    garden: {
+      saveTheDate: 'https://www.canva.com/',
+      invitation: 'https://www.canva.com/',
+      rsvp: 'https://www.canva.com/',
+      details: 'https://www.canva.com/',
+      program: 'https://www.canva.com/',
+      menu: 'https://www.canva.com/',
+      tableNumber: 'https://www.canva.com/',
+      placeCard: 'https://www.canva.com/',
+      welcomeSign: 'https://www.canva.com/',
+      thankYou: 'https://www.canva.com/',
+    },
   },
 
   // Download links printed in the START HERE guide (Etsy allows 5 files per

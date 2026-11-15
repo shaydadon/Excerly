@@ -34,12 +34,26 @@ function tableSVG(seats = 10) {
   return s + `<line x1="38" y1="56" x2="62" y2="56" stroke="#DCD3C8" stroke-width=".6"/><text x="50" y="48" text-anchor="middle" font-family="Jost" font-size="5.5" letter-spacing="1.5" fill="#A69C92">TABLE</text></svg>`;
 }
 
+// One color story per section, each paired with a public-domain botanical painting (art/).
+const THEMES = {
+  front: { wash: '#FBF0EE', tint: '#F3DCD6', accent: '#B9675F', art: 'rose', credit: 'Pierre-Joseph Redouté, Rosa turbinata, 1817–24' },
+  start: { wash: '#FCEFEB', tint: '#F5D9D1', accent: '#C0675E', art: 'poppy', credit: 'Johanna Helena Herolt, A Poppy in Three Stages of Flowering, c. 1700' },
+  plan: { wash: '#F4EFF7', tint: '#E4D9EE', accent: '#86609A', art: 'columbine', credit: 'Pieter Holsteyn II, A Columbine, 17th century' },
+  budget: { wash: '#FCF2E7', tint: '#F3DEC4', accent: '#B5783B', art: 'crown-imperial', credit: 'Pierre-Joseph Redouté, Fritillaria imperialis, 1802–16' },
+  guests: { wash: '#F8EFF4', tint: '#EDD7E3', accent: '#9A5A7D', art: 'sweet-pea', credit: 'Jacques Le Moyne de Morgues, A Sheet of Studies of Flowers, 16th century' },
+  vendors: { wash: '#EEF5EF', tint: '#D6E7D8', accent: '#558A61', art: 'gloriosa', credit: 'Pierre-Joseph Redouté, Gloriosa superba, c. 1810' },
+  design: { wash: '#FCEFF2', tint: '#F4D5DD', accent: '#B5526B', art: 'tulips', credit: 'Jacob Marrel, Four Tulips, c. 1635–45' },
+  events: { wash: '#EDF4F2', tint: '#D3E6E0', accent: '#46806E', art: 'star-flower', credit: 'Maria Moninckx, Study of a Plant with Red-Purple Flowers, 1695' },
+  day: { wash: '#EEF2F9', tint: '#D7E1F0', accent: '#5878A3', art: 'erica', credit: 'Pierre-Joseph Redouté, Erica fulgida, 1813' },
+  after: { wash: '#F8F1E9', tint: '#EBDCCB', accent: '#987052', art: 'fritillaries', credit: 'Herman Saftleven II, Study of Three Fritillaries, 1683' },
+};
+
 // ── document ──
 module.exports = function buildPlanner(cfg, opts) {
-  const { digital, size, thumbs = {}, qrSvg = '' } = opts;
+  const { digital, size, thumbs = {}, qrSvg = '', art = '' } = opts;
   const sections = [];
   let current = null;
-  const S = (id, tab, title, lede) => { current = { id, tab, title, lede, pages: [] }; sections.push(current); };
+  const S = (id, tab, title, lede) => { current = { id, tab, title, lede, theme: THEMES[id], pages: [] }; sections.push(current); };
   const P = (id, title, kicker, body, extra = {}) => current.pages.push({ id, title, kicker, body, ...extra });
 
   // ═════════ 01 · START ═════════
@@ -303,18 +317,18 @@ module.exports = function buildPlanner(cfg, opts) {
     </div>`);
 
   const items = [['saveTheDate', 'Save the Date'], ['invitation', 'Invitation'], ['rsvp', 'RSVP Card'], ['details', 'Details Card'], ['program', 'Program'], ['menu', 'Menu'], ['tableNumber', 'Table Number'], ['placeCard', 'Place Card'], ['welcomeSign', 'Welcome Sign'], ['thankYou', 'Thank You']];
-  const styles = [['classic', 'Ivory Classic'], ['modern', 'Modern Minimal'], ['botanical', 'Botanical Line']];
+  const styles = [['garden', 'Garden Rose'], ['classic', 'Ivory Classic'], ['modern', 'Modern Minimal'], ['botanical', 'Botanical Line']];
   styles.forEach(([sk, sn], si) => {
     P(`canva-${sk}`, `Invitation <em>Suite</em>`, `${sn} · Edit in Canva`, () => `
       <div class="row none" style="align-items:flex-start">
-        <div class="col" style="flex:1.6"><p class="copy">${si === 0 ? 'Thirty matching designs in three styles. Tap <b style="font-weight:400">Edit in Canva</b> under any design to open your own copy. Change the names, date and wording, then print at home, send to a print shop, or share it digitally. A free Canva account is all you need.' : 'Every design opens as your own copy in Canva. Fonts used: Cormorant Garamond and Jost, both free in Canva.'}</p></div>
+        <div class="col" style="flex:1.6"><p class="copy">${si === 0 ? 'Forty matching designs in four styles. Tap <b style="font-weight:400">Edit in Canva</b> under any design to open your own copy. Change the names, date and wording, then print at home, send to a print shop, or share it digitally. A free Canva account is all you need.' : 'Every design opens as your own copy in Canva. Fonts used: Cormorant Garamond and Jost, both free in Canva.'}</p></div>
         <div class="col" style="flex:1">${tip('Printing tip', 'Download as “PDF Print” with crop marks and bleed for a print shop, or print at home on 250–300 gsm card stock.')}</div>
       </div>
       <div class="grow" style="display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:1fr;gap:.18in .2in;min-height:0">
         ${items.map(([ik, iname]) => `<a class="canva-card" href="${esc(cfg.canva[sk][ik])}" style="min-height:0">
           <div class="thumb" style="flex:1;aspect-ratio:auto;min-height:0">${thumbs[`${sk}-${ik}`] ? `<img src="${thumbs[`${sk}-${ik}`]}">` : ''}</div>
           <div class="t">${iname}</div><div class="go">Edit in Canva</div></a>`).join('')}
-        <div class="box wash" style="grid-column:span 2;justify-content:center"><div class="label accent">${String(si + 1).padStart(2, '0')} / 03</div><div class="serif" style="font-size:20pt;font-weight:300;margin-top:.05in">${sn}</div><p class="note" style="margin-top:.06in">Save the date, invitation, RSVP, details, program, menu, table number, place card, welcome sign and thank-you card.</p></div>
+        <div class="box wash" style="grid-column:span 2;justify-content:center"><div class="label accent">${String(si + 1).padStart(2, '0')} / 04</div><div class="serif" style="font-size:20pt;font-weight:300;margin-top:.05in">${sn}</div><p class="note" style="margin-top:.06in">Save the date, invitation, RSVP, details, program, menu, table number, place card, welcome sign and thank-you card.</p></div>
       </div>`);
   });
 
@@ -469,10 +483,13 @@ module.exports = function buildPlanner(cfg, opts) {
   });
   const total = n;
 
-  const rail = (activeId) => !digital ? '' : `<nav class="rail"><a class="home" href="#contents">&amp;</a>${sections.map((s) => `<a href="#${s.id}" class="${s.id === activeId ? 'on' : ''}">${s.tab}</a>`).join('')}</nav>`;
-  const wrap = (id, cls, inner, activeId = '') => `<section class="page ${cls}" id="${id}"><div class="sheet">${inner}</div>${rail(activeId)}</section>`;
-  const head = (kicker, title, extra = '') => `<header class="ph"><div><div class="kicker">${kicker}</div><h1>${title}</h1></div><div class="ph-right">${extra}</div></header>`;
-  const foot = (num, label) => `<footer class="pf"><span>${esc(cfg.brand)}</span><span>${label}</span><span class="num">${num}</span></footer>`;
+  const vars = (t) => `--sec:${t.accent};--sec-wash:${t.wash};--sec-tint:${t.tint}`;
+  const themeOf = (id) => (sections.find((s) => s.id === id) || {}).theme || THEMES.front;
+  const rail = (activeId) => !digital ? '' : `<nav class="rail"><a class="home" href="#contents">&amp;</a>${sections.map((s) => `<a href="#${s.id}" class="${s.id === activeId ? 'on' : ''}" style="${vars(s.theme)}">${s.tab}</a>`).join('')}</nav>`;
+  const wrap = (id, cls, inner, activeId = '') => `<section class="page ${cls}" id="${id}" style="${vars(themeOf(activeId))}"><div class="sheet">${inner}</div>${rail(activeId)}</section>`;
+  const artImg = (name, cls = '', style = '') => (art ? `<img class="art ${cls}" src="${art}/${name}${cls === 'vign' ? '-sm' : ''}.png" style="${style}" alt="">` : '');
+  const head = (kicker, title, extra = '', vign = '') => `<header class="ph"><div><div class="kicker">${kicker}</div><h1>${title}</h1></div><div class="ph-right">${extra}${vign ? artImg(vign, 'vign') : ''}</div></header>`;
+  const foot = (num, label, nav = '') => `<footer class="pf"><span>${esc(cfg.brand)}</span><span>${nav || label}</span><span class="num">${num}</span></footer>`;
   const plain = (s) => s.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&');
 
   const out = [];
@@ -480,10 +497,10 @@ module.exports = function buildPlanner(cfg, opts) {
   // cover
   out.push(wrap('cover', 'cover', `
     <div class="frame"></div>
-    <div class="mono">&amp;</div>
-    <div>
-      <div class="label accent" style="letter-spacing:.42em;margin-bottom:.32in">${esc(cfg.edition)}</div>
-      <h1>The Wedding<br><em>Planner</em></h1>
+    ${artImg('rose', 'cover-art')}
+    <div style="margin-top:4.5in">
+      <div class="label accent" style="letter-spacing:.42em;margin-bottom:.22in">${esc(cfg.edition)}</div>
+      <h1>The Wedding <em>Planner</em></h1>
       <div class="sub">${esc(cfg.productSubtitle)}</div>
     </div>
     <div class="names">
@@ -504,7 +521,7 @@ module.exports = function buildPlanner(cfg, opts) {
           <p class="copy">Work through the sections in order, or jump straight to what you need from the contents page. Each section opens with a short overview, then gives you the checklists, trackers and worksheets for that part of planning.</p>
           <p class="copy">The <b style="font-weight:400">Vendors</b> section has a page for every supplier you might book, with the questions to ask before you sign, a comparison sheet for three options, and space to record the one you choose.</p>
           ${sec('What’s included')}
-          ${check([`${total} planner pages`, 'Printable PDF in US Letter and A4', 'Hyperlinked digital PDF for tablets', '30 invitation designs to edit in Canva', 'Companion budget & guest-list spreadsheet', 'Live vendor directory, updated regularly'], 'round')}
+          ${check([`${total} planner pages`, 'Printable PDF in US Letter and A4', 'Hyperlinked digital PDF for tablets', '40 invitation designs to edit in Canva', 'Companion budget & guest-list spreadsheet', 'Live vendor directory, updated regularly'], 'round')}
         </div>
         <div class="col">
           ${box('On a tablet', `<p class="copy">Open the <b style="font-weight:400">Digital</b> PDF in GoodNotes, Notability, Noteshelf, Xodo or any PDF app that supports links. Tap the tabs on the right to move between sections; tap <span class="serif" style="color:var(--accent)">&amp;</span> to return to the contents. Write with a stylus, or add text boxes and photos.</p>`, 'none')}
@@ -521,14 +538,14 @@ module.exports = function buildPlanner(cfg, opts) {
     <div class="toc">
       ${sections.map((s) => `<div class="grp">
         <a class="g" href="#${s.id}"><span class="n">${s.num}</span><span>${plain(s.title)}</span></a>
-        ${s.pages.filter((p, i, a) => !(p.vendor && a.findIndex((q) => q.vendor) !== i) && !/-compare$/.test(p.id) && !/^(month|guests|expenses|gifts|notes|checklist|seating)-([2-9]|1[0-2])$/.test(p.id) && !/^canva-(modern|botanical)$/.test(p.id) && p.id !== 'alcohol-calc')
+        ${s.pages.filter((p, i, a) => !(p.vendor && a.findIndex((q) => q.vendor) !== i) && !/-compare$/.test(p.id) && !/^(month|guests|expenses|gifts|notes|checklist|seating)-([2-9]|1[0-2])$/.test(p.id) && !/^canva-(classic|modern|botanical)$/.test(p.id) && p.id !== 'alcohol-calc')
           .map((p) => {
             let label = plain(p.title);
             if (p.vendor) label = 'Vendor pages (16 categories)';
             if (/^month-1$/.test(p.id)) label = 'Monthly planners (12)';
             if (/^guests-1$/.test(p.id)) label = 'Guest list (150 guests)';
             if (/^checklist-1$/.test(p.id)) label = 'Wedding checklist (3 pages)';
-            if (p.id === 'canva-classic') label = 'Invitation suite · Canva (30)';
+            if (p.id === 'canva-garden') label = 'Invitation suite · Canva (40)';
             return `<a class="i" href="#${p.id}"><span>${label}</span><span>${p.n}</span></a>`;
           }).join('')}
         ${s.id === 'vendors' ? `<a class="i" href="#alcohol-calc"><span>Alcohol calculator</span><span>${s.pages.find((p) => p.id === 'alcohol-calc').n}</span></a>` : ''}
@@ -538,16 +555,20 @@ module.exports = function buildPlanner(cfg, opts) {
 
   sections.forEach((s) => {
     // divider
-    const toc = s.pages.filter((p) => !/-compare$/.test(p.id) && !/^(month|guests|expenses|gifts|notes|checklist|seating)-([2-9]|1[0-2])$/.test(p.id) && !/^canva-(modern|botanical)$/.test(p.id));
+    const toc = s.pages.filter((p) => !/-compare$/.test(p.id) && !/^(month|guests|expenses|gifts|notes|checklist|seating)-([2-9]|1[0-2])$/.test(p.id) && !/^canva-(classic|modern|botanical)$/.test(p.id));
     out.push(wrap(s.id, 'divider', `
-      <div class="num">${s.num}</div>
-      <h1>${s.title}</h1>
-      <div class="rule"></div>
-      <p class="lede">${s.lede}</p>
-      <div class="toc-mini">${toc.map((p) => `<a href="#${p.id}"><span>${plain(p.title)}</span><span>${p.n}</span></a>`).join('')}</div>`, s.id));
+      <div class="div-art" style="${toc.length > 12 ? 'height:3.5in' : ''}">${artImg(s.theme.art)}</div>
+      <div class="div-text">
+        <div class="num">${s.num}</div>
+        <h1>${s.title}</h1>
+        <div class="rule"></div>
+        <p class="lede">${s.lede}</p>
+      </div>
+      <div class="toc-mini">${toc.map((p) => `<a href="#${p.id}"><span>${plain(p.title)}</span><span>${p.n}</span></a>`).join('')}</div>
+      <div class="credit">${esc(s.theme.credit)}</div>`, s.id));
     s.pages.forEach((p) => {
-      const right = digital ? `<a href="#${s.id}">${s.tab}</a> · <a href="#contents">Contents</a>` : '';
-      out.push(wrap(p.id, '', `${head(p.kicker, p.title, right)}<div class="body">${p.body()}</div>${foot(p.n, s.tab)}`, s.id));
+      const nav = digital ? `<a href="#${s.id}">${s.tab}</a> &nbsp;·&nbsp; <a href="#contents">Contents</a>` : '';
+      out.push(wrap(p.id, '', `${head(p.kicker, p.title, '', s.theme.art)}<div class="body">${p.body()}</div>${foot(p.n, s.tab, nav)}`, s.id));
     });
   });
 
@@ -562,3 +583,4 @@ module.exports = function buildPlanner(cfg, opts) {
     pageHeight: dims.ph,
   };
 };
+module.exports.THEMES = THEMES;

@@ -1,4 +1,4 @@
-// Invitation suite: 10 items × 3 styles. Every size is the real print size in inches.
+// Invitation suite: 10 items × 4 styles. Every size is the real print size in inches.
 // All type is sized from --u (1% of the card width) so each design scales cleanly.
 
 const ITEMS = {
@@ -14,7 +14,7 @@ const ITEMS = {
   thankYou: { name: 'Thank You', w: 7, h: 5 },
 };
 
-const STYLES = { classic: 'Ivory Classic', modern: 'Modern Minimal', botanical: 'Botanical Line' };
+const STYLES = { classic: 'Ivory Classic', modern: 'Modern Minimal', botanical: 'Botanical Line', garden: 'Garden Rose' };
 
 const D = {
   a: 'Olivia', b: 'James',
@@ -175,6 +175,25 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .s-botanical .sprig.bot { bottom: calc(var(--u) * 5); }
 .s-botanical .form .opt i { border-color: #7D8E72; }
 
+/* Garden Rose: watercolor rose (Redouté, public domain) on blush */
+.s-garden { background: linear-gradient(180deg, #FBEFEC 0%, #FDF8F5 70%); }
+.s-garden .rose { flex: none; width: calc(var(--u) * 34); margin-bottom: calc(var(--u) * 1); }
+.s-garden .eyebrow, .s-garden .amp { color: #B9675F; }
+.s-garden .rule { border-top-color: #D9A49B; }
+.s-garden .form .opt i { border-color: #B9675F; }
+.s-garden::after { content: ''; position: absolute; inset: calc(var(--u) * 3.4); border: calc(var(--u) * .15) solid #EBC9C1; pointer-events: none; }
+.s-garden.i-invitation, .s-garden.i-program { padding-top: calc(var(--u) * 8); padding-bottom: calc(var(--u) * 8); gap: calc(var(--u) * 2.6); }
+.s-garden.i-invitation .rose, .s-garden.i-program .rose { width: calc(var(--u) * 20); }
+.s-garden.i-rsvp .rose, .s-garden.i-details .rose { width: calc(var(--u) * 20); }
+.s-garden.i-menu .rose { width: calc(var(--u) * 30); }
+.s-garden.i-tableNumber .rose { width: calc(var(--u) * 30); }
+.s-garden.i-tableNumber .numeral { font-size: calc(var(--u) * 34); }
+.s-garden.i-welcomeSign .rose { width: calc(var(--u) * 32); }
+.s-garden.i-thankYou, .s-garden.i-placeCard { padding: calc(var(--u) * 8) calc(var(--u) * 6) calc(var(--u) * 8) calc(var(--u) * 48); }
+.s-garden.i-thankYou .rose, .s-garden.i-placeCard .rose { position: absolute; top: 50%; left: calc(var(--u) * 6); width: auto; height: 80%; transform: translateY(-50%); margin: 0; }
+.s-garden.i-thankYou .ty { font-size: calc(var(--u) * 11); }
+.s-garden.i-placeCard .names.pc { font-size: calc(var(--u) * 9); }
+
 /* tight formats */
 .i-placeCard { gap: calc(var(--u) * 2); padding: calc(var(--u) * 8); }
 .i-placeCard.s-botanical .sprig { width: calc(var(--u) * 30); margin-left: calc(var(--u) * -15); }
@@ -187,11 +206,12 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .i-rsvp.s-modern, .i-details.s-modern { justify-content: center; }
 `;
 
-function cardHTML(style, item) {
+function cardHTML(style, item, art = '') {
   const it = ITEMS[item];
   const u = it.w / 100;
   const deco = style === 'botanical' ? `${sprig(false).replace('class="sprig"', 'class="sprig top"')}${item !== 'placeCard' && item !== 'thankYou' ? sprig(true).replace('class="sprig"', 'class="sprig bot"') : ''}` : '';
-  return `<div class="card s-${style} i-${item}" style="--w:${it.w}in;--h:${it.h}in;--u:${u}in">${deco}${content(item)}</div>`;
+  const rose = style === 'garden' && art ? `<img class="rose" src="${art}/rose.png" alt="">` : '';
+  return `<div class="card s-${style} i-${item}" style="--w:${it.w}in;--h:${it.h}in;--u:${u}in">${deco}${rose}${content(item)}</div>`;
 }
 
 module.exports = { ITEMS, STYLES, CSS, cardHTML };

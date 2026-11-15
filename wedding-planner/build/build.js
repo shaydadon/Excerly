@@ -41,7 +41,7 @@ async function writeAndLoad(page, name, html) {
       const dir = path.join(OUT, 'Invitation-Suite', sname.replace(/ /g, '-'));
       fs.mkdirSync(dir, { recursive: true });
       for (const [ik, it] of Object.entries(inv.ITEMS)) {
-        const html = doc(inv.cardHTML(sk, ik), inv.CSS + `@page{size:${it.w}in ${it.h}in;margin:0}`);
+        const html = doc(inv.cardHTML(sk, ik, 'file://' + path.join(ROOT, 'art/out')), inv.CSS + `@page{size:${it.w}in ${it.h}in;margin:0}`);
         await writeAndLoad(page, `inv-${sk}-${ik}.html`, html);
         const thumb = path.join(TMP, 'thumbs', `${sk}-${ik}.png`);
         await page.setViewportSize({ width: 1400, height: 1800 });
@@ -64,7 +64,7 @@ async function writeAndLoad(page, name, html) {
       { file: 'The-Wedding-Planner_Printable_A4.pdf', digital: false, size: 'a4', cls: 'print' },
     ];
     for (const v of variants) {
-      const p = buildPlanner(cfg, { ...v, thumbs, qrSvg });
+      const p = buildPlanner(cfg, { ...v, thumbs, qrSvg, art: 'file://' + path.join(ROOT, 'art/out') });
       await writeAndLoad(page, `planner-${v.digital ? 'digital' : v.size}.html`, doc(p.html, pageCss + p.css, v.cls));
       await page.pdf({ path: path.join(OUT, v.file), preferCSSPageSize: true, printBackground: true });
       console.log(`✓ ${v.file} · ${p.total} pages`);

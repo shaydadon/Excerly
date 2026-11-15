@@ -17,7 +17,7 @@ const total = fs.readdirSync(PAGES).length;
 
 const CSS = `${fontCss}
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { width: 2700px; height: 2025px; overflow: hidden; background: #EEE7DD; font-family: 'Jost'; font-weight: 300; color: #2E2A27; position: relative; }
+body { width: 2700px; height: 2025px; overflow: hidden; background: #F3EAE4; font-family: 'Jost'; font-weight: 300; color: #2E2A27; position: relative; }
 .k { font-size: 30px; letter-spacing: .34em; text-transform: uppercase; color: #A3845F; font-weight: 400; }
 h1 { font-family: 'Cormorant Garamond'; font-weight: 300; font-size: 168px; line-height: .95; }
 h1 em { font-style: italic; }
@@ -44,18 +44,18 @@ const slides = {
       <h1 style="margin:50px 0 46px">The Wedding<br><em>Planner</em></h1>
       <div class="sub">Everything you need, from yes to ever after</div>
       <div class="feat" style="margin-top:90px">
-        <div>${total} hyperlinked pages</div><div>30 invitation templates for Canva</div><div>Budget & guest-list spreadsheet</div><div>Live vendor directory</div>
+        <div>${total} hyperlinked pages</div><div>40 invitation templates for Canva</div><div>Budget & guest-list spreadsheet</div><div>Live vendor directory</div>
       </div>
     </div>
-    ${img(pg('budget-guide'), 1500, 330, 900, 7)}
-    ${img(pg('v-photo'), 1380, 250, 900, -6)}
+    ${img(pg('budget'), 1520, 330, 900, 7)}
+    ${img(pg('start'), 1360, 250, 900, -6)}
     ${img(pg('cover'), 1420, 150, 1000, 0)}
     ${band}`,
 
   '02-inside': `
     <div style="position:absolute;left:0;right:0;top:110px;text-align:center"><div class="k">${total} pages</div><h2 style="margin-top:26px">What’s <em>Inside</em></h2></div>
     <div style="position:absolute;left:150px;right:150px;top:470px;display:grid;grid-template-columns:repeat(6,1fr);gap:46px 40px">
-      ${['couple', 'checklist-1', 'month-1', 'budget-guide', 'budget-overview', 'guest-guide', 'guests-1', 'seating-1', 'v-photo', 'alcohol-calc', 'canva-classic', 'music', 'shots', 'ceremony', 'day-timeline', 'vendor-schedule', 'honeymoon', 'memories']
+      ${['plan', 'checklist-1', 'month-1', 'budget', 'budget-guide', 'guest-guide', 'guests', 'seating-1', 'vendors', 'v-photo', 'alcohol-calc', 'canva-garden', 'design', 'music', 'events', 'day', 'day-timeline', 'after']
     .map((id) => `<img src="${pg(id)}" style="width:100%;box-shadow:0 14px 34px rgba(70,50,30,.18)">`).join('')}
     </div>`,
 
@@ -88,13 +88,13 @@ const slides = {
   '06-invitations': `
     <div style="position:absolute;left:170px;top:150px;width:1000px">
       <div class="k">Edit in Canva</div>
-      <h2 style="margin:30px 0 40px">30 invitation<br><em>templates</em></h2>
-      <div class="sub" style="font-size:44px">Three styles, ten matching pieces each. Change the names, date and wording in a free Canva account.</div>
+      <h2 style="margin:30px 0 40px">40 invitation<br><em>templates</em></h2>
+      <div class="sub" style="font-size:44px">Four styles, ten matching pieces each. Change the names, date and wording in a free Canva account.</div>
       <div class="feat" style="margin-top:60px">
         <div>Save the date · Invitation · RSVP</div><div>Details · Program · Menu</div><div>Table number · Place card</div><div>Welcome sign · Thank-you card</div>
       </div>
     </div>
-    ${[['classic-invitation', 1250, 200, 410, -2], ['modern-invitation', 1720, 170, 410, 0], ['botanical-invitation', 2190, 200, 410, 2], ['classic-rsvp', 1290, 950, 300, -3], ['botanical-menu', 1690, 900, 260, 0], ['modern-tableNumber', 2010, 940, 320, 2], ['botanical-placeCard', 2290, 1500, 330, -2], ['classic-thankYou', 1300, 1520, 480, 2]]
+    ${[['classic-invitation', 1250, 200, 410, -2], ['garden-invitation', 1720, 170, 410, 0], ['botanical-invitation', 2190, 200, 410, 2], ['garden-rsvp', 1290, 950, 300, -3], ['botanical-menu', 1690, 900, 260, 0], ['garden-tableNumber', 2010, 940, 320, 2], ['garden-placeCard', 2290, 1500, 330, -2], ['garden-thankYou', 1300, 1520, 480, 2]]
     .map(([id, x, y, w, r]) => img(th(id), x, y, w, r)).join('')}`,
 
   '07-spreadsheet': `
@@ -112,7 +112,7 @@ const slides = {
   '08-what-you-get': `
     <div style="position:absolute;left:0;right:0;top:120px;text-align:center"><div class="k">Instant download</div><h2 style="margin-top:26px">What you <em>get</em></h2></div>
     <div style="position:absolute;left:260px;right:260px;top:520px;display:grid;grid-template-columns:repeat(3,1fr);gap:50px">
-      ${[['01', 'Digital planner', `${total}-page hyperlinked PDF for tablets`], ['02', 'Printable planner', 'US Letter and A4 PDFs, print what you need'], ['03', 'Invitation suite', '30 Canva templates + print-ready PDFs'], ['04', 'Spreadsheet', 'Budget, guests, RSVPs, vendors & seating'], ['05', 'Vendor directory', 'Live, regularly updated online list'], ['06', 'Start-here guide', 'Links, setup and printing tips']]
+      ${[['01', 'Digital planner', `${total}-page hyperlinked PDF for tablets`], ['02', 'Printable planner', 'US Letter and A4 PDFs, print what you need'], ['03', 'Invitation suite', '40 Canva templates + print-ready PDFs'], ['04', 'Spreadsheet', 'Budget, guests, RSVPs, vendors & seating'], ['05', 'Vendor directory', 'Live, regularly updated online list'], ['06', 'Start-here guide', 'Links, setup and printing tips']]
     .map(([n, t, d]) => `<div style="background:#FBF8F3;padding:60px 56px;min-height:470px"><div style="font-family:'Cormorant Garamond';font-size:84px;color:#A3845F;font-weight:300">${n}</div><div style="font-family:'Cormorant Garamond';font-size:58px;margin:18px 0 18px">${t}</div><div style="font-size:32px;color:#6F665F;line-height:1.5">${d}</div></div>`).join('')}
     </div>
     <div style="position:absolute;left:0;right:0;bottom:120px;text-align:center"><span class="pill">${cfg.brand}</span></div>`,

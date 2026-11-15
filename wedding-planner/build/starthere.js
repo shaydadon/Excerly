@@ -17,8 +17,8 @@ module.exports = function startHere(cfg, { qrSvg, total, inv }) {
           <div>
             ${row('01', 'The-Wedding-Planner_Digital-Hyperlinked.pdf', `${total} pages with clickable tabs for GoodNotes, Notability, Noteshelf, Xodo and other PDF apps.`)}
             ${row('02', 'The-Wedding-Planner_Printable (US Letter & A4)', 'Print-friendly white pages. Print the whole planner or only the pages you need.')}
-            ${row('03', 'Invitation Suite (30 designs)', 'Edit in Canva with the links on the next page, or print the ready-made PDFs.')}
-            ${row('04', 'The-Wedding-Planner_Spreadsheet.xlsx', 'Budget, guest list, RSVPs, meals, vendors, seating and checklist. Totals update on their own.')}
+            ${row('03', 'Invitation Suite (40 designs)', 'In the Invitation-Suite-and-Spreadsheet zip. Edit in Canva with the links on the next page, or print the ready-made PDFs.')}
+            ${row('04', 'The-Wedding-Planner_Spreadsheet.xlsx', 'In the same zip. Budget, guest list, RSVPs, meals, vendors, seating and checklist. Totals update on their own.')}
             ${row('05', 'Vendor directory', 'An online list of wedding vendors, updated regularly. Link and QR code below.')}
           </div>
           ${sec('Using the digital planner')}

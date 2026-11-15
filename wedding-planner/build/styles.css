@@ -190,3 +190,49 @@ p.note { font-size: 7.2pt; line-height: 1.55; color: var(--soft); }
 
 .tbl.tight .tr { min-height: 0.16in; }
 .tbl.tight .tr > div { font-size: 7.4pt; }
+
+/* ───────── color & botanical art layer ───────── */
+.page { --sec: var(--accent); --sec-wash: var(--accent-wash); --sec-tint: var(--accent-soft); }
+img.art { display: block; }
+.ph .kicker { color: var(--sec); }
+.ph h1 em { color: var(--sec); }
+.ph-right { display: flex; align-items: flex-end; gap: .14in; }
+.ph img.vign { height: 0.78in; width: auto; max-width: 1.1in; object-fit: contain; margin-bottom: -0.06in; }
+.ph { border-bottom-color: var(--sec-tint); border-bottom-width: 1.2pt; }
+.pf a { color: var(--sec); }
+.box.wash { background: var(--sec-wash); }
+.label.accent, h2.sec small, .tip .label, .big-num, .kv span:last-child, .divider .toc-mini a span:last-child, .toc .grp > a.g span.n { color: var(--sec); }
+.tip { border-left-color: var(--sec); }
+.tbl .tr.th { background: var(--sec-wash); }
+.tbl { border-top-color: var(--sec); }
+.check li::before { border-color: color-mix(in srgb, var(--sec) 45%, var(--line-strong)); }
+.bar-track { background: var(--sec-tint); } .bar-track i { background: var(--sec); }
+.chip { color: var(--sec); border-color: var(--sec); }
+.canva-card .go { color: var(--sec); border-color: var(--sec); }
+.swatches i { border-color: color-mix(in srgb, var(--sec) 50%, var(--line-strong)); }
+
+/* tabs: each section keeps its color */
+.rail { background: var(--paper); }
+.rail a { background: var(--sec-wash); color: var(--sec); border-left-color: var(--sec-tint); }
+.rail a.on { background: var(--sec); color: #fff; border-left-color: var(--sec); }
+
+/* section dividers: full-bleed color with the painting */
+.divider .sheet { background: var(--sec-wash); justify-content: flex-start; padding-top: 0.55in; }
+.divider .div-art { height: 4.6in; display: flex; justify-content: center; align-items: flex-end; flex: none; }
+.divider .div-art img { max-height: 100%; max-width: 5.2in; object-fit: contain; }
+.divider .div-text { margin-top: .22in; }
+.divider .num { font-size: 30pt; color: var(--sec); letter-spacing: .12em; }
+.divider h1 { font-size: 46pt; margin-top: .02in; }
+.divider h1 em { color: var(--sec); }
+.divider .rule { border-top-color: var(--sec); margin: .2in auto; }
+.divider .toc-mini { margin-top: .3in; }
+.divider .toc-mini a { border-bottom-color: var(--sec-tint); }
+.divider .credit { position: absolute; bottom: .32in; left: 0; right: 0; text-align: center; font-family: var(--serif); font-style: italic; font-size: 7.5pt; color: var(--faint); }
+
+/* cover */
+.cover .sheet { background: linear-gradient(180deg, #FBF0EE 0%, var(--paper) 62%); justify-content: flex-start; padding-top: 0.75in; }
+.cover img.cover-art { position: absolute; top: .62in; left: 50%; transform: translateX(-50%); height: 4.35in; }
+.cover h1 { font-size: 52pt; }
+.cover h1 em { color: var(--sec); }
+.cover .frame { border-color: var(--sec-tint); }
+.cover .names { margin-top: auto; }
