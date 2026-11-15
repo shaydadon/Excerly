@@ -14,6 +14,9 @@ module.exports = {
   // A QR code and links to this page are printed in the planner.
   vendorDirectoryUrl: 'https://YOUR-USERNAME.github.io/wedding-vendors/',
 
+  // The interactive app (site/app, hosted together with the directory).
+  appUrl: 'https://YOUR-USERNAME.github.io/wedding-vendors/app/',
+
   // Canva template links. In Canva: open the design → Share → "Template link" → copy.
   // Paste each link here and run `npm run build` again.
   canva: {

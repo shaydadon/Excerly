@@ -14,6 +14,27 @@ const fontCss = fs.readFileSync(path.join(ROOT, 'fonts/fonts.css'), 'utf8').repl
 const pg = (id) => `file://${PAGES}/${id}.png`;
 const th = (id) => `file://${THUMBS}/${id}.png`;
 const total = fs.readdirSync(PAGES).length;
+const APPSHOT = path.join(ROOT, '.cache/app-seating.png');
+
+// Screenshot of the interactive app's seating chart with example data.
+async function appShot(b) {
+  const first = ['Emma', 'Liam', 'Olivia', 'Noah', 'Ava', 'Ethan', 'Mia', 'Lucas', 'Zoe', 'Leo', 'Isla', 'Jack', 'Nora', 'Henry', 'Grace', 'Adam', 'Chloe', 'Sam', 'Ruby', 'Max'];
+  const last = ['Reed', 'Carter', 'Hale', 'Morgan', 'Price', 'Cole', 'Ward', 'Fox'];
+  const tables = Array.from({ length: 8 }, (_, i) => ({ id: 't' + i, name: i === 0 ? 'Family' : 'Table ' + (i + 1), seats: 10, shape: 'round', x: 14 + (i % 4) * 24, y: 25 + Math.floor(i / 4) * 50 }));
+  const counts = [10, 8, 10, 6, 9, 7, 4, 0];
+  const guests = []; let k = 0;
+  counts.forEach((c, ti) => { for (let j = 0; j < c; j++, k++) guests.push({ id: 'g' + k, name: first[k % 20] + ' ' + last[(k * 3) % 8], side: 'Both', group: '', rsvp: 'Attending', meal: '—', table: 't' + ti, notes: '' }); });
+  for (let j = 0; j < 9; j++, k++) guests.push({ id: 'g' + k, name: first[(k * 7) % 20] + ' ' + last[(k * 5) % 8], side: 'Both', group: '', rsvp: j < 7 ? 'Attending' : 'Awaiting', meal: '—', table: '', notes: '' });
+  const state = { v: 1, couple: { a: 'Olivia', b: 'James', date: '2027-06-12', total: '35000', currency: '$' }, guests, tables, budget: [], done: {}, saved: [], country: 'US', city: '' };
+  const ctx = await b.newContext({ viewport: { width: 1440, height: 980 }, deviceScaleFactor: 2 });
+  await ctx.addInitScript((s) => { try { localStorage.setItem('wedding-planner-app-v1', s); } catch (e) {} }, JSON.stringify(state));
+  const p = await ctx.newPage();
+  await p.goto('file://' + path.join(ROOT, 'site/app/index.html') + '#seating');
+  await p.evaluate(() => document.fonts.ready);
+  await p.waitForTimeout(400);
+  await p.screenshot({ path: APPSHOT });
+  await ctx.close();
+}
 
 const CSS = `${fontCss}
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -38,6 +59,14 @@ const img = (src, x, y, w, rot = 0, extra = '') => `<img class="pg" src="${src}"
 const band = `<div class="band"><span>Instant download</span><span>Printable + digital</span><span>US Letter & A4</span><span>Edit in Canva</span></div>`;
 
 const slides = {
+  '09-app': `
+    <div style="position:absolute;left:0;right:0;top:100px;text-align:center"><div class="k">Bonus · interactive app</div><h2 style="margin-top:26px">Drag & drop <em>seating</em></h2>
+    <div class="sub" style="margin-top:26px;font-size:44px">Guests, seating, budget, checklist and real vendors near you, on any phone, tablet or computer</div></div>
+    <div style="position:absolute;left:330px;right:330px;top:600px;height:1180px;overflow:hidden;background:#2E2A27;border-radius:36px 36px 0 0;padding:34px 34px 0;box-shadow:0 40px 90px rgba(40,25,10,.3)">
+      <img src="file://${APPSHOT}" style="width:100%;display:block;border-radius:8px 8px 0 0">
+    </div>
+    <div style="position:absolute;left:250px;right:250px;top:1780px;height:42px;background:#CFC6BC;border-radius:0 0 30px 30px"></div>`,
+
   '01-cover': `
     <div style="position:absolute;left:170px;top:330px;width:1150px">
       <div class="k">Printable & Digital Planner</div>
@@ -112,7 +141,7 @@ const slides = {
   '08-what-you-get': `
     <div style="position:absolute;left:0;right:0;top:120px;text-align:center"><div class="k">Instant download</div><h2 style="margin-top:26px">What you <em>get</em></h2></div>
     <div style="position:absolute;left:260px;right:260px;top:520px;display:grid;grid-template-columns:repeat(3,1fr);gap:50px">
-      ${[['01', 'Digital planner', `${total}-page hyperlinked PDF for tablets`], ['02', 'Printable planner', 'US Letter and A4 PDFs, print what you need'], ['03', 'Invitation suite', '40 Canva templates + print-ready PDFs'], ['04', 'Spreadsheet', 'Budget, guests, RSVPs, vendors & seating'], ['05', 'Vendor directory', 'Live, regularly updated online list'], ['06', 'Start-here guide', 'Links, setup and printing tips']]
+      ${[['01', 'Digital planner', `${total}-page hyperlinked PDF for tablets`], ['02', 'Printable planner', 'US Letter and A4 PDFs, print what you need'], ['03', 'Invitation suite', '40 Canva templates + print-ready PDFs'], ['04', 'Spreadsheet', 'Budget, guests, RSVPs, vendors & seating'], ['05', 'Vendor directory', 'Live, regularly updated online list'], ['06', 'Interactive app', 'Drag & drop seating, budget, vendors near you']]
     .map(([n, t, d]) => `<div style="background:#FBF8F3;padding:60px 56px;min-height:470px"><div style="font-family:'Cormorant Garamond';font-size:84px;color:#A3845F;font-weight:300">${n}</div><div style="font-family:'Cormorant Garamond';font-size:58px;margin:18px 0 18px">${t}</div><div style="font-size:32px;color:#6F665F;line-height:1.5">${d}</div></div>`).join('')}
     </div>
     <div style="position:absolute;left:0;right:0;bottom:120px;text-align:center"><span class="pill">${cfg.brand}</span></div>`,
@@ -120,6 +149,7 @@ const slides = {
 
 (async () => {
   const b = await chromium.launch();
+  await appShot(b);
   const p = await b.newPage({ viewport: { width: 2700, height: 2025 } });
   for (const [name, html] of Object.entries(slides)) {
     const f = path.join(ROOT, '.cache', `listing-${name}.html`);

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wedding Planner App</title>
+<meta name="description" content="Your interactive wedding planner: guests, drag-and-drop seating, budget, checklist and vendors near you.">
+<meta name="theme-color" content="#FBF8F3">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="art/rose-sm.png">
+<link rel="apple-touch-icon" href="art/icon-192.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><img src="art/rose-sm.png" alt=""><div><div class="kicker">The Wedding Planner</div><div class="couple" id="couple-line">Your wedding</div></div></div>
+  <nav class="tabs" id="tabs" role="tablist"></nav>
+</header>
+<main id="view"></main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="data.js"></script>
+<script src="../locales.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
