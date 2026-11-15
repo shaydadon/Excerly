@@ -20,7 +20,7 @@ module.exports = function startHere(cfg, { qrSvg, total, inv }) {
             ${row('03', 'Invitation Suite (40 designs)', 'In the Invitations-Spreadsheet-and-App zip. Edit in Canva with the links on the next page, or print the ready-made PDFs.')}
             ${row('04', 'The-Wedding-Planner_Spreadsheet.xlsx', 'In the same zip. Budget, guest list, RSVPs, meals, vendors, seating and checklist. Totals update on their own.')}
             ${row('05', 'Vendor directory', 'Vendors for your country, found automatically. Link and QR code below.')}
-            ${row('06', 'Interactive app', 'Guests, drag-and-drop seating, budget, checklist and real vendors near you. Use it online, or open the offline copy (Wedding-Planner-App_offline.html in the zip) on your computer.')}
+            ${row('06', 'Interactive app', 'Guests, WhatsApp invitations and RSVP reminders, drag-and-drop seating, budget, checklist and real vendors near you. Use it online, or open the offline copy (Wedding-Planner-App_offline.html in the zip) on your computer.')}
             <div style="margin-top:.1in"><a class="btn" href="${esc(cfg.appUrl)}">Open the app →</a> <span class="note" style="margin-left:.08in">Tip: add it to your home screen.</span></div>
           </div>
           ${sec('Using the digital planner')}

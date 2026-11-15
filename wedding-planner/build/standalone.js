@@ -32,6 +32,7 @@ module.exports = function buildStandalone(ROOT, outFile) {
 <script>window.ART_INLINE = ${JSON.stringify(art)};</script>
 <script>${js(path.join(APP, 'data.js'))}</script>
 <script>${js(path.join(ROOT, 'site/locales.js'))}</script>
+<script>${js(path.join(APP, 'messages.js'))}</script>
 <script>${js(path.join(APP, 'app.js'))}</script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 // Offline support: the app shell is cached; vendor data and map searches always go to the network.
-const CACHE = 'wedding-app-v1';
-const SHELL = ['./', 'index.html', 'app.css', 'app.js', 'data.js', '../locales.js', 'manifest.webmanifest',
+const CACHE = 'wedding-app-v2';
+const SHELL = ['./', 'index.html', 'app.css', 'app.js', 'messages.js', 'data.js', '../locales.js', 'manifest.webmanifest',
   '../CormorantGaramond-300.ttf', '../CormorantGaramond-400.ttf', '../CormorantGaramond-400i.ttf', '../CormorantGaramond-500.ttf', '../Jost-300.ttf', '../Jost-400.ttf', '../Jost-500.ttf',
   ...['rose', 'poppy', 'columbine', 'crown-imperial', 'sweet-pea', 'gloriosa', 'tulips', 'star-flower', 'erica', 'fritillaries'].map((n) => `art/${n}-sm.png`)];
 self.addEventListener('install', (e) => e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())));

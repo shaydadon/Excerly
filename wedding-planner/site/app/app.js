@@ -21,10 +21,11 @@
     for (let i = 0; i < 8; i++) tables.push({ id: uid(), name: `Table ${i + 1}`, seats: 10, shape: 'round', x: 14 + (i % 4) * 24, y: 22 + Math.floor(i / 4) * 40 });
     const budget = [];
     D.budgetLines.forEach(([cat, items]) => items.forEach((item) => budget.push({ id: uid(), cat, item, est: '', act: '', paid: '' })));
-    return { v: 1, couple: { a: '', b: '', date: '', total: '', currency: '$' }, guests: [], tables, budget, done: {}, saved: [], country: '', city: '' };
+    return { v: 1, couple: { a: '', b: '', date: '', total: '', currency: '$', venue: '', place: '', time: '', rsvpBy: '', link: '' }, guests: [], tables, budget, done: {}, saved: [], country: '', city: '', tpl: {}, sent: {}, msgLang: '' };
   }
   let S;
   try { S = JSON.parse(store.get(KEY)) || defaults(); } catch (e) { S = defaults(); }
+  { const d = defaults(); S = { ...d, ...S, couple: { ...d.couple, ...S.couple } }; }
   let saveWarned = false;
   const save = () => { if (!store.set(KEY, JSON.stringify(S)) && !saveWarned) { saveWarned = true; toast('This browser is not saving data. Export a backup from Overview.'); } };
 
@@ -33,7 +34,7 @@
 
   // ── tabs ──
   const TABS = [
-    ['overview', 'Overview', T.front], ['guests', 'Guests', T.guests], ['seating', 'Seating', T.events],
+    ['overview', 'Overview', T.front], ['guests', 'Guests', T.guests], ['invites', 'Invites', T.day], ['seating', 'Seating', T.events],
     ['budget', 'Budget', T.budget], ['checklist', 'Checklist', T.plan], ['vendors', 'Vendors', T.vendors],
   ];
   let tab = (location.hash.slice(1) && TABS.find((t) => t[0] === location.hash.slice(1))) ? location.hash.slice(1) : 'overview';
@@ -52,7 +53,7 @@
     setTheme(th);
     renderTabs();
     const v = $('#view');
-    ({ overview, guests, seating, budget, checklist, vendors })[tab](v, th);
+    ({ overview, guests, invites, seating, budget, checklist, vendors })[tab](v, th);
   }
 
   // ── derived ──
@@ -126,7 +127,7 @@
       <div class="card wash" style="margin:14px 0">
         <h2>Add guests</h2>
         <div class="row" style="align-items:stretch">
-          <textarea class="f" id="g-new" rows="3" placeholder="One name per line, e.g.\nEmma Thompson\nLiam Thompson" style="flex:2 1 260px"></textarea>
+          <textarea class="f" id="g-new" rows="3" placeholder="One guest per line, phone optional, e.g.\nEmma Thompson, 050-123-4567\nLiam Thompson" style="flex:2 1 260px"></textarea>
           <div style="display:flex;flex-direction:column;gap:8px;flex:1 1 160px">
             <select class="f" id="g-side">${opt(['Partner one', 'Partner two', 'Both'], 'Both')}</select>
             <input class="f" id="g-group" placeholder="Group (family, work…)">
@@ -136,9 +137,10 @@
       </div>
       <div class="row" style="justify-content:space-between;margin-bottom:8px"><input class="f" id="g-find" placeholder="Search guests" value="${esc(gFilter)}" style="flex:1 1 220px;max-width:340px"><span class="note">${list.length} shown</span></div>
       <div class="card scroll" style="padding:0">
-        ${S.guests.length ? `<table class="tbl"><thead><tr><th>Name</th><th>Side</th><th>Group</th><th>RSVP</th><th>Meal</th><th>Table</th><th>Notes</th><th></th></tr></thead><tbody>
+        ${S.guests.length ? `<table class="tbl"><thead><tr><th>Name</th><th>Phone</th><th>Side</th><th>Group</th><th>RSVP</th><th>Meal</th><th>Table</th><th>Notes</th><th></th></tr></thead><tbody>
           ${list.map((g) => `<tr data-id="${g.id}">
             <td><input data-k="name" value="${esc(g.name)}" style="min-width:140px"></td>
+            <td><input data-k="phone" type="tel" inputmode="tel" value="${esc(g.phone)}" placeholder="050…" style="min-width:110px" dir="ltr"></td>
             <td><select data-k="side">${opt(['Partner one', 'Partner two', 'Both'], g.side)}</select></td>
             <td><input data-k="group" value="${esc(g.group)}" style="min-width:90px"></td>
             <td><select data-k="rsvp">${opt(['Awaiting', 'Attending', 'Declined'], g.rsvp)}</select></td>
@@ -152,7 +154,7 @@
       if (e.target.closest('[data-act="add"]')) {
         const names = $('#g-new').value.split('\n').map((s) => s.trim()).filter(Boolean);
         if (!names.length) return toast('Type at least one name');
-        names.forEach((name) => S.guests.push({ id: uid(), name, side: $('#g-side').value, group: $('#g-group').value.trim(), rsvp: 'Awaiting', meal: '—', table: '', notes: '' }));
+        names.forEach((line) => { const m = line.match(/^(.*?)[,;\t]\s*(\+?[\d\s\-().]{6,})$/); const name = m ? m[1].trim() : line; const phone = m ? m[2].trim() : ''; S.guests.push({ id: uid(), name, phone, side: $('#g-side').value, group: $('#g-group').value.trim(), rsvp: 'Awaiting', meal: '—', table: '', notes: '' }); });
         save(); render(); toast(`${names.length} guest${names.length > 1 ? 's' : ''} added`);
       }
       const d = e.target.closest('[data-del]');
@@ -168,6 +170,110 @@
       const g = S.guests.find((x) => x.id === tr.dataset.id); g[e.target.dataset.k] = e.target.value;
       if (e.target.dataset.k === 'rsvp' && g.rsvp === 'Declined') g.table = '';
       save(); render();
+    };
+  }
+
+
+  // ══════ INVITES (WhatsApp) ══════
+  const M = window.WP_MESSAGES;
+  let openTpl = null;
+  function invites(v) {
+    const country = detectCountry(), C = COUNTRIES[country];
+    const lang = S.msgLang || (C.lang === 'he' ? 'he' : 'en');
+    const couple = [S.couple.a, S.couple.b].filter(Boolean).join(lang === 'he' ? ' ו' : ' & ') || (lang === 'he' ? 'החתן והכלה' : 'the couple');
+    const textOf = (t) => (S.tpl[`${lang}:${t.id}`] ?? M.TEXT[lang][t.id]);
+    const titleOf = (t) => t.title;
+    const inAud = (g, a) => a === 'all' || (a === 'notDeclined' && g.rsvp !== 'Declined') || (a === 'awaiting' && g.rsvp === 'Awaiting') || (a === 'attending' && g.rsvp === 'Attending');
+    const msgFor = (t, g) => M.fill(textOf(t), {
+      name: (g.name || '').split(/\s+/)[0], couple, date: M.fmtDate(S.couple.date, lang), time: S.couple.time, venue: S.couple.venue,
+      city: S.couple.place, rsvp: S.couple.rsvpBy ? M.fmtDate(S.couple.rsvpBy, lang) : '', link: S.couple.link,
+      table: (S.tables.find((x) => x.id === g.table) || {}).name || '—',
+    });
+    const today = new Date(); today.setHours(12, 0, 0, 0);
+    const status = (t) => {
+      if (!S.couple.date) return '';
+      const d = M.addDays(S.couple.date, t.offset), days = Math.round((d - today) / 864e5);
+      const when = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+      return days > 0 ? `Send on ${when} · in ${days} days` : days === 0 ? 'Send today' : `Send date was ${when}`;
+    };
+    const f = (k, label, type = 'text', ph = '') => `<label class="label">${label}<input class="f" data-c="${k}" type="${type}" value="${esc(S.couple[k])}" placeholder="${ph}" style="display:block;width:100%;margin-top:4px" ${type === 'url' ? 'dir="ltr"' : ''}></label>`;
+    const withPhone = S.guests.filter((g) => g.phone);
+    v.innerHTML = `${head('WhatsApp <em>Invites</em>', 'Send invitations, RSVP reminders and thank-yous from your own WhatsApp. Each message opens ready to send; you just tap Send.', 'erica')}
+      <div class="grid g2">
+        <div class="card"><h2>Event details</h2><p class="note" style="margin-bottom:8px">Used to fill in every message.</p>
+          <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">
+            ${f('venue', 'Venue', 'text', 'Rosewood Gardens')}${f('place', 'City', 'text', 'Tel Aviv')}${f('time', 'Time', 'time')}${f('rsvpBy', 'RSVP by', 'date')}
+            <div style="grid-column:span 2">${f('link', 'Link (optional): map, website or RSVP form', 'url', 'https://')}</div>
+          </div>
+          ${!S.couple.date ? '<p class="note" style="color:var(--danger);margin-top:8px">Add your wedding date in Overview to schedule messages.</p>' : ''}
+        </div>
+        <div class="card wash"><h2>How it works</h2>
+          <ol class="note" style="padding-left:18px;display:grid;gap:6px">
+            <li>Add phone numbers in Guests (${withPhone.length} of ${S.guests.length} have one).</li>
+            <li>Open a message below and tap <b style="font-weight:400">WhatsApp</b> next to each guest: it opens with the text ready, you tap Send.</li>
+            <li>When guests reply, tap <b style="font-weight:400">Yes</b> or <b style="font-weight:400">No</b> to record their RSVP. Seating and meals update.</li>
+            <li>Plan ahead: add the send dates to your calendar and get a reminder on each day.</li>
+          </ol>
+          <div class="row" style="margin-top:12px">
+            <label class="label">Message language <select class="f" id="m-lang" style="display:block;margin-top:4px"><option value="en" ${lang === 'en' ? 'selected' : ''}>English</option><option value="he" ${lang === 'he' ? 'selected' : ''}>עברית</option></select></label>
+            <button class="btn small sec" data-act="ics" ${S.couple.date ? '' : 'disabled'} style="align-self:flex-end">Add reminders to my calendar</button>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;gap:12px;margin-top:16px">
+      ${M.TEMPLATES.map((t) => {
+        const aud = S.guests.filter((g) => inAud(g, t.audience));
+        const sent = S.sent[t.id] || {};
+        const nSent = aud.filter((g) => sent[g.id]).length;
+        const open = openTpl === t.id;
+        return `<div class="card">
+          <div class="row" style="justify-content:space-between;cursor:pointer" data-open="${t.id}">
+            <div><h2 style="margin:0">${t.title}</h2><div class="note">${M.AUD[t.audience]} · ${status(t)}</div></div>
+            <div class="row"><span class="pill">${nSent}/${aud.length} sent</span><button class="btn small ${open ? 'ghost' : ''}">${open ? 'Close' : 'Open'}</button></div>
+          </div>
+          ${open ? `
+            <textarea class="f" data-tpl="${t.id}" rows="6" dir="auto" style="width:100%;margin-top:12px;font-size:14px;line-height:1.5">${esc(textOf(t))}</textarea>
+            <div class="row" style="justify-content:space-between;margin:6px 0 10px"><span class="note">Placeholders: {name} {couple} {date} {time} {venue} {city} {rsvp} {link} {table}</span><button class="icon" style="font-size:12px" data-reset="${t.id}">Reset text</button></div>
+            ${aud.length ? `<div class="scroll"><table class="tbl"><thead><tr><th>Guest</th><th>Phone</th><th>RSVP</th><th></th><th>Status</th></tr></thead><tbody>
+              ${aud.map((g) => { const n = M.waNumber(g.phone, C.dial); return `<tr>
+                <td dir="auto">${esc(g.name)}</td><td dir="ltr" class="note">${esc(g.phone) || '<span style="color:var(--danger)">no phone</span>'}</td>
+                <td>${t.rsvp ? `<div class="row" style="gap:4px"><button class="btn small ${g.rsvp === 'Attending' ? 'sec' : 'ghost'}" data-rsvp="Attending" data-g="${g.id}">Yes</button><button class="btn small ${g.rsvp === 'Declined' ? 'sec' : 'ghost'}" data-rsvp="Declined" data-g="${g.id}">No</button></div>` : `<span class="note">${esc(g.rsvp)}</span>`}</td>
+                <td>${n ? `<a class="btn small sec" target="_blank" rel="noopener" data-send="${t.id}" data-g="${g.id}" href="https://wa.me/${n}?text=${encodeURIComponent(msgFor(t, g))}">WhatsApp</a>` : ''} <button class="icon" style="font-size:12px" data-copy="${t.id}" data-g="${g.id}" title="Copy message">Copy</button></td>
+                <td class="note">${sent[g.id] ? '✓ ' + new Date(sent[g.id]).toLocaleDateString('en-GB') : ''}</td></tr>`; }).join('')}
+            </tbody></table></div>` : '<div class="empty">No guests in this group yet.</div>'}` : ''}
+        </div>`;
+      }).join('')}
+      </div>
+      <p class="note" style="margin-top:14px">WhatsApp does not let apps send messages automatically from a personal number, so each message opens ready and you tap Send. That keeps it free and keeps your number safe.</p>`;
+
+    v.oninput = (e) => {
+      const c = e.target.dataset.c; if (c) { S.couple[c] = e.target.value; save(); return; }
+      const t = e.target.dataset.tpl; if (t) { S.tpl[`${lang}:${t}`] = e.target.value; save(); }
+    };
+    v.onchange = (e) => {
+      if (e.target.id === 'm-lang') { S.msgLang = e.target.value; save(); render(); }
+    };
+    v.onclick = (e) => {
+      const send = e.target.closest('[data-send]');
+      if (send) {
+        // build the link from the latest details and wording at the moment of sending
+        const t = M.TEMPLATES.find((x) => x.id === send.dataset.send), g = S.guests.find((x) => x.id === send.dataset.g);
+        send.href = `https://wa.me/${M.waNumber(g.phone, C.dial)}?text=${encodeURIComponent(msgFor(t, g))}`;
+        (S.sent[t.id] ||= {})[g.id] = Date.now(); save(); setTimeout(render, 300); return;
+      }
+      const r = e.target.closest('[data-rsvp]');
+      if (r) { const g = S.guests.find((x) => x.id === r.dataset.g); g.rsvp = r.dataset.rsvp; if (g.rsvp === 'Declined') g.table = ''; save(); render(); toast(`${g.name}: ${g.rsvp === 'Attending' ? 'coming 🎉' : 'not coming'}`); return; }
+      const cp = e.target.closest('[data-copy]');
+      if (cp) { const t = M.TEMPLATES.find((x) => x.id === cp.dataset.copy), g = S.guests.find((x) => x.id === cp.dataset.g); navigator.clipboard?.writeText(msgFor(t, g)).then(() => toast('Message copied'), () => toast('Copy not available')); return; }
+      const rs = e.target.closest('[data-reset]');
+      if (rs) { delete S.tpl[`${lang}:${rs.dataset.reset}`]; save(); render(); return; }
+      if (e.target.closest('[data-act="ics"]')) {
+        const blob = new Blob([M.ics(S, M.TEMPLATES, titleOf)], { type: 'text/calendar' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'wedding-message-reminders.ics'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+        toast('Open the file to add the reminders'); return;
+      }
+      const o = e.target.closest('[data-open]');
+      if (o) { openTpl = openTpl === o.dataset.open ? null : o.dataset.open; render(); }
     };
   }
 
