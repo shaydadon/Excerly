@@ -12,6 +12,10 @@ module.exports = {
 
   // Live vendor directory (the /site folder, hosted on GitHub Pages / Netlify).
   // A QR code and links to this page are printed in the planner.
+  // Opening-page image: 'illustration' (art/out/couple-illustration.png — only sell it if you hold a
+  // commercial license for it) or 'vintage' (public-domain 1828/1848 fashion plates, safe to sell).
+  openingImage: 'illustration',
+
   vendorDirectoryUrl: 'https://YOUR-USERNAME.github.io/wedding-vendors/',
 
   // The interactive app (site/app, hosted together with the directory).

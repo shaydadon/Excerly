@@ -1,11 +1,4 @@
 {
-  "updated": "2026-11-15",
-  "note": "Curated vendors. 'country' is a code from locales.js (US, GB, IL ...). Visitors only see vendors for their country. Replace the SAMPLE listings with real vendors you have checked, and delete \"sample\": true when a listing is real. \"featured\": true pins a vendor to the top.",
-  "vendors": [
-    { "sample": true, "country": "US", "name": "Sample Studio Photography", "category": "Photographers", "city": "Napa, California", "price": "$$$", "description": "Documentary-style wedding photography with a second shooter on every package.", "website": "https://example.com", "instagram": "", "phone": "", "featured": true },
-    { "sample": true, "country": "US", "name": "Sample Sound DJ Co.", "category": "DJs & Bands", "city": "New York", "price": "$$", "description": "DJ and MC with ceremony mics, dance-floor lighting and a planning call.", "website": "https://example.com", "instagram": "", "phone": "" },
-    { "sample": true, "country": "GB", "name": "Sample Shaker Mobile Bar", "category": "Active / Mobile Bars", "city": "London", "price": "$$", "description": "Show bar with a custom cocktail menu, smoked cocktails and mocktails.", "website": "https://example.com", "instagram": "", "phone": "" },
-    { "sample": true, "country": "IL", "name": "Sample Active Bar", "category": "Active / Mobile Bars", "city": "Tel Aviv", "price": "$$", "description": "Active bar with mixologists, a custom cocktail menu and a smoke show.", "website": "https://example.com", "instagram": "", "phone": "" },
-    { "sample": true, "country": "CA", "name": "Sample Bloom Floral Design", "category": "Florists & Designers", "city": "Toronto", "price": "$$$", "description": "Seasonal, garden-style arrangements with full set-up and breakdown.", "website": "https://example.com", "instagram": "", "phone": "" }
-  ]
+  "note": "Optional. Leave empty for a zero-maintenance product: the directory and app then show only live local search. If you ever want to feature vendors, add them here with a country code from locales.js, e.g. { \"country\": \"IL\", \"name\": \"...\", \"category\": \"Photographers\", \"city\": \"Tel Aviv\", \"description\": \"...\", \"website\": \"https://...\", \"featured\": true }",
+  "vendors": []
 }

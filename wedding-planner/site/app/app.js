@@ -45,7 +45,7 @@
   }
   $('#tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (b) go(b.dataset.tab); });
   function go(id) { tab = id; history.replaceState(null, '', '#' + id); render(); window.scrollTo(0, 0); }
-  function head(title, lede, art) { return `<div class="page-head"><div><h1>${title}</h1><p class="lede">${lede}</p></div>${art ? `<img class="art" src="art/${art}-sm.png" alt="">` : ''}</div>`; }
+  function head(title, lede, art) { return `<div class="page-head"><div><h1>${title}</h1><p class="lede">${lede}</p></div>${art ? `<img class="art" src="${(window.ART_INLINE || {})[art] || `art/${art}-sm.png`}" alt="">` : ''}</div>`; }
 
   function render() {
     const th = TABS.find((t) => t[0] === tab)[2];
@@ -421,7 +421,7 @@
     const terms = TERMS[C.lang] || TERMS.en;
     const term = terms[CATEGORIES.indexOf(vCat)] || vCat;
     const q = S.city ? `${term} ${S.city}` : term;
-    if (curated === null) { curated = []; fetch('../vendors.json', { cache: 'no-store' }).then((r) => r.json()).then((d) => { curated = d.vendors || []; if (tab === 'vendors') render(); }).catch(() => {}); }
+    if (curated === null) { curated = []; (location.protocol.startsWith('http') ? fetch('../vendors.json', { cache: 'no-store' }) : Promise.reject()).then((r) => r.json()).then((d) => { curated = d.vendors || []; if (tab === 'vendors') render(); }).catch(() => {}); }
     const cur = curated.filter((x) => x.country === country && x.category === vCat);
     const key = loc && `${vCat}|${loc.lat.toFixed(3)}|${loc.lon.toFixed(3)}`;
     const res = key ? results[key] : null;

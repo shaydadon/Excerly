@@ -141,7 +141,7 @@ const slides = {
   '08-what-you-get': `
     <div style="position:absolute;left:0;right:0;top:120px;text-align:center"><div class="k">Instant download</div><h2 style="margin-top:26px">What you <em>get</em></h2></div>
     <div style="position:absolute;left:260px;right:260px;top:520px;display:grid;grid-template-columns:repeat(3,1fr);gap:50px">
-      ${[['01', 'Digital planner', `${total}-page hyperlinked PDF for tablets`], ['02', 'Printable planner', 'US Letter and A4 PDFs, print what you need'], ['03', 'Invitation suite', '40 Canva templates + print-ready PDFs'], ['04', 'Spreadsheet', 'Budget, guests, RSVPs, vendors & seating'], ['05', 'Vendor directory', 'Live, regularly updated online list'], ['06', 'Interactive app', 'Drag & drop seating, budget, vendors near you']]
+      ${[['01', 'Digital planner', `${total}-page hyperlinked PDF for tablets`], ['02', 'Printable planner', 'US Letter and A4 PDFs, print what you need'], ['03', 'Invitation suite', '40 Canva templates + print-ready PDFs'], ['04', 'Spreadsheet', 'Budget, guests, RSVPs, vendors & seating'], ['05', 'Vendor directory', 'Live search for your country, always current'], ['06', 'Interactive app', 'Drag & drop seating, budget, vendors near you']]
     .map(([n, t, d]) => `<div style="background:#FBF8F3;padding:60px 56px;min-height:470px"><div style="font-family:'Cormorant Garamond';font-size:84px;color:#A3845F;font-weight:300">${n}</div><div style="font-family:'Cormorant Garamond';font-size:58px;margin:18px 0 18px">${t}</div><div style="font-size:32px;color:#6F665F;line-height:1.5">${d}</div></div>`).join('')}
     </div>
     <div style="position:absolute;left:0;right:0;bottom:120px;text-align:center"><span class="pill">${cfg.brand}</span></div>`,

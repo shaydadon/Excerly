@@ -9,6 +9,7 @@ const cfg = require('./config');
 const buildPlanner = require('./planner');
 const inv = require('./invitations');
 const startHere = require('./starthere');
+const buildStandalone = require('./standalone');
 
 const ROOT = path.resolve(__dirname, '..');
 const OUT = path.join(ROOT, 'dist');
@@ -102,6 +103,10 @@ async function writeAndLoad(page, name, html) {
     for (let i = 0; i < shots.length; i++) await shots[i].screenshot({ path: path.join(TMP, `start-here-${i + 1}.png`) });
     console.log('✓ 00-START-HERE.pdf');
   }
+
+  // ── 4. offline single-file app (buyers keep it even if the website is ever offline) ──
+  const mb = buildStandalone(ROOT, path.join(OUT, 'Wedding-Planner-App_offline.html'));
+  console.log(`✓ Wedding-Planner-App_offline.html · ${mb} MB`);
 
   await browser.close();
 })().catch((e) => { console.error(e); process.exit(1); });

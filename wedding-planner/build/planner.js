@@ -238,11 +238,11 @@ module.exports = function buildPlanner(cfg, opts) {
   // ═════════ 05 · VENDORS ═════════
   S('vendors', 'Vendors', 'The <em>Vendors</em>', 'Find, compare and book the team behind your day, with the questions to ask every one of them.');
 
-  P('directory', 'Vendor <em>Directory</em>', 'Updated Regularly', () => `
+  P('directory', 'Vendor <em>Directory</em>', 'Always Current', () => `
     <div class="row grow">
       <div class="col" style="flex:1.2">
         <p class="lede">Your planner comes with a live vendor directory that opens on your own country: photographers, DJs, bars, florists and more.</p>
-        <p class="copy">Scan the code or tap the link. You’ll see our hand-picked vendors for your country, plus a live local search for every category in your language, on Google Maps and your country’s leading wedding marketplaces. Add your city for results close to home. Check every vendor with the questions in this section before you book.</p>
+        <p class="copy">Scan the code or tap the link. It opens on your country with a live local search for every category in your language, on Google Maps and your country’s leading wedding marketplaces, so results are never out of date. Add your city for results close to home. Check every vendor with the questions in this section before you book.</p>
         <div class="row" style="gap:.12in"><a class="btn" href="${esc(cfg.vendorDirectoryUrl)}">Open the vendor directory →</a><a class="btn ghost" href="${esc(cfg.appUrl)}#vendors">Vendors near me</a></div>
         ${box('Categories in the directory', check(['Venues', 'Catering', 'Photographers', 'Videographers', 'DJs & bands', 'Bars & alcohol', 'Active / mobile bars', 'Florists & designers', 'Hair & makeup', 'Cakes & desserts', 'Officiants', 'Stationery', 'Transportation', 'Photo booths & extras', 'Rentals & lighting', 'Planners'], 'two round'), 'grow wash')}
       </div>
@@ -476,7 +476,7 @@ module.exports = function buildPlanner(cfg, opts) {
   }
 
   // ═════════ assemble with page numbers ═════════
-  let n = 3; // cover, welcome, contents
+  let n = 4; // cover, opening, welcome, contents
   sections.forEach((s, si) => {
     s.num = String(si + 1).padStart(2, '0');
     s.page = ++n;
@@ -511,6 +511,20 @@ module.exports = function buildPlanner(cfg, opts) {
       <div class="label" style="margin-top:.12in">Our date</div>
     </div>`, ''));
 
+  // opening page: the couple
+  const couple = cfg.openingImage === 'vintage'
+    ? `<div class="couple-art vintage">${artImg('groom', 'groom')}${artImg('bride', 'bride')}</div>`
+    : `<div class="couple-art">${artImg('couple-illustration', 'ill')}</div>`;
+  out.push(wrap('opening', 'opening', `
+    <div class="frame"></div>
+    ${couple}
+    <div class="open-text">
+      <div class="label accent" style="letter-spacing:.42em">Congratulations</div>
+      <h1>Here’s to <em>the two of you</em></h1>
+      <p class="lede">Every detail of your day, gathered in one beautiful place. Take a breath, pour something lovely, and let’s begin.</p>
+      <div class="open-btns"><a class="btn" href="#welcome">Begin →</a><a class="btn ghost" href="#contents">Contents</a></div>
+    </div>`, ''));
+
   // welcome
   out.push(wrap('welcome', '', `
     ${head('Welcome', 'Before You <em>Begin</em>')}
@@ -532,7 +546,7 @@ module.exports = function buildPlanner(cfg, opts) {
         </div>
       </div>
     </div>
-    ${foot(2, 'Welcome')}`, ''));
+    ${foot(3, 'Welcome')}`, ''));
 
   // contents
   out.push(wrap('contents', '', `
@@ -553,7 +567,7 @@ module.exports = function buildPlanner(cfg, opts) {
         ${s.id === 'vendors' ? `<a class="i" href="#alcohol-calc"><span>Alcohol calculator</span><span>${s.pages.find((p) => p.id === 'alcohol-calc').n}</span></a>` : ''}
       </div>`).join('')}
     </div>
-    ${foot(3, 'Contents')}`, ''));
+    ${foot(4, 'Contents')}`, ''));
 
   sections.forEach((s) => {
     // divider

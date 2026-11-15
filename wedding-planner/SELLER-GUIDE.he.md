@@ -5,9 +5,57 @@
 ## מה יש בחבילה
 
 | קובץ | מה זה |
+|## ✅ מוצר "שלח ושכח": מה זה אומר בפועל
+
+אחרי ההגדרה הראשונית (פעם אחת, כ-30 דקות), אין שום עבודה שוטפת, בלי קשר למספר הקונים:
+
+| רכיב | למה הוא לא דורש תחזוקה |
 |---|---|
+| קבצי PDF, הזמנות וגיליון | Etsy שולחת אותם אוטומטית לכל קונה |
+| קישורי Canva | כל קונה מקבל עותק משלו. התבנית המקורית לא משתנה |
+| אתר הספקים והאפליקציה | אתר סטטי באחסון חינמי (Netlify / GitHub Pages). אין שרת, אין מסד נתונים, אין עלות לפי משתמש |
+| נתוני הקונים | נשמרים במכשיר של כל קונה. אתם לא מחזיקים מידע אישי |
+| ספקים | חיפוש חי מ-OpenStreetMap, Google Maps ואתרי חתונות מקומיים. תמיד מעודכן, בלי שתעדכנו כלום |
+| גיבוי אם האתר נופל | בהורדה יש עותק offline של האפליקציה (`Wedding-Planner-App_offline.html`), שעובד בלחיצה כפולה |
+
+**מה בכוונה לא הוספנו:** Google Places API. הוא נותן דירוגים ותמונות, אבל עולה כסף לפי כל חיפוש, כך שככל שתמכרו יותר תשלמו יותר. הוא גם דורש מפתח ושרת לתחזוקה. זה סותר "שלח ושכח".
+
+**הדבר היחיד שנשאר:** הודעות מקונים ב-Etsy, שקיימות בכל חנות. כדי לצמצם אותן, מדריך START HERE עונה מראש על השאלות הנפוצות.
+
+### הגדרה ראשונית (פעם אחת)
+1. **העלאת האתר:** נכנסים ל-app.netlify.com/drop וגוררים את התיקייה `site`, או משתמשים ב-GitHub Pages. מקבלים כתובת.
+2. **`build/config.js`:**
+   - `vendorDirectoryUrl` = הכתובת שקיבלתם.
+   - `appUrl` = אותה כתובת + `app/`.
+   - שם המותג, האימייל וקישור החנות.
+3. **Canva:** יוצרים 40 קישורי תבנית (פירוט בהמשך) ומדביקים ב-config.
+4. **בנייה מחדש:** מריצים `npm install && npm run all`. ההעלאה ל-Etsy היא חמשת הקבצים בתיקייה `dist/Etsy-Upload/`.
+
+### ⚠️ תמונת החתן והכלה בעמוד הפתיחה
+- **האיור שסיפקת:** נראה כמו איור ממאגר תמונות (stock). מוכרים אותו רק אם יש לך עליו רישיון מסחרי. Etsy מורידה מודעות בגלל תלונות על זכויות יוצרים.
+- **רזולוציה:** האיור הוא 554×554 פיקסלים בלבד. במסך זה בסדר, בהדפסה בגודל עמוד מלא הוא מעט רך.
+- **החלופה הבטוחה:** זוג וינטג' מתחריטי אופנה (כלה מ-1828 מהרייקסמוזיאום, חתן מ-1848 מהמטרופוליטן). שניהם CC0, ומותרים למכירה ללא הגבלה. מעבר אליה: `openingImage: 'vintage'` בקובץ `config.js`.
+
+---
+
+## 💰 תמחור מומלץ
+
+מה רואים ב-Etsy היום: פלאנר דיגיטלי בודד נמכר זול, בדרך כלל $1–$5 אחרי הנחות. גיליונות תכנון נמכרים ב-$7–$15. באנדלים של Canva ותבניות נמכרים ב-$19–$27, לעיתים "מחיר מקורי" גבוה יותר עם הנחה קבועה. בהתאם:
+
+| גרסה | מחיר מומלץ | למה |
+|---|---|---|
+| **Ebook בלבד** (פלאנר דיגיטלי + הדפסה) | **$9.99–$12.99** | איכות גבוהה מהממוצע (118 עמודים, ציורים, צבעים), אבל בקטגוריה צפופה וזולה |
+| **באנדל מלא** (Ebook + 40 הזמנות Canva + גיליון + אפליקציית PWA) | **$24.99–$29.99** | ההזמנות לבדן שוות $15–$20 בשוק. האפליקציה עם ההושבה בגרירה היא יתרון שכמעט אין למתחרים |
+
+**טיפים:**
+- **שתי מודעות נפרדות:** מודעה זולה (ebook בלבד) שמביאה תנועה, ומודעה מלאה שמביאה את הרווח. בתיאור של הזולה מציינים "Want the app + invitations? See the Complete Bundle".
+- **השקה:** מתחילים עם הנחה של 30–40% לשבועיים–שלושה, כדי לצבור מכירות וביקורות ראשונות. Etsy מקדמת מודעות שכבר נמכרות.
+- **לא מוכרים את האפליקציה לבד:** היא מגיעה ממילא עם כל באנדל (הקישור נמצא בתוך ה-PDF), ולכן כמוצר נפרד היא פחות אמינה לקונה.
+- **אין עלות לקונה נוסף:** אין עלות שוטפת שגדלה עם המכירות, כך שכל מכירה היא רווח נקי, פחות העמלות של Etsy.
+
+---|---|
 | `dist/Etsy-Upload/` | **חמשת הקבצים שמעלים ל-Etsy** (המגבלה של Etsy: 5 קבצים, עד 20MB לכל אחד): START HERE, דיגיטלי, Letter, A4, ו-zip עם ההזמנות והגיליון |
-| `The-Wedding-Planner_Digital-Hyperlinked.pdf` | 117 עמודים, טאבים לחיצים בכל עמוד, לטאבלט (GoodNotes / Notability) |
+| `The-Wedding-Planner_Digital-Hyperlinked.pdf` | 118 עמודים, טאבים לחיצים בכל עמוד, לטאבלט (GoodNotes / Notability) |
 | `The-Wedding-Planner_Printable_US-Letter.pdf` / `_A4.pdf` | גרסת הדפסה על רקע לבן (חוסכת דיו) |
 | `Invitation-Suite/` | 40 עיצובים: 4 סגנונות × 10 פריטים (Garden Rose בצבעי מים, Ivory Classic, Modern Minimal, Botanical Line), בגדלי הדפסה אמיתיים |
 | `The-Wedding-Planner_Spreadsheet.xlsx` | תקציב, אורחים, RSVP, מנות, ספקים, הושבה, צ'קליסט ודשבורד עם נוסחאות |
@@ -35,11 +83,11 @@
 **איך הרשימה מותאמת לכל קונה:**
 - האתר מזהה את מדינת הגולש לפי אזור הזמן והשפה של המכשיר. הזיהוי נעשה במכשיר עצמו, בלי שירות חיצוני ובלי לשלוח מידע לשום מקום. הגולש יכול גם לבחור מדינה ולהוסיף עיר.
 - **"Find vendors near you":** לכל אחת מ-16 הקטגוריות מופיעים חיפוש ב-Google Maps בשפה המקומית (בישראל: "בר אקטיבי", "צלם חתונות", "מגנטים לחתונה" ועוד), ביקורות, אינסטגרם, ואתרי הספקים המובילים במדינה: Mit4Mit בישראל, The Knot / WeddingWire / Zola בארה"ב, Hitched / Bridebook בבריטניה, Bodas.net בספרד וכו'. כך כל קונה מקבל תוצאות עדכניות בלי שתצטרכו לתחזק רשימה.
-- **"Recommended in ...":** ספקים שבחרתם בעצמכם ב-`site/vendors.json`, כל אחד עם קוד מדינה (`"country": "IL"`). גולש רואה רק את הספקים של המדינה שלו. כאן יש מקום להכנסה נוספת: ספקים יכולים לשלם על מיקום `featured`.
+- **"Recommended in ..." (אופציונלי, מוסתר כשהרשימה ריקה):** ספקים שתבחרו בעצמכם ב-`site/vendors.json`, עם קוד מדינה. אפשר להשתמש בזה בעתיד גם כמקור הכנסה (מיקום `featured` בתשלום), אבל המוצר עובד מצוין בלי זה.
 - מדינות, מונחי חיפוש ואתרים מוגדרים ב-`site/locales.js`. כרגע יש 26 מדינות, ומדינה חדשה היא שורה אחת.
 - קישור למדינה מסוימת: `?country=IL` בסוף הכתובת.
 
-> ⚠️ ב-`vendors.json` יש כרגע 5 ספקים **לדוגמה בלבד** (מסומנים "Sample listing"). מחקו אותם, והוסיפו רק ספקים שבדקתם. החיפוש החי עובד בכל מקרה, גם בלי ספקים מומלצים.
+> `vendors.json` ריק כברירת מחדל. זה מצב "שלח ושכח": הקונים רואים רק את החיפוש החי, שתמיד מעודכן. אם תרצו יום אחד להציג ספקים מומלצים, מוסיפים אותם שם. זה לא חובה.
 
 ### 3. צרו את תבניות ה-Canva וקבלו קישורים
 לכל אחד מ-40 העיצובים (`dist/Invitation-Suite/...`):
@@ -98,7 +146,7 @@ PDF לא יכול לעשות גרירה ושחרור, ולכן הפלאנר מג
 
 **Title**
 ```
-Wedding Planner Printable & Digital Bundle, 117 Page Hyperlinked GoodNotes Planner, Budget Spreadsheet, Canva Invitation Templates
+Wedding Planner Printable & Digital Bundle, 118 Page Hyperlinked GoodNotes Planner, Budget Spreadsheet, Canva Invitation Templates
 ```
 
 **13 Tags** (כל אחד עד 20 תווים)
@@ -110,15 +158,15 @@ wedding planner, digital planner, wedding checklist, wedding budget, goodnotes p
 ```
 Plan your whole wedding calmly, from yes to ever after.
 
-The Wedding Planner is a complete, beautifully minimal planning system, illustrated with fine-art botanical paintings and a soft color for every section: a 117-page planner in printable and digital versions, 40 invitation templates you edit in Canva, a budget and guest-list spreadsheet that does the math, and access to our regularly updated vendor directory.
+The Wedding Planner is a complete, beautifully minimal planning system, illustrated with fine-art botanical paintings and a soft color for every section: a 118-page planner in printable and digital versions, 40 invitation templates you edit in Canva, a budget and guest-list spreadsheet that does the math, an interactive drag-and-drop planning app, and a live vendor finder for your country.
 
 WHAT'S INCLUDED
-• Digital planner: 117 hyperlinked pages with tabs for GoodNotes, Notability, Noteshelf, Xodo and more
+• Digital planner: 118 hyperlinked pages with tabs for GoodNotes, Notability, Noteshelf, Xodo and more
 • Printable planner: US Letter and A4 PDFs
 • Invitation suite: 40 Canva templates in 4 styles (save the date, invitation, RSVP, details, program, menu, table number, place card, welcome sign, thank-you card)
 • Spreadsheet: budget, guest list, RSVPs, meals, vendors, seating and checklist, with an automatic dashboard (Excel, Google Sheets, Numbers)
 • Interactive web app: drag-and-drop seating chart, guest list, budget, checklist and real vendors near you (works on phone, tablet and computer)
-• Live vendor directory, updated regularly
+• Live vendor finder for your country, always current
 • Start-here guide with every link
 
 INSIDE THE PLANNER

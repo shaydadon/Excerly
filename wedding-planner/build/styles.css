@@ -236,3 +236,17 @@ img.art { display: block; }
 .cover h1 em { color: var(--sec); }
 .cover .frame { border-color: var(--sec-tint); }
 .cover .names { margin-top: auto; }
+
+/* opening page: the couple */
+.opening .sheet { background: radial-gradient(ellipse at 50% 34%, #FFFFFF 0%, #FBF0EE 46%, var(--paper) 78%); justify-content: flex-start; align-items: center; text-align: center; padding: 0.7in 0.8in 0.65in; }
+.opening .frame { position: absolute; inset: 0.32in; border: 0.6pt solid var(--sec-tint); pointer-events: none; }
+.opening .couple-art { height: 6.3in; display: flex; align-items: flex-end; justify-content: center; flex: none; }
+.opening .couple-art img.ill { height: 100%; width: auto; }
+.opening .couple-art.vintage { gap: 0; }
+.opening .couple-art.vintage img.groom { height: 100%; margin-right: -0.35in; position: relative; z-index: 1; }
+.opening .couple-art.vintage img.bride { height: 97%; }
+.opening .open-text { margin-top: 0.3in; }
+.opening h1 { font-family: var(--serif); font-weight: 300; font-size: 40pt; line-height: 1.02; margin: 0.12in 0 0.14in; }
+.opening h1 em { color: var(--sec); }
+.opening .lede { max-width: 4.6in; margin: 0 auto; }
+.opening .open-btns { display: flex; gap: 0.14in; justify-content: center; margin-top: 0.24in; }

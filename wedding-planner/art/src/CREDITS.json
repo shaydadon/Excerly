@@ -78,5 +78,21 @@
   "date": "1683",
   "url": "https://www.metmuseum.org/art/collection/search/820756",
   "license": "CC0 (The Met Open Access)"
+ },
+ "399213": {
+  "file": "groom.jpg",
+  "title": "L'Elégant, from \"Journal des Tailleurs\"",
+  "artist": "Anonymous, French, 19th century",
+  "date": "1848",
+  "url": "https://www.metmuseum.org/art/collection/search/399213",
+  "license": "CC0 (The Met Open Access)"
+ },
+ "RP-P-2005-515-34": {
+  "file": "bride.jpg",
+  "title": "Costume de Mariée, Petit Courrier des Dames, 25 April 1828, No. 549",
+  "artist": "Petit Courrier des Dames",
+  "date": "1828",
+  "url": "https://id.rijksmuseum.nl/200510455",
+  "license": "CC0 / Public domain (Rijksmuseum)"
  }
 }

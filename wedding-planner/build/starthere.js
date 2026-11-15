@@ -17,10 +17,10 @@ module.exports = function startHere(cfg, { qrSvg, total, inv }) {
           <div>
             ${row('01', 'The-Wedding-Planner_Digital-Hyperlinked.pdf', `${total} pages with clickable tabs for GoodNotes, Notability, Noteshelf, Xodo and other PDF apps.`)}
             ${row('02', 'The-Wedding-Planner_Printable (US Letter & A4)', 'Print-friendly white pages. Print the whole planner or only the pages you need.')}
-            ${row('03', 'Invitation Suite (40 designs)', 'In the Invitation-Suite-and-Spreadsheet zip. Edit in Canva with the links on the next page, or print the ready-made PDFs.')}
+            ${row('03', 'Invitation Suite (40 designs)', 'In the Invitations-Spreadsheet-and-App zip. Edit in Canva with the links on the next page, or print the ready-made PDFs.')}
             ${row('04', 'The-Wedding-Planner_Spreadsheet.xlsx', 'In the same zip. Budget, guest list, RSVPs, meals, vendors, seating and checklist. Totals update on their own.')}
             ${row('05', 'Vendor directory', 'Vendors for your country, found automatically. Link and QR code below.')}
-            ${row('06', 'Interactive app', 'Guests, drag-and-drop seating, budget, checklist and real vendors near you. Works on any phone, tablet or computer.')}
+            ${row('06', 'Interactive app', 'Guests, drag-and-drop seating, budget, checklist and real vendors near you. Use it online, or open the offline copy (Wedding-Planner-App_offline.html in the zip) on your computer.')}
             <div style="margin-top:.1in"><a class="btn" href="${esc(cfg.appUrl)}">Open the app →</a> <span class="note" style="margin-left:.08in">Tip: add it to your home screen.</span></div>
           </div>
           ${sec('Using the digital planner')}
@@ -35,7 +35,7 @@ module.exports = function startHere(cfg, { qrSvg, total, inv }) {
           ${sec('The vendor directory')}
           <div class="row" style="align-items:center">
             <a href="${esc(cfg.vendorDirectoryUrl)}" style="display:block;width:1.25in;padding:.1in;background:#fff;border:.6pt solid var(--line-strong);flex:none">${qrSvg}</a>
-            <div><p class="copy">Scan or tap: it opens on your country, with hand-picked vendors and a live local search for every category. Bookmark it.</p><a class="btn ghost" style="margin-top:.08in" href="${esc(cfg.vendorDirectoryUrl)}">Open the directory</a></div>
+            <div><p class="copy">Scan or tap: it opens on your country, with a live local search for every category, always up to date. Bookmark it.</p><a class="btn ghost" style="margin-top:.08in" href="${esc(cfg.vendorDirectoryUrl)}">Open the directory</a></div>
           </div>
         </div>
       </div>

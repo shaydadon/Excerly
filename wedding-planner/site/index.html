@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Wedding Vendor Directory</title>
-<meta name="description" content="Wedding vendors in your country: curated picks plus live local search for every category.">
+<meta name="description" content="Wedding vendors in your country: a live local search for every category, in your language.">
 <style>
 @font-face { font-family: 'Cormorant Garamond'; font-weight: 300; src: url(CormorantGaramond-300.ttf); }
 @font-face { font-family: 'Cormorant Garamond'; font-weight: 400; src: url(CormorantGaramond-400.ttf); }
@@ -61,7 +61,7 @@ footer { text-align: center; padding: 28px 0 40px; font-size: 11px; letter-spaci
   <div class="wrap">
     <div class="kicker">For Wedding Planner owners</div>
     <h1>The Vendor <em>Directory</em></h1>
-    <p class="lede">Vendors in your country: our curated picks, plus a live local search for every category, from photographers to active bars.</p>
+    <p class="lede">Vendors in your country: a live local search for every category, in your language, from photographers to active bars.</p>
     <div class="where">
       <label for="country">Showing vendors in</label>
       <select id="country" aria-label="Country"></select>
@@ -72,7 +72,7 @@ footer { text-align: center; padding: 28px 0 40px; font-size: 11px; letter-spaci
 <main class="wrap">
   <div class="chips" id="chips"></div>
 
-  <section id="curated-sec">
+  <section id="curated-sec" hidden>
     <h2>Recommended <em>in <span class="cname"></span></em></h2>
     <div class="sub" id="updated"></div>
     <div class="grid" id="curated"></div>
@@ -86,21 +86,19 @@ footer { text-align: center; padding: 28px 0 40px; font-size: 11px; letter-spaci
 
   <section class="tips">
     <div><h3>Before you book</h3><p>Use the questions on each vendor page of your planner, read recent reviews, and always get the package, price and date in a written contract.</p></div>
-    <div><h3>How we pick</h3><p>Curated vendors are reviewed by us. Search results come straight from Google Maps and local wedding marketplaces, so check each vendor yourself.</p></div>
-    <div><h3>Know a great vendor?</h3><p>Tell us who made your day special and we will consider them for the directory. <a id="suggest" href="#">Suggest a vendor</a></p></div>
+    <div><h3>Where results come from</h3><p>Straight from Google Maps, reviews and your country’s wedding marketplaces, so they are always current. Check each vendor yourself.</p></div>
+    <div><h3>Plan it in the app</h3><p>Save vendors, track quotes and see real businesses near you in the interactive planner app. <a href="app/#vendors">Open the app</a></p></div>
   </section>
 </main>
 <footer><span id="brand"></span> · Wedding Vendor Directory</footer>
 <script src="locales.js"></script>
 <script>
-const CONTACT = 'hello@your-domain.com'; // ← your email for vendor suggestions
 const BRAND = 'Ivory & Vow';             // ← your brand name
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const safeUrl = (u) => /^https?:\/\//i.test(u || '') ? u : '';
 const store = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
 $('brand').textContent = BRAND;
-$('suggest').href = `mailto:${CONTACT}?subject=${encodeURIComponent('Vendor suggestion')}`;
 
 // Guess the country on the device only: ?country= link, saved choice, time zone, then browser language.
 function detectCountry() {
@@ -145,7 +143,8 @@ function render() {
         ${v.instagram ? `<a href="https://instagram.com/${esc(v.instagram.replace(/^@/, ''))}" target="_blank" rel="noopener">Instagram</a>` : ''}
         ${v.phone ? `<a href="tel:${esc(v.phone.replace(/[^+\d]/g, ''))}">Call</a>` : ''}
       </div>
-    </article>`).join('') : `<div class="empty">We are adding hand-picked vendors in ${esc(country === 'OTHER' ? 'more countries' : C.name)}. Until then, use the live search below.</div>`;
+    </article>`).join('') : '';
+  $('curated-sec').hidden = !list.length;
 
   // live local search
   const terms = TERMS[C.lang] || TERMS.en;
@@ -174,7 +173,6 @@ $('chips').onclick = (e) => { const b = e.target.closest('.chip'); if (!b) retur
 render();
 fetch('vendors.json', { cache: 'no-store' }).then((r) => r.json()).then((d) => {
   vendors = d.vendors || [];
-  if (d.updated) $('updated').textContent = 'Updated ' + new Date(d.updated + 'T12:00:00').toLocaleDateString('en', { month: 'long', day: 'numeric', year: 'numeric' });
   render();
 }).catch(() => {});
 </script>
