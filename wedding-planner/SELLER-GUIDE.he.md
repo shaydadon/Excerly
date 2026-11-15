@@ -54,7 +54,7 @@
 - **אין עלות לקונה נוסף:** אין עלות שוטפת שגדלה עם המכירות, כך שכל מכירה היא רווח נקי, פחות העמלות של Etsy.
 
 ---|---|
-| `dist/Etsy-Upload/` | **חמשת הקבצים שמעלים ל-Etsy** (המגבלה של Etsy: 5 קבצים, עד 20MB לכל אחד): START HERE, דיגיטלי, Letter, A4, ו-zip עם ההזמנות והגיליון |
+| `dist/Etsy-Upload_Ebook/` + `dist/Etsy-Upload_Complete/` | **חמשת הקבצים שמעלים ל-Etsy** (המגבלה של Etsy: 5 קבצים, עד 20MB לכל אחד): START HERE, דיגיטלי, Letter, A4, ו-zip עם ההזמנות והגיליון |
 | `The-Wedding-Planner_Digital-Hyperlinked.pdf` | 118 עמודים, טאבים לחיצים בכל עמוד, לטאבלט (GoodNotes / Notability) |
 | `The-Wedding-Planner_Printable_US-Letter.pdf` / `_A4.pdf` | גרסת הדפסה על רקע לבן (חוסכת דיו) |
 | `Invitation-Suite/` | 40 עיצובים: 4 סגנונות × 10 פריטים (Garden Rose בצבעי מים, Ivory Classic, Modern Minimal, Botanical Line), בגדלי הדפסה אמיתיים |
@@ -147,6 +147,58 @@ PDF לא יכול לעשות גרירה ושחרור, ולכן הפלאנר מג
 - השרתים הציבוריים (Overpass) עמוסים לפעמים. האפליקציה מנסה 3 שרתים, ואם כולם עמוסים מציגה "נסו שוב בעוד דקה".
 - בדקתי את התצוגה עם נתוני אמת מתל אביב (12 חנויות פרחים, ממוינות לפי מרחק). את החיבור החי לשרת הראשי לא יכולתי לבדוק מסביבת הפיתוח, כי הרשת שלה חוסמת אותו. כדאי לבדוק פעם אחת אחרי שהאתר עולה לאוויר.
 - אם בעתיד תרצו תוצאות עשירות יותר (דירוגים, תמונות, שעות פתיחה), אפשר לחבר Google Places API דרך Cloudflare Worker. זה כרוך בעלות לפי שימוש.
+
+---
+
+## שתי מודעות: Ebook ומלא
+
+`npm run all` בונה שתי חבילות נפרדות, כל אחת עם קבצים ותמונות משלה:
+
+| | **Ebook** | **Complete (מלא)** |
+|---|---|---|
+| מחיר | **$12.99** | **$29.99** |
+| קבצים להעלאה | `dist/Etsy-Upload_Ebook/` (4 קבצים) | `dist/Etsy-Upload_Complete/` (5 קבצים) |
+| תמונות מודעה | `dist/Etsy-Listing-Images/Ebook/` (6) | `dist/Etsy-Listing-Images/Complete/` (9) |
+| פלאנר | 114 עמודים, "Planner Edition" | 118 עמודים, כולל 4 עמודי Canva |
+| הזמנות Canva, גיליון, אפליקציה | ✗ | ✓ |
+| רשימת ספקים חיה | ✓ | ✓ |
+
+ב-Ebook אין שום קישור לאפליקציה או ל-Canva. יש בו תיבת שדרוג עדינה ("Complete Edition") עם קישור לחנות, כך שהמודעה הזולה מביאה מכירות למודעה המלאה.
+
+### מודעת ה-Ebook (באנגלית, להעתקה)
+
+**Title**
+```
+Wedding Planner Printable & Digital, 114 Page Hyperlinked GoodNotes Wedding Planner, Wedding Checklist, Budget, Guest List, Vendor Guide
+```
+**13 Tags**
+```
+wedding planner, digital planner, wedding checklist, wedding budget, goodnotes planner, printable planner, bride to be gift, engagement gift, wedding organizer, wedding binder, guest list tracker, seating chart, wedding vendor
+```
+**Description**
+```
+Plan your whole wedding calmly, from yes to ever after.
+
+A beautifully minimal 114-page wedding planner, illustrated with fine-art botanical paintings and a soft color for every section. Use it on your tablet with clickable tabs, or print it at home in US Letter or A4.
+
+WHAT'S INCLUDED
+• Digital planner: 114 hyperlinked pages for GoodNotes, Notability, Noteshelf, Xodo and more
+• Printable planner: US Letter and A4 PDFs
+• 16 vendor categories with questions to ask, booked-vendor pages and a 3-quote comparison
+• Live vendor finder for your country
+• Start-here guide
+
+INSIDE: checklist from 12+ months out, monthly and weekly planners, budget guide and tracker, guest list for 150, meals, seating charts for 24 tables, alcohol calculator, ceremony and vow writing, wedding-day timeline, emergency kit, honeymoon planner, thank-you tracker and more.
+
+WANT MORE? The Complete Edition adds 40 Canva invitation templates, a budget spreadsheet, and an interactive app with WhatsApp invitations and drag-and-drop seating. See our shop.
+
+PLEASE NOTE
+• Digital product, nothing will be shipped. • For personal use only. • All sales are final; if anything isn't working, message us and we'll make it right.
+```
+
+### מודעת ה-Complete
+משתמשים בטקסט שבסעיף הבא, עם שני שינויים: בכותרת כותבים "118 Page", ובתיאור מוסיפים בראש הרשימה:
+`• Interactive app: WhatsApp invitations & RSVP reminders, drag-and-drop seating chart, budget and real vendors near you (works on phone, tablet and computer, also offline)`
 
 ---
 

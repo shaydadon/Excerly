@@ -50,7 +50,8 @@ const THEMES = {
 
 // ── document ──
 module.exports = function buildPlanner(cfg, opts) {
-  const { digital, size, thumbs = {}, qrSvg = '', art = '' } = opts;
+  const { digital, size, thumbs = {}, qrSvg = '', art = '', edition = 'complete' } = opts;
+  const full = edition !== 'ebook'; // the ebook edition has no Canva suite, app or spreadsheet
   const sections = [];
   let current = null;
   const S = (id, tab, title, lede) => { current = { id, tab, title, lede, theme: THEMES[id], pages: [] }; sections.push(current); };
@@ -195,8 +196,8 @@ module.exports = function buildPlanner(cfg, opts) {
       <div class="col">
         ${tip('The A / B list', 'Make an A list of people you cannot imagine the day without. Expect 10–20% of invited guests to decline, and invite from the B list as replies come in.')}
         ${tip('The one-year rule', 'Not sure? Ask yourselves: have we spoken to them in the past year, and will we in the next?')}
-        ${tip('Collect addresses early', 'Ask for mailing addresses and phone numbers as soon as the list is set. The guest list in the companion spreadsheet sorts and counts everything for you.')}
-        <div class="row" style="gap:.12in"><a class="btn" href="${esc(cfg.appUrl)}#guests">Open the guest list app →</a><a class="btn ghost" href="${esc(cfg.appUrl)}#invites">WhatsApp invites</a></div>
+        ${full ? `${tip('Collect addresses early', 'Ask for mailing addresses and phone numbers as soon as the list is set. The guest list in the companion spreadsheet sorts and counts everything for you.')}
+        <div class="row" style="gap:.12in"><a class="btn" href="${esc(cfg.appUrl)}#guests">Open the guest list app →</a><a class="btn ghost" href="${esc(cfg.appUrl)}#invites">WhatsApp invites</a></div>` : tip('Collect addresses early', 'Ask for mailing addresses and phone numbers as soon as the list is set, so invitations go out on time.')}
         ${box('RSVP summary', fields(['Invited', 'Attending', 'Declined', 'Awaiting reply', 'Children', 'Vegetarian / vegan', 'Allergies']), 'wash grow')}
       </div>
     </div>`);
@@ -217,7 +218,7 @@ module.exports = function buildPlanner(cfg, opts) {
   for (let i = 1; i <= 2; i++) {
     P(`seating-${i}`, 'Seating <em>Chart</em>', `Tables ${(i - 1) * 12 + 1}–${i * 12}`, () => `
       <div class="seat-grid">${rep(12, (t) => `<div class="seat">${tableSVG(10)}<div class="names"><div class="label accent">Table ${(i - 1) * 12 + t + 1}</div>${rep(5, () => '<i></i>')}</div></div>`)}</div>
-      <div class="row none" style="align-items:center;justify-content:space-between"><p class="note">Seat ten per table, or plan it in the app: drag and drop guests onto tables.</p><a class="btn" href="${esc(cfg.appUrl)}#seating">Drag &amp; drop seating →</a></div>`);
+      ${full ? `<div class="row none" style="align-items:center;justify-content:space-between"><p class="note">Seat ten per table, or plan it in the app: drag and drop guests onto tables.</p><a class="btn" href="${esc(cfg.appUrl)}#seating">Drag &amp; drop seating →</a></div>` : '<p class="note none">Seat ten per table. Write names beside each table, or use the head-table box on the next page.</p>'}`);
   }
 
   P('head-table', 'Head Table & <em>Seating Notes</em>', 'Seating', () => `
@@ -243,7 +244,7 @@ module.exports = function buildPlanner(cfg, opts) {
       <div class="col" style="flex:1.2">
         <p class="lede">Your planner comes with a live vendor directory that opens on your own country: photographers, DJs, bars, florists and more.</p>
         <p class="copy">Scan the code or tap the link. It opens on your country with a live local search for every category in your language, on Google Maps and your country’s leading wedding marketplaces, so results are never out of date. Add your city for results close to home. Check every vendor with the questions in this section before you book.</p>
-        <div class="row" style="gap:.12in"><a class="btn" href="${esc(cfg.vendorDirectoryUrl)}">Open the vendor directory →</a><a class="btn ghost" href="${esc(cfg.appUrl)}#vendors">Vendors near me</a></div>
+        <div class="row" style="gap:.12in"><a class="btn" href="${esc(cfg.vendorDirectoryUrl)}">Open the vendor directory →</a>${full ? `<a class="btn ghost" href="${esc(cfg.appUrl)}#vendors">Vendors near me</a>` : ''}</div>
         ${box('Categories in the directory', check(['Venues', 'Catering', 'Photographers', 'Videographers', 'DJs & bands', 'Bars & alcohol', 'Active / mobile bars', 'Florists & designers', 'Hair & makeup', 'Cakes & desserts', 'Officiants', 'Stationery', 'Transportation', 'Photo booths & extras', 'Rentals & lighting', 'Planners'], 'two round'), 'grow wash')}
       </div>
       <div class="col" style="flex:.8;align-items:center;justify-content:flex-start">
@@ -319,7 +320,7 @@ module.exports = function buildPlanner(cfg, opts) {
 
   const items = [['saveTheDate', 'Save the Date'], ['invitation', 'Invitation'], ['rsvp', 'RSVP Card'], ['details', 'Details Card'], ['program', 'Program'], ['menu', 'Menu'], ['tableNumber', 'Table Number'], ['placeCard', 'Place Card'], ['welcomeSign', 'Welcome Sign'], ['thankYou', 'Thank You']];
   const styles = [['garden', 'Garden Rose'], ['classic', 'Ivory Classic'], ['modern', 'Modern Minimal'], ['botanical', 'Botanical Line']];
-  styles.forEach(([sk, sn], si) => {
+  if (full) styles.forEach(([sk, sn], si) => {
     P(`canva-${sk}`, `Invitation <em>Suite</em>`, `${sn} · Edit in Canva`, () => `
       <div class="row none" style="align-items:flex-start">
         <div class="col" style="flex:1.6"><p class="copy">${si === 0 ? 'Forty matching designs in four styles. Tap <b style="font-weight:400">Edit in Canva</b> under any design to open your own copy. Change the names, date and wording, then print at home, send to a print shop, or share it digitally. A free Canva account is all you need.' : 'Every design opens as your own copy in Canva. Fonts used: Cormorant Garamond and Jost, both free in Canva.'}</p></div>
@@ -500,7 +501,7 @@ module.exports = function buildPlanner(cfg, opts) {
     <div class="frame"></div>
     ${artImg('rose', 'cover-art')}
     <div style="margin-top:4.5in">
-      <div class="label accent" style="letter-spacing:.42em;margin-bottom:.22in">${esc(cfg.edition)}</div>
+      <div class="label accent" style="letter-spacing:.42em;margin-bottom:.22in">${esc(full ? cfg.edition : (cfg.editionEbook || cfg.edition))}</div>
       <h1>The Wedding <em>Planner</em></h1>
       <div class="sub">${esc(cfg.productSubtitle)}</div>
     </div>
@@ -536,12 +537,13 @@ module.exports = function buildPlanner(cfg, opts) {
           <p class="copy">Work through the sections in order, or jump straight to what you need from the contents page. Each section opens with a short overview, then gives you the checklists, trackers and worksheets for that part of planning.</p>
           <p class="copy">The <b style="font-weight:400">Vendors</b> section has a page for every supplier you might book, with the questions to ask before you sign, a comparison sheet for three options, and space to record the one you choose.</p>
           ${sec('What’s included')}
-          ${check([`${total} planner pages`, 'Printable PDF in US Letter and A4', 'Hyperlinked digital PDF for tablets', '40 invitation designs to edit in Canva', 'Interactive app: WhatsApp invites, drag & drop seating, budget, vendors', 'Companion budget & guest-list spreadsheet', 'Live vendor directory for your country'], 'round')}
+          ${check(full ? [`${total} planner pages`, 'Printable PDF in US Letter and A4', 'Hyperlinked digital PDF for tablets', '40 invitation designs to edit in Canva', 'Interactive app: WhatsApp invites, drag & drop seating, budget, vendors', 'Companion budget & guest-list spreadsheet', 'Live vendor directory for your country'] : [`${total} planner pages`, 'Printable PDF in US Letter and A4', 'Hyperlinked digital PDF for tablets', '16 vendor categories with questions to ask', 'Live vendor directory for your country'], 'round')}
         </div>
         <div class="col">
           ${box('On a tablet', `<p class="copy">Open the <b style="font-weight:400">Digital</b> PDF in GoodNotes, Notability, Noteshelf, Xodo or any PDF app that supports links. Tap the tabs on the right to move between sections; tap <span class="serif" style="color:var(--accent)">&amp;</span> to return to the contents. Write with a stylus, or add text boxes and photos.</p>`, 'none')}
           ${box('On paper', `<p class="copy">Print the <b style="font-weight:400">Printable</b> PDF in US Letter or A4, single or double-sided. Print only the pages you need, as many times as you need: extra guest lists, months, notes. A ring binder or disc binder keeps it all together.</p>`, 'none')}
-          ${box('The interactive app', `<p class="copy">Prefer to tap and drag? Open the app on any phone, tablet or computer to manage guests, send WhatsApp invitations and RSVP reminders, drag guests onto tables, track the budget and find real vendors near you. It saves on your device and works offline.</p><div style="margin-top:.08in"><a class="btn" href="${esc(cfg.appUrl)}">Open the app →</a></div>`, 'none')}
+          ${!full ? box('Want more?', `<p class="copy">The <b style="font-weight:400">Complete Edition</b> adds 40 invitation designs to edit in Canva, a budget and guest-list spreadsheet, and an interactive app with WhatsApp invitations and drag-and-drop seating.</p><div style="margin-top:.08in"><a class="btn ghost" href="${esc(cfg.shopUrl)}">See it in our shop →</a></div>`, 'none') : ''}
+          ${!full ? '' : box('The interactive app', `<p class="copy">Prefer to tap and drag? Open the app on any phone, tablet or computer to manage guests, send WhatsApp invitations and RSVP reminders, drag guests onto tables, track the budget and find real vendors near you. It saves on your device and works offline.</p><div style="margin-top:.08in"><a class="btn" href="${esc(cfg.appUrl)}">Open the app →</a></div>`, 'none')}
           ${box('A note on numbers', `<p class="note">Budget splits, tipping customs and timings are common starting points, not rules. Prices and customs differ by country and region, so adjust them to your own wedding.</p>`, 'wash grow')}
         </div>
       </div>

@@ -16,5 +16,7 @@ npm install
 npm run all        # build → dist/, upload-ready files → dist/Etsy-Upload/
 ```
 
-Edit `build/config.js` (brand, Canva links, directory URL) before the final build.
+Two editions are built: `dist/Etsy-Upload_Ebook/` (planner only) and `dist/Etsy-Upload_Complete/` (planner, Canva suite, spreadsheet, interactive app).
+
+Edit `build/config.js` (brand, Canva links, directory and app URLs) before the final build.
 Content lives in `build/content.js` (checklists, vendor questions) and `build/planner.js` (pages).

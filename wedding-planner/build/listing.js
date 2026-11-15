@@ -13,7 +13,9 @@ fs.mkdirSync(OUT, { recursive: true });
 const fontCss = fs.readFileSync(path.join(ROOT, 'fonts/fonts.css'), 'utf8').replace(/url\(([^)]+\.ttf)\)/g, (_, f) => `url(file://${path.join(ROOT, 'fonts', f)})`);
 const pg = (id) => `file://${PAGES}/${id}.png`;
 const th = (id) => `file://${THUMBS}/${id}.png`;
-const total = fs.readdirSync(PAGES).length;
+const buildPlanner = require('./planner');
+const total = buildPlanner(cfg, { digital: true, size: 'letter' }).total;
+const ebookTotal = buildPlanner(cfg, { digital: true, size: 'letter', edition: 'ebook' }).total;
 const APPSHOT = path.join(ROOT, '.cache/app-seating.png');
 
 // Screenshot of the interactive app's seating chart with example data.
@@ -147,18 +149,47 @@ const slides = {
     <div style="position:absolute;left:0;right:0;bottom:120px;text-align:center"><span class="pill">${cfg.brand}</span></div>`,
 };
 
+const toEbook = (h) => h.split(PAGES + '/').join(PAGES + '-ebook/');
+const ebookSlides = {
+  '01-cover': slides['01-cover']
+    .replace(`<div>${total} hyperlinked pages</div><div>40 invitation templates for Canva</div><div>Budget & guest-list spreadsheet</div><div>Live vendor directory</div>`,
+      `<div>${ebookTotal} hyperlinked pages</div><div>Printable in US Letter & A4</div><div>16 vendor categories</div><div>Live vendor directory</div>`)
+    .replace('<span>Edit in Canva</span>', '<span>GoodNotes & Notability</span>'),
+  '02-inside': slides['02-inside'].replace(`<div class="k">${total} pages</div>`, `<div class="k">${ebookTotal} pages</div>`).replace('/canva-garden.png', '/flowers.png'),
+  '03-digital': slides['03-digital'],
+  '04-vendors': slides['04-vendors'],
+  '05-budget-guests': slides['05-budget-guests'],
+  '06-what-you-get': `
+    <div style="position:absolute;left:0;right:0;top:120px;text-align:center"><div class="k">Instant download</div><h2 style="margin-top:26px">What you <em>get</em></h2></div>
+    <div style="position:absolute;left:420px;right:420px;top:500px;display:grid;grid-template-columns:repeat(2,1fr);gap:50px">
+      ${[['01', 'Digital planner', `${ebookTotal}-page hyperlinked PDF for tablets`], ['02', 'Printable planner', 'US Letter and A4 PDFs, print what you need'], ['03', '16 vendor guides', 'Questions to ask, quotes compared, alcohol calculator'], ['04', 'Vendor directory', 'Live search for your country, always current']]
+    .map(([n, t, d]) => `<div style="background:#FBF8F3;padding:56px 56px;min-height:400px"><div style="font-family:'Cormorant Garamond';font-size:84px;color:#A3845F;font-weight:300">${n}</div><div style="font-family:'Cormorant Garamond';font-size:58px;margin:18px 0 18px">${t}</div><div style="font-size:32px;color:#6F665F;line-height:1.5">${d}</div></div>`).join('')}
+    </div>
+    <div style="position:absolute;left:0;right:0;bottom:120px;text-align:center"><span class="pill">${cfg.brand}</span></div>`,
+};
+// Complete bundle: show the app second, it is what sets it apart
+const completeOrder = ['01-cover', '09-app', '06-invitations', '02-inside', '03-digital', '04-vendors', '05-budget-guests', '07-spreadsheet', '08-what-you-get'];
+const sets = {
+  Complete: completeOrder.map((k, i) => [`${String(i + 1).padStart(2, '0')}-${k.slice(3)}`, slides[k]]),
+  Ebook: Object.entries(ebookSlides).map(([k, h]) => [k, toEbook(h)]),
+};
+
 (async () => {
   const b = await chromium.launch();
   await appShot(b);
   const p = await b.newPage({ viewport: { width: 2700, height: 2025 } });
-  for (const [name, html] of Object.entries(slides)) {
-    const f = path.join(ROOT, '.cache', `listing-${name}.html`);
+  for (const f of fs.readdirSync(OUT)) if (f.endsWith('.png')) fs.unlinkSync(path.join(OUT, f)); // old flat layout
+  for (const [set, list] of Object.entries(sets)) {
+  fs.mkdirSync(path.join(OUT, set), { recursive: true });
+  for (const [name, html] of list) {
+    const f = path.join(ROOT, '.cache', `listing-${set}-${name}.html`);
     fs.writeFileSync(f, `<!doctype html><html><head><meta charset="utf-8"><style>${CSS}</style></head><body>${html}</body></html>`);
     await p.goto('file://' + f);
     await p.evaluate(() => document.fonts.ready);
     await p.waitForTimeout(150);
-    await p.screenshot({ path: path.join(OUT, `${name}.png`) });
-    console.log('✓', name);
+    await p.screenshot({ path: path.join(OUT, set, `${name}.png`) });
+    console.log('✓', set, name);
+  }
   }
   await b.close();
 })();

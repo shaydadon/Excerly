@@ -7,6 +7,7 @@ module.exports = {
   productTitle: 'The Wedding Planner',
   productSubtitle: 'Everything you need, from yes to ever after',
   edition: 'Complete Edition · 2027',
+  editionEbook: 'Planner Edition · 2027',   // cover label of the ebook-only version
   shopUrl: 'https://www.etsy.com/shop/YOUR-SHOP-NAME',
   supportEmail: 'hello@your-domain.com',
 

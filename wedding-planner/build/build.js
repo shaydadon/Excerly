@@ -72,6 +72,19 @@ async function writeAndLoad(page, name, html) {
       { file: 'The-Wedding-Planner_Printable_A4.pdf', digital: false, size: 'a4', cls: 'print' },
     ];
     for (const v of variants) {
+      // ebook-only edition: same planner without the Canva suite, app or spreadsheet
+      const eb = buildPlanner(cfg, { ...v, thumbs, qrSvg, art: 'file://' + path.join(ROOT, 'art/out'), edition: 'ebook' });
+      fs.mkdirSync(path.join(OUT, 'Ebook'), { recursive: true });
+      await writeAndLoad(page, `planner-ebook-${v.digital ? 'digital' : v.size}.html`, doc(eb.html, pageCss + eb.css, v.cls));
+      await page.pdf({ path: path.join(OUT, 'Ebook', v.file), preferCSSPageSize: true, printBackground: true });
+      console.log(`✓ Ebook/${v.file} · ${eb.total} pages`);
+      if (v.digital) { // ebook page previews, so its listing images show exactly what that buyer gets
+        await page.setViewportSize({ width: 1000, height: 1200 });
+        fs.rmSync(path.join(TMP, 'pages-ebook'), { recursive: true, force: true });
+        fs.mkdirSync(path.join(TMP, 'pages-ebook'));
+        for (const id of await page.$$eval('.page', (els) => els.map((e) => e.id))) await page.locator(`#${id}`).screenshot({ path: path.join(TMP, 'pages-ebook', `${id}.png`) });
+      }
+
       const p = buildPlanner(cfg, { ...v, thumbs, qrSvg, art: 'file://' + path.join(ROOT, 'art/out') });
       await writeAndLoad(page, `planner-${v.digital ? 'digital' : v.size}.html`, doc(p.html, pageCss + p.css, v.cls));
       await page.pdf({ path: path.join(OUT, v.file), preferCSSPageSize: true, printBackground: true });
@@ -102,6 +115,14 @@ async function writeAndLoad(page, name, html) {
     const shots = await page.$$('.page');
     for (let i = 0; i < shots.length; i++) await shots[i].screenshot({ path: path.join(TMP, `start-here-${i + 1}.png`) });
     console.log('✓ 00-START-HERE.pdf');
+
+    const ebTotal = buildPlanner(cfg, { digital: true, size: 'letter', thumbs: {}, qrSvg, edition: 'ebook' }).total;
+    const esh = startHere(cfg, { qrSvg, total: ebTotal, inv, edition: 'ebook' });
+    fs.mkdirSync(path.join(OUT, 'Ebook'), { recursive: true });
+    await writeAndLoad(page, 'start-here-ebook.html', doc(esh.html, pageCss + esh.css, 'print'));
+    await page.pdf({ path: path.join(OUT, 'Ebook', '00-START-HERE.pdf'), preferCSSPageSize: true, printBackground: true });
+    await (await page.$('.page')).screenshot({ path: path.join(TMP, 'start-here-ebook.png') });
+    console.log('✓ Ebook/00-START-HERE.pdf');
   }
 
   // ── 4. offline single-file app (buyers keep it even if the website is ever offline) ──
