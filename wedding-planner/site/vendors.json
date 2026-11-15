@@ -1,17 +1,11 @@
 {
   "updated": "2026-11-15",
-  "note": "Replace the SAMPLE listings below with real vendors you have checked. Delete \"sample\": true when a listing is real.",
-  "categories": [
-    "Venues", "Catering", "Photographers", "Videographers", "DJs & Bands",
-    "Bars & Alcohol", "Active / Mobile Bars", "Florists & Designers", "Hair & Makeup",
-    "Cakes & Desserts", "Officiants", "Stationery", "Transportation",
-    "Photo Booths & Extras", "Rentals & Lighting", "Planners"
-  ],
+  "note": "Curated vendors. 'country' is a code from locales.js (US, GB, IL ...). Visitors only see vendors for their country. Replace the SAMPLE listings with real vendors you have checked, and delete \"sample\": true when a listing is real. \"featured\": true pins a vendor to the top.",
   "vendors": [
-    { "sample": true, "name": "Sample Studio Photography", "category": "Photographers", "region": "California, USA", "price": "$$$", "description": "Documentary-style wedding photography with a second shooter on every package.", "website": "https://example.com", "instagram": "", "phone": "", "featured": true },
-    { "sample": true, "name": "Sample Sound DJ Co.", "category": "DJs & Bands", "region": "New York, USA", "price": "$$", "description": "DJ and MC with ceremony mics, dance-floor lighting and a planning call.", "website": "https://example.com", "instagram": "", "phone": "" },
-    { "sample": true, "name": "Sample Shaker Mobile Bar", "category": "Active / Mobile Bars", "region": "London, UK", "price": "$$", "description": "Show bar with a custom cocktail menu, smoked cocktails and mocktails.", "website": "https://example.com", "instagram": "", "phone": "" },
-    { "sample": true, "name": "Sample Cellar Drinks Supply", "category": "Bars & Alcohol", "region": "Texas, USA", "price": "$", "description": "Wine, beer and spirits by the case, with returns on unopened bottles.", "website": "https://example.com", "instagram": "", "phone": "" },
-    { "sample": true, "name": "Sample Bloom Floral Design", "category": "Florists & Designers", "region": "Ontario, Canada", "price": "$$$", "description": "Seasonal, garden-style arrangements with full set-up and breakdown.", "website": "https://example.com", "instagram": "", "phone": "" }
+    { "sample": true, "country": "US", "name": "Sample Studio Photography", "category": "Photographers", "city": "Napa, California", "price": "$$$", "description": "Documentary-style wedding photography with a second shooter on every package.", "website": "https://example.com", "instagram": "", "phone": "", "featured": true },
+    { "sample": true, "country": "US", "name": "Sample Sound DJ Co.", "category": "DJs & Bands", "city": "New York", "price": "$$", "description": "DJ and MC with ceremony mics, dance-floor lighting and a planning call.", "website": "https://example.com", "instagram": "", "phone": "" },
+    { "sample": true, "country": "GB", "name": "Sample Shaker Mobile Bar", "category": "Active / Mobile Bars", "city": "London", "price": "$$", "description": "Show bar with a custom cocktail menu, smoked cocktails and mocktails.", "website": "https://example.com", "instagram": "", "phone": "" },
+    { "sample": true, "country": "IL", "name": "Sample Active Bar", "category": "Active / Mobile Bars", "city": "Tel Aviv", "price": "$$", "description": "Active bar with mixologists, a custom cocktail menu and a smoke show.", "website": "https://example.com", "instagram": "", "phone": "" },
+    { "sample": true, "country": "CA", "name": "Sample Bloom Floral Design", "category": "Florists & Designers", "city": "Toronto", "price": "$$$", "description": "Seasonal, garden-style arrangements with full set-up and breakdown.", "website": "https://example.com", "instagram": "", "phone": "" }
   ]
 }

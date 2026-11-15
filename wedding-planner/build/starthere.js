@@ -19,7 +19,7 @@ module.exports = function startHere(cfg, { qrSvg, total, inv }) {
             ${row('02', 'The-Wedding-Planner_Printable (US Letter & A4)', 'Print-friendly white pages. Print the whole planner or only the pages you need.')}
             ${row('03', 'Invitation Suite (40 designs)', 'In the Invitation-Suite-and-Spreadsheet zip. Edit in Canva with the links on the next page, or print the ready-made PDFs.')}
             ${row('04', 'The-Wedding-Planner_Spreadsheet.xlsx', 'In the same zip. Budget, guest list, RSVPs, meals, vendors, seating and checklist. Totals update on their own.')}
-            ${row('05', 'Vendor directory', 'An online list of wedding vendors, updated regularly. Link and QR code below.')}
+            ${row('05', 'Vendor directory', 'Vendors for your country, found automatically. Link and QR code below.')}
           </div>
           ${sec('Using the digital planner')}
           <p class="copy">On an iPad: download the PDF, tap Share → GoodNotes (or your app) → Import as new document. On Android: open it in Noteshelf, Xodo or Samsung Notes. Use your app’s <b style="font-weight:400">read-only / link mode</b> (in GoodNotes, the pen-free mode) to tap tabs and links.</p>
@@ -33,7 +33,7 @@ module.exports = function startHere(cfg, { qrSvg, total, inv }) {
           ${sec('The vendor directory')}
           <div class="row" style="align-items:center">
             <a href="${esc(cfg.vendorDirectoryUrl)}" style="display:block;width:1.25in;padding:.1in;background:#fff;border:.6pt solid var(--line-strong);flex:none">${qrSvg}</a>
-            <div><p class="copy">Scan or tap to browse vendors by category and region. Bookmark it; new vendors are added regularly.</p><a class="btn ghost" style="margin-top:.08in" href="${esc(cfg.vendorDirectoryUrl)}">Open the directory</a></div>
+            <div><p class="copy">Scan or tap: it opens on your country, with hand-picked vendors and a live local search for every category. Bookmark it.</p><a class="btn ghost" style="margin-top:.08in" href="${esc(cfg.vendorDirectoryUrl)}">Open the directory</a></div>
           </div>
         </div>
       </div>

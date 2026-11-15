@@ -240,8 +240,8 @@ module.exports = function buildPlanner(cfg, opts) {
   P('directory', 'Vendor <em>Directory</em>', 'Updated Regularly', () => `
     <div class="row grow">
       <div class="col" style="flex:1.2">
-        <p class="lede">Your planner comes with a live vendor directory that we keep adding to: photographers, DJs, bars, florists and more.</p>
-        <p class="copy">Scan the code or tap the link to browse by category and region. The directory is updated regularly, so check back as you plan. Every listing should still be checked with the questions in this section before you book.</p>
+        <p class="lede">Your planner comes with a live vendor directory that opens on your own country: photographers, DJs, bars, florists and more.</p>
+        <p class="copy">Scan the code or tap the link. You’ll see our hand-picked vendors for your country, plus a live local search for every category in your language, on Google Maps and your country’s leading wedding marketplaces. Add your city for results close to home. Check every vendor with the questions in this section before you book.</p>
         <div><a class="btn" href="${esc(cfg.vendorDirectoryUrl)}">Open the vendor directory →</a></div>
         ${box('Categories in the directory', check(['Venues', 'Catering', 'Photographers', 'Videographers', 'DJs & bands', 'Bars & alcohol', 'Active / mobile bars', 'Florists & designers', 'Hair & makeup', 'Cakes & desserts', 'Officiants', 'Stationery', 'Transportation', 'Photo booths & extras', 'Rentals & lighting', 'Planners'], 'two round'), 'grow wash')}
       </div>
@@ -521,7 +521,7 @@ module.exports = function buildPlanner(cfg, opts) {
           <p class="copy">Work through the sections in order, or jump straight to what you need from the contents page. Each section opens with a short overview, then gives you the checklists, trackers and worksheets for that part of planning.</p>
           <p class="copy">The <b style="font-weight:400">Vendors</b> section has a page for every supplier you might book, with the questions to ask before you sign, a comparison sheet for three options, and space to record the one you choose.</p>
           ${sec('What’s included')}
-          ${check([`${total} planner pages`, 'Printable PDF in US Letter and A4', 'Hyperlinked digital PDF for tablets', '40 invitation designs to edit in Canva', 'Companion budget & guest-list spreadsheet', 'Live vendor directory, updated regularly'], 'round')}
+          ${check([`${total} planner pages`, 'Printable PDF in US Letter and A4', 'Hyperlinked digital PDF for tablets', '40 invitation designs to edit in Canva', 'Companion budget & guest-list spreadsheet', 'Live vendor directory for your country'], 'round')}
         </div>
         <div class="col">
           ${box('On a tablet', `<p class="copy">Open the <b style="font-weight:400">Digital</b> PDF in GoodNotes, Notability, Noteshelf, Xodo or any PDF app that supports links. Tap the tabs on the right to move between sections; tap <span class="serif" style="color:var(--accent)">&amp;</span> to return to the contents. Write with a stylus, or add text boxes and photos.</p>`, 'none')}
