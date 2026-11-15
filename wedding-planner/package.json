@@ -1,0 +1,16 @@
+{
+  "name": "wedding-planner-ebook",
+  "private": true,
+  "version": "1.0.0",
+  "description": "The Wedding Planner — printable & digital hyperlinked ebook, invitation suite, spreadsheet and vendor directory.",
+  "scripts": {
+    "build": "node build/build.js",
+    "listing": "node build/listing.js",
+    "sheet": "python3 build/spreadsheet.py",
+    "package": "python3 build/package.py",
+    "all": "node build/build.js && python3 build/spreadsheet.py && node build/listing.js && python3 build/package.py"
+  },
+  "dependencies": {
+    "qrcode": "1.5.4"
+  }
+}
