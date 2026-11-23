@@ -240,11 +240,13 @@
           if (!n || n.amount == null || n.status === 'missing') missing = true;
           else amount += Number(n.amount);
         });
+        const sources = confirmed.map(c => c.nutrients && c.nutrients[key] && c.nutrients[key].source).filter(Boolean);
         nutrients[key] = {
           id: sample.id,
           amount: missing && !confirmed.some(c => c.nutrients && c.nutrients[key] && c.nutrients[key].amount != null) ? null : amount,
           unit: sample.unit,
           status: missing ? (confirmed.some(c => c.nutrients && c.nutrients[key] && c.nutrients[key].amount != null) ? 'partial' : 'missing') : 'known',
+          source: sources.length && sources.every(s => s === sources[0]) ? sources[0] : (sources.length ? 'mixed' : null),
           per100g: null
         };
         if (nutrients[key].status === 'missing') nutrients[key].amount = null;

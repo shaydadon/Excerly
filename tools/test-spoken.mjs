@@ -59,5 +59,20 @@ test('plain פרגית is a skinless thigh, and פרגית אסייתית is an 
   assert.equal(soup.components[0].matchState, 'matched');
 });
 
+test('an old 1437 kcal dinner with no parseVer re-resolves under the current parser', async () => {
+  const text = 'כריך מלחמניה לבנה עם ארבע פרוסות חזה עוף במרינדה עם טחינה ועמבה';
+  const stale = { id: 'old', name: text, text: text, kcal: 1437, protein: 222.8, status: 'confirmed', parseVer: null, slot: 'dinner' };
+  assert.equal(stale.parseVer, null);
+  const fresh = await ctx.ExcerlyMealCard.resolveMeal(
+    ctx.ExcerlyMealCard.createPending({ id: stale.id, text: stale.text, slot: stale.slot }),
+    { search: async () => ({ ok: false, foods: [] }), govil: ctx.ExcerlyGovil },
+    ctx.ExcerlyNutrients
+  );
+  assert.equal(fresh.parseVer, 1);
+  assert.ok(fresh.kcal < 800, 'kcal ' + fresh.kcal);
+  assert.notEqual(fresh.kcal, 1437);
+  assert.ok(fresh.protein < 80);
+});
+
 if (failed) process.exit(1);
 console.log('spoken tests passed');

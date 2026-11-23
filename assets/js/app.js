@@ -1466,9 +1466,10 @@
           src = 'USDA · ' + escapeHtml(c.candidate.description) + ' · fdcId ' + escapeHtml(String(c.candidate.fdcId));
         }
       }
+      const compNuts = (R && c.nutrients) ? '<div class="micro-list">' + R.CATALOG.map(sp => nutrientRow(Object.assign({ key: sp.key }, c.nutrients[sp.key] || { status: 'missing', amount: null, unit: sp.fallbackUnit }), label(sp), c.kcal != null)).join('') + '</div>' : '';
       return '<div class="log-comp"><div class="lc-head"><b>' + escapeHtml(c.name) + '</b>' + (known ? '<span class="micro-val"><bdi class="iso-num" dir="ltr">' + c.kcal + '</bdi><span>' + t('goalUnit') + '</span></span>' : '') + '</div>' +
         (known ? '<div class="log-cap"><bdi dir="ltr">' + (c.gramsStated != null && c.gramsStated !== c.grams ? nf(c.gramsStated) + '</bdi> ' + t('grams') + ' (נספג ~<bdi dir="ltr">' + nf(c.grams) + '</bdi> ' + t('grams') + ')' : nf(c.grams) + '</bdi> ' + t('grams')) + (portion ? ' · ' + portion : '') + ' · ' + t('protein') + ' <bdi dir="ltr">' + nf(c.protein) + '</bdi> · ' + t('carbs') + ' <bdi dir="ltr">' + nf(c.carbs) + '</bdi> · ' + t('fat') + ' <bdi dir="ltr">' + nf(c.fat) + '</bdi></div>' : '') +
-        (src ? '<div class="log-cap src">' + src + '</div>' : '') + (q ? '<div class="section-hint">' + q + '</div>' : '') + choices + grams + retry + '</div>';
+        (src ? '<div class="log-cap src">' + src + '</div>' : '') + compNuts + (q ? '<div class="section-hint">' + q + '</div>' : '') + choices + grams + retry + '</div>';
     }).join('');
     const img = window.ExcerlyMealImage ? ExcerlyMealImage.forMeal(m) : null;
     const imgCap = !img || !img.src || img.kind === 'placeholder' ? '' : (img.kind === 'user' ? t('userPhotoCap') : t('imgRepresentative'));
