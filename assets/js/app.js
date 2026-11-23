@@ -1294,6 +1294,16 @@
     refreshNutrition();
     toast(t('toastAdded'));
   }
+  function addFromSection(slot) {
+    logSlot = slot;
+    pendingSlot = slot;
+    markSlotChips();
+    const input = document.querySelector('.sec-text[data-slot="' + slot + '"]');
+    const text = input ? input.value.trim() : '';
+    if (!text) { toast(t('toastWriteFood')); return; }
+    if (input) input.value = '';
+    logTextMeal(text, null);
+  }
   const addMeal = item => addMeals([item]);
 
   function removeMeal(id) {
@@ -1312,70 +1322,68 @@
     if (sheet.classList.contains('open') && sheetDate) renderWorkout(sheetDate);
   }
 
+  function loggedHour(m) {
+    if (m && (m.loggedAt || m.createdAt)) {
+      const d = new Date(m.loggedAt || m.createdAt);
+      if (!isNaN(d.getTime())) return d.getHours();
+    }
+    const raw = String(m && m.id || '');
+    if (raw.charAt(0) === 'm' && raw.length > 5) {
+      const ms = parseInt(raw.slice(1, -4), 36);
+      if (ms > 1e12 && ms < 2e13) return new Date(ms).getHours();
+    }
+    return new Date().getHours();
+  }
+  function sectionOf(m) {
+    const slot = m && m.slot;
+    if (slot === 'breakfast' || slot === 'lunch' || slot === 'dinner' || slot === 'snack') return slot;
+    return window.ExcerlyMealCard ? ExcerlyMealCard.slotForHour(loggedHour(m)) : 'breakfast';
+  }
+  function mealAmountText(m) {
+    let g = m && m.grams;
+    if ((g == null || g === '') && m && m.components && m.components.length) {
+      g = m.components.reduce((s, c) => s + (Number(c.grams) || 0), 0);
+    }
+    g = Number(g);
+    return g > 0 ? Math.round(g) + ' ' + t('grams') : '';
+  }
+  function sectionEntries(slot, meals) {
+    return (meals || []).filter(m => sectionOf(m) === slot);
+  }
   function renderDayMeals() {
     const box = $('#day-meals');
     if (!box) return;
     const key = dateKey(new Date());
     const meals = getMeals(key);
-    if (!meals.length) {
-      box.innerHTML = '<div class="empty-meal"><p>' + escapeHtml(t('emptyMealInvite')) + '</p><button type="button" class="btn btn-primary" id="empty-mic">' + escapeHtml(t('micBtn')) + '</button></div>';
-      const em = $('#empty-mic', box);
-      if (em) em.addEventListener('click', () => { const m = $('#mic-btn'); if (m) m.click(); });
-      box.classList.add('show');
-      renderMicroSummary(meals);
-      return;
-    }
-    const kn = window.ExcerlyNutrients ? ExcerlyNutrients.knownKcal(meals) : { total: meals.reduce((s, m) => s + (m.kcal || 0), 0), incomplete: false };
-    const total = kn.total;
-    const target = (N.targetCalories && N.targetCalories()) || 2100;
-    const rows = meals.slice().reverse().map(m => m.components ? renderLogCard(m) : `
-      <div class="dm-row" data-id="${m.id}">
-        <button class="dm-del" data-id="${m.id}" aria-label="${t('removeMealAria')}" title="${t('removeMealAria')}">✕</button>
-        <button class="dm-edit" data-id="${m.id}" aria-label="${t('editMealAria')}" title="${t('editMealAria')}">✎</button>
-        <span class="dm-name">${escapeHtml(m.name)}</span>
-        <span class="dm-kcal"><bdi class="iso-num" dir="ltr">${m.kcal == null ? '—' : m.kcal}</bdi><span>${t('goalUnit')}</span></span>
-      </div>`).join('');
-    let summary;
-    if (target) {
-      const v = N.verdict(total, target);
-      const pct = Math.min(100, Math.round((total / target) * 100));
-      const vLabel = t(v.key === 'over' ? 'vOver' : v.key === 'met' ? 'vMet' : 'vUnder');
-      const iso = n => '<bdi class="iso-num" dir="ltr">' + nf(n) + '</bdi>';
-      const deltaTxt = v.key === 'over' ? t('dOver', { n: iso(v.delta) })
-        : v.key === 'under' ? t('dUnder', { n: iso(v.delta) }) : t('dMet');
-      summary = `
-        <div class="nutri-summary" style="margin-top:10px">
-          <div class="nutri-verdict" style="background:${v.color}">${vLabel}</div>
-          <div class="nutri-pair light">
-            <div class="pair-item"><bdi class="iso-num" dir="ltr">${nf(total)}</bdi><span>${t('ateLabel')}</span></div>
-            <div class="pair-item"><bdi class="iso-num" dir="ltr">${nf(target)}</bdi><span>${t('targetLabel')}</span></div>
-          </div>
-          <div class="nutri-numbers">${deltaTxt}</div>
-          ${kn.incomplete ? '<p class="section-hint">' + t('logPending') + '</p>' : ''}
-        </div>
-        <div class="nutri-bar"><span style="width:${pct}%;background:${v.color}"></span></div>`;
-    } else {
-      summary = `<div class="nutri-numbers" style="margin-top:8px"><b>${nf(total)}</b> ${t('goalUnit')}</div>`;
-    }
-    // סיכום מקרו-נוטריאנטים לכל היום
-    const r1 = v => Math.round(v * 10) / 10;
-    const carbs = r1(meals.reduce((s, m) => s + (m.carbs || 0), 0));
-    const protein = r1(meals.reduce((s, m) => s + (m.protein || 0), 0));
-    const fat = r1(meals.reduce((s, m) => s + (m.fat || 0), 0));
-    const macroRow = (carbs || protein || fat) ? `
-      <div class="dm-macros">
-        <span class="dm-mac c"><span>${t('carbs')}</span><bdi class="iso-num" dir="ltr">${carbs}</bdi><span>${t('grams')}</span></span>
-        <span class="dm-mac p"><span>${t('protein')}</span><bdi class="iso-num" dir="ltr">${protein}</bdi><span>${t('grams')}</span></span>
-        <span class="dm-mac f"><span>${t('fat')}</span><bdi class="iso-num" dir="ltr">${fat}</bdi><span>${t('grams')}</span></span>
-      </div>` : '';
-    // סיכום היום כבר מוצג בטבעת למעלה; כאן רק הכרטיסים ושורת המאקרו
-    void summary;
-    box.innerHTML = `<div class="dm-list">${rows}</div>${macroRow}${kn.incomplete ? '<p class="section-hint">' + t('logPending') + '</p>' : ''}`;
-    renderMicroSummary(meals);
+    const order = ['breakfast', 'lunch', 'dinner', 'snack'];
+    const micSvg = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4"/></svg>';
+    box.innerHTML = order.map(slot => {
+      const list = sectionEntries(slot, meals);
+      const known = list.filter(m => m.kcal != null);
+      const sub = known.length ? Math.round(known.reduce((s, m) => s + Number(m.kcal), 0)) : null;
+      const rows = list.map(m => '<button type="button" class="sec-entry" data-id="' + m.id + '"><span class="sec-name">' + escapeHtml(m.name || '') + '</span><span class="sec-amt">' + escapeHtml(mealAmountText(m)) + '</span><span class="sec-kcal"><bdi class="iso-num" dir="ltr">' + (m.kcal == null ? '—' : m.kcal) + '</bdi></span></button>').join('');
+      const body = rows || '<p class="sec-empty">' + escapeHtml(t('sectionEmpty')) + '</p>';
+      return '<section class="meal-sec" data-slot="' + slot + '"><header class="sec-head"><h3>' + escapeHtml(slotLabel(slot)) + '</h3><span class="sec-sub"><bdi class="iso-num" dir="ltr">' + (sub == null ? '0' : sub) + '</bdi> ' + escapeHtml(t('goalUnit')) + '</span></header>' + body +
+        '<div class="sec-add"><button type="button" class="btn btn-primary sec-mic" data-slot="' + slot + '">' + micSvg + '<span>' + escapeHtml(t('micPrimary')) + '</span></button><div class="sec-type"><input class="sec-text" data-slot="' + slot + '" type="text" placeholder="' + escapeHtml(t('foodPlaceholder')) + '" aria-label="' + escapeHtml(slotLabel(slot)) + '"/><button type="button" class="btn btn-ghost sec-save" data-slot="' + slot + '">' + escapeHtml(t('calcBtn')) + '</button></div></div></section>';
+    }).join('');
     box.classList.add('show');
-    box.querySelectorAll('.dm-del').forEach(b => b.addEventListener('click', () => removeMeal(b.dataset.id)));
-    box.querySelectorAll('.dm-edit').forEach(b => b.addEventListener('click', () => editDayMeal(b.dataset.id)));
-    bindLogCards(box);
+    box.querySelectorAll('.sec-entry').forEach(card => {
+      card.addEventListener('click', () => openMealSheet(card.dataset.id));
+    });
+    box.querySelectorAll('.sec-mic').forEach(b => b.addEventListener('click', () => {
+      logSlot = b.dataset.slot;
+      markSlotChips();
+      startMic(b);
+    }));
+    box.querySelectorAll('.sec-text').forEach(inp => inp.addEventListener('focus', () => {
+      logSlot = inp.dataset.slot;
+      markSlotChips();
+    }));
+    box.querySelectorAll('.sec-save').forEach(b => b.addEventListener('click', () => addFromSection(b.dataset.slot)));
+    box.querySelectorAll('.sec-text').forEach(inp => inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); addFromSection(inp.dataset.slot); }
+    }));
+    markSlotChips();
   }
 
   function placeholderSvg() {
@@ -1675,6 +1683,7 @@
   function renderNutriTarget() {
     const box = $('#nutri-target');
     const target = (N.targetCalories && N.targetCalories()) || 2100;
+    if (!box) return target || null;
     if (!target) {
       box.innerHTML = `<div class="nutri-need-profile">${t('needProfile')}</div>`;
       return null;
@@ -1752,6 +1761,7 @@
 
   function renderMenu(plan) {
     const box = $('#menu-result');
+    if (!box || !plan) return;
     box.innerHTML = `
       <div class="menu-head">
         <div class="menu-title">${t('menuTitle')}</div>
@@ -1795,7 +1805,7 @@
   }
   function markSlotChips() {
     const slot = currentLogSlot();
-    document.querySelectorAll('#slot-toggle button').forEach(b => b.classList.toggle('on', b.dataset.slot === slot));
+    document.querySelectorAll('.meal-sec').forEach(s => s.classList.toggle('on', s.dataset.slot === slot));
   }
   function persistMealCard(meal) {
     const key = dateKey(new Date());
@@ -1861,7 +1871,8 @@
       id: uid(),
       text: text,
       slot: currentLogSlot(),
-      photo: photo || null
+      photo: photo || null,
+      createdAt: new Date().toISOString()
     });
     const key = persistMealCard(meal);
     const input = $('#food-text');
@@ -2048,52 +2059,12 @@
 
   function initNutrition() {
     renderNutriTarget();
-    renderDayMeals(); // שחזור הארוחות של היום מהאחסון (מקור אמת אחד)
-    // הגדרות AI
-    const cfg = aiCfg();
-    $('#ai-proxy').value = cfg.proxyUrl || '';
-    $('#ai-key').value = cfg.key || '';
-    $('#ai-enabled').checked = !!cfg.enabled;
-    const persistAI = () => save(STORE.ai, {
-      proxyUrl: $('#ai-proxy').value.trim(),
-      key: $('#ai-key').value.trim(),
-      enabled: $('#ai-enabled').checked
-    });
-    $('#ai-proxy').addEventListener('change', () => { persistAI(); updateAiBadge(); });
-    $('#ai-key').addEventListener('change', persistAI);
-    $('#ai-enabled').addEventListener('change', () => {
-      if ($('#ai-enabled').checked && !$('#ai-key').value.trim()) {
-        toast(t('toastEnterKey'));
-        $('#ai-enabled').checked = false;
-      }
-      persistAI();
-    });
+    renderDayMeals();
     updateAiBadge();
-
-    $('#calc-food').addEventListener('click', calcFood);
-    const slots = $('#slot-toggle');
-    if (slots) slots.addEventListener('click', (e) => {
-      const b = e.target.closest('button');
-      if (!b || !b.dataset.slot) return;
-      logSlot = b.dataset.slot;
-      pendingSlot = logSlot;
-      markSlotChips();
-    });
-    markSlotChips();
-    $('#build-menu').addEventListener('click', buildMenu);
-    const onPhoto = (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (file) calcFromImage(file);
-      e.target.value = ''; // מאפשר לבחור שוב את אותה תמונה
-    };
-    $('#camera-btn').addEventListener('click', openCamera);
-    $('#gallery-btn').addEventListener('click', () => $('#food-photo').click());
-    $('#food-camera').addEventListener('change', onPhoto);
-    $('#food-photo').addEventListener('change', onPhoto);
-    // בקרות המצלמה בתוך האפליקציה
-    $('#cam-shot').addEventListener('click', captureCam);
-    $('#cam-cancel').addEventListener('click', closeCamera);
-    $('#cam-flip').addEventListener('click', flipCam);
+    const calc = $('#calc-food');
+    if (calc) calc.addEventListener('click', calcFood);
+    const menu = $('#build-menu');
+    if (menu) menu.addEventListener('click', buildMenu);
     document.addEventListener('excerly:profile', () => {
       renderNutriTarget();
       // עדכון היעד גם ברישומי היום כדי שהמחוון והממוצע יתעדכנו
@@ -2531,8 +2502,8 @@
       logSlot = b.dataset.slot;
       markSlotChips();
       setTab('nutrition');
-      const input = $('#food-text');
-      if (input) { input.focus(); input.placeholder = t(b.dataset.slot === 'breakfast' ? 'slotBreakfast' : b.dataset.slot === 'lunch' ? 'slotLunch' : b.dataset.slot === 'dinner' ? 'slotDinner' : 'slotSnack'); }
+      const input = document.querySelector('.sec-text[data-slot="' + b.dataset.slot + '"]');
+      if (input) input.focus();
     }));
   }
   function renderNutriHero() {
@@ -2541,8 +2512,8 @@
     const target = (N.targetCalories && N.targetCalories()) || 2100;
     const nums = $('#nutri-hero-nums');
     if (nums) {
-      nums.innerHTML = '<bdi class="iso-num" dir="ltr">' + String(kn.total || 0) + ' / ' + (target ? String(target) : '—') + '</bdi>';
-      nums.setAttribute('aria-label', t('ateLabel') + ' ' + (kn.total || 0) + ', ' + t('targetLabel') + ' ' + (target || '—'));
+      nums.innerHTML = '<bdi class="iso-num" dir="ltr">' + String(kn.total || 0) + '</bdi>';
+      nums.setAttribute('aria-label', t('ateLabel') + ' ' + (kn.total || 0));
     }
     const ring = $('#nutri-ring');
     const pct = target ? Math.max(6, Math.min(100, Math.round(((kn.total || 0) / target) * 100))) : 6;
@@ -3060,41 +3031,73 @@
     input.value = text || '';
     box.hidden = false;
   }
-  async function startMic() {
+  let micRec = null;
+  let micBusy = false;
+  function micMime() {
+    if (typeof MediaRecorder === 'undefined' || typeof MediaRecorder.isTypeSupported !== 'function') return '';
+    const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
+    for (let i = 0; i < types.length; i++) if (MediaRecorder.isTypeSupported(types[i])) return types[i];
+    return '';
+  }
+  async function startMic(btn) {
+    if (micRec && micRec.state === 'recording') { micRec.stop(); return; }
+    if (micBusy) return;
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
-      toast(t('camDenied'));
+      toast(t('voiceFail'));
       return;
     }
+    micBusy = true;
     let stream;
     try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-    catch (e) { toast(t('camDenied')); return; }
-    const rec = new MediaRecorder(stream);
+    catch (e) { micBusy = false; toast(t('voiceFail')); return; }
+    const mime = micMime();
+    let rec;
+    try { rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream); }
+    catch (e) {
+      stream.getTracks().forEach(tr => tr.stop());
+      micBusy = false;
+      toast(t('voiceFail'));
+      return;
+    }
+    micRec = rec;
+    const button = btn && btn.classList ? btn : document.querySelector('.sec-mic');
+    if (button) button.classList.add('recording');
     const chunks = [];
     rec.ondataavailable = (ev) => { if (ev.data && ev.data.size) chunks.push(ev.data); };
     rec.onstop = async () => {
       stream.getTracks().forEach(tr => tr.stop());
-      const blob = new Blob(chunks, { type: rec.mimeType || 'audio/webm' });
+      if (button) button.classList.remove('recording');
+      micRec = null;
+      micBusy = false;
+      const blob = new Blob(chunks, { type: rec.mimeType || mime || 'audio/webm' });
       const buf = await blob.arrayBuffer();
       const bytes = new Uint8Array(buf);
       let bin = '';
-      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      const step = 8192;
+      for (let i = 0; i < bytes.length; i += step) {
+        bin += String.fromCharCode.apply(null, bytes.subarray(i, i + step));
+      }
       const audio = btoa(bin);
       const proxy = (window.EXCERLY_CONFIG && EXCERLY_CONFIG.fdcProxy) || (aiCfg().proxyUrl);
-      if (!proxy) { toast(t('toastNeedAiPhoto')); return; }
+      if (!proxy) { toast(t('voiceFail')); return; }
       try {
         const res = await fetch(proxy.replace(/\/$/, '') + '/transcribe', {
           method: 'POST', headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ action: 'transcribe', audio: audio })
         });
         const data = await res.json().catch(() => null);
-        if (!res.ok || !data || !data.text) { toast(t('fdcOffline')); return; }
+        if (!res.ok || !data || !data.text) { toast(t('voiceFail')); return; }
         showVoiceDraft(data.text);
-      } catch (err) { toast(t('fdcOffline')); }
+      } catch (err) { toast(t('voiceFail')); }
     };
-    rec.start();
-    const btn = document.getElementById('mic-btn');
-    if (btn) btn.classList.add('recording');
-    setTimeout(() => { if (rec.state === 'recording') rec.stop(); if (btn) btn.classList.remove('recording'); }, 8000);
+    try { rec.start(); }
+    catch (e) {
+      stream.getTracks().forEach(tr => tr.stop());
+      if (button) button.classList.remove('recording');
+      micRec = null;
+      toast(t('voiceFail'));
+    }
+    micBusy = false;
   }
 
   /* ---------- סנכרון ל-Google Calendar ---------- */

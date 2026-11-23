@@ -286,18 +286,6 @@
           </svg>
         </div>
       </div>
-      <p class="ask" data-i18n="foodLabel">מה אכלתי היום?</p>
-      <button type="button" class="btn btn-primary btn-mic-main" id="mic-btn">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4"/></svg>
-        <span data-i18n="micPrimary">ספר מה אכלת</span>
-      </button>
-      <div class="food-row food-field">
-        <textarea id="food-text" rows="1" data-i18n-placeholder="foodPlaceholder" placeholder="לדוגמה: חזה עוף 150 גרם, תפוח"></textarea>
-        <button type="button" class="icon-btn photo-action" id="camera-btn" data-i18n-aria="cameraBtn" aria-label="צלם ארוחה">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3v10H4z"/><circle cx="12" cy="13" r="3.2"/></svg>
-        </button>
-      </div>
-      <button class="btn btn-ghost btn-add-meal" id="calc-food" data-i18n="calcBtn">הוספת ארוחה</button>
       <div id="voice-draft" class="voice-draft" hidden>
         <label for="voice-text" data-i18n="voiceUse">שימוש בתמלול</label>
         <textarea id="voice-text" rows="3"></textarea>
@@ -306,53 +294,8 @@
           <button type="button" class="btn btn-ghost" id="voice-cancel" data-i18n="voiceCancel">ביטול</button>
         </div>
       </div>
-      <input type="file" id="food-camera" accept="image/*" capture="environment" hidden />
-      <input type="file" id="food-photo" accept="image/*" hidden />
-      <div class="photo-preview" id="photo-preview" hidden></div>
       <div class="day-meals" id="day-meals"></div>
-
-      <details class="nutri-more" id="nutri-more">
-        <summary data-i18n="moreOptions">אפשרויות נוספות</summary>
-        <span class="ai-badge" id="ai-badge" data-i18n="aiActive" hidden>AI</span>
-        <div class="seg" id="slot-toggle" role="group" aria-label="meal slot">
-          <button type="button" data-slot="breakfast" data-i18n="slotBreakfast">ארוחת בוקר</button>
-          <button type="button" data-slot="lunch" data-i18n="slotLunch">ארוחת צהריים</button>
-          <button type="button" data-slot="dinner" data-i18n="slotDinner">ארוחת ערב</button>
-          <button type="button" data-slot="snack" data-i18n="slotSnack">חטיף</button>
-        </div>
-        <p class="section-hint" id="nutri-hint" data-i18n="nutriHint">כתבו בטקסט חופשי מה אכלתם — המערכת תזהה את המזון, ואתם תאשרו מקור וכמות לפני השמירה.</p>
-        <div class="nutri-target" id="nutri-target"></div>
-        <div id="micro-summary"></div>
-        <div class="btn-row">
-          <button class="btn btn-ghost" id="build-menu" style="flex:1" data-i18n="menuBtn">🍽️ בנה לי תפריט יומי</button>
-          <button class="btn btn-ghost photo-action" id="gallery-btn" style="flex:1" data-i18n="galleryBtn">מהגלריה</button>
-        </div>
-      <details class="ai-settings" id="ai-settings">
-        <summary data-i18n="aiSettings">⚙️ הגדרות AI (ניתוח טקסט חכם באמצעות Claude)</summary>
-        <p class="ai-note" data-i18n="aiNote1">כשמחובר שרת AI, האפליקציה מבינה כל טקסט חופשי ומחשבת קלוריות בעזרת Claude — אוטומטית. ללא חיבור, פועל מנוע ההערכה המקומי.</p>
-
-        <div class="field wide">
-          <label for="ai-proxy" data-i18n="proxyLabel">כתובת שרת ה-AI (Proxy URL) — מומלץ</label>
-          <input id="ai-proxy" type="url" placeholder="https://excerly-proxy.xxx.workers.dev" autocomplete="off" inputmode="url" />
-        </div>
-        <p class="ai-note" data-i18n="aiNote2">מגדירים פעם אחת שרת proxy קטן (Cloudflare Worker) שמחזיק את המפתח בצד השרת — ואז ה-AI עובד לכל מי שנכנס לאתר, בלי לחשוף מפתח.</p>
-
-        <details class="ai-advanced">
-          <summary data-i18n="advSummary">אפשרות למתקדמים: מפתח ישיר במכשיר (BYOK)</summary>
-          <div class="field wide" style="margin-top:8px">
-            <label for="ai-key" data-i18n="keyLabel">מפתח Anthropic API (sk-ant-...)</label>
-            <input id="ai-key" type="password" placeholder="sk-ant-..." autocomplete="off" />
-          </div>
-          <label class="ai-toggle">
-            <input type="checkbox" id="ai-enabled" />
-            <span data-i18n="keyToggle">השתמש במפתח המקומי (נשמר רק במכשיר זה)</span>
-          </label>
-        </details>
-      </details>
-      </details>
-
       <div class="nutri-result" id="nutri-result"></div>
-      <div class="menu-result" id="menu-result"></div>
     </section>
 
     <!-- לוח שנה -->
@@ -432,16 +375,6 @@
 
   <!-- נגן אימון מודרך -->
   <div class="player" id="player" role="dialog" aria-modal="true" hidden></div>
-
-  <!-- מצלמה בתוך האפליקציה (ללא יציאה מהמסך, כדי לא לאבד את המסך/התמונה) -->
-  <div class="cam" id="cam" role="dialog" aria-modal="true" hidden>
-    <video id="cam-video" playsinline autoplay muted></video>
-    <div class="cam-bar">
-      <button class="cam-side" id="cam-cancel" aria-label="ביטול">✕</button>
-      <button class="cam-shot" id="cam-shot" aria-label="צלם"></button>
-      <button class="cam-side" id="cam-flip" aria-label="החלף מצלמה">⟲</button>
-    </div>
-  </div>
 
   <script src="assets/js/i18n.js"></script>
   <script src="assets/js/data.js"></script>

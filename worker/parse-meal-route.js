@@ -345,14 +345,7 @@ export async function handleTranscribe(body, env) {
   }
   const audio = body && body.audio;
   if (!audio) return { error: true, status: 400, detail: 'missing audio' };
-  let payload = audio;
-  if (typeof audio === 'string') {
-    const b64 = audio.replace(/^data:.*?;base64,/, '');
-    const bin = atob(b64);
-    const arr = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-    payload = [...arr];
-  }
+  const payload = typeof audio === 'string' ? audio.replace(/^data:.*?;base64,/, '') : audio;
   try {
     const result = await env.AI.run('@cf/openai/whisper-large-v3-turbo', { audio: payload });
     const text = String((result && (result.text || result.transcription)) || '').trim();
