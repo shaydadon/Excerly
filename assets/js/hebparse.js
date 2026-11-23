@@ -8,20 +8,22 @@
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ action: 'parse_meal', text: text, lang: (global.ExcerlyI18n && ExcerlyI18n.lang) || 'he' })
+      body: JSON.stringify({ action: 'parse_meal', text: text, lang: /[\u0590-\u05FF]/.test(text) ? 'he' : 'en' })
     });
     const data = await res.json().catch(() => null);
     if (!res.ok || !data || !Array.isArray(data.items || data.ingredients)) return { ok: false, error: (data && data.error) || res.status };
     return { ok: true, data: data };
   }
 
-  function toMeal(data, Nutrients, Govil, mealId, slot) {
+  function toMeal(data, Nutrients, Govil, mealId, slot, sourceText) {
     const G = Govil || global.ExcerlyGovil;
     const N = Nutrients || global.ExcerlyNutrients;
     const MC = global.ExcerlyMealCard;
     const items = data.items || [];
     const components = items.map((it, i) => {
-      const grams = Number(it.grams);
+      let grams = Number(it.grams);
+      const spoken = MC && MC.spokenGram ? MC.spokenGram(sourceText, (it.nameHe || '') + ' ' + (it.nameEn || '')) : null;
+      if (spoken != null) grams = spoken;
       const comp = {
         id: 'c' + i,
         name: it.nameHe || it.name || '',
@@ -64,6 +66,11 @@
     });
     const pending = MC.createPending({ id: mealId, text: (data.note ? '' : '') || items.map(i => i.nameHe).join(' · '), slot: slot });
     pending.components = components;
+    pending.text = sourceText || pending.name;
+    if (sourceText && !/[\u0590-\u05FF]/.test(sourceText)) {
+      pending.name = items.map(i => i.nameEn || i.nameHe).filter(Boolean).join(' · ') || pending.name;
+      pending.lang = 'en';
+    } else pending.lang = 'he';
     pending.dishEn = String(data.dishEn || '').replace(/[^\u0000-\u024F]+/g, ' ').replace(/\s+/g, ' ').trim();
     pending.parseSource = 'llm+govil';
     return MC.rollup(pending);

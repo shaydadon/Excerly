@@ -185,21 +185,9 @@
     const second = ranked[1];
     const clear = top.score >= 800 && (!second || top.score - second.score >= 80);
     const unique = ranked.length === 1 && top.score >= 600;
-    if (clear || unique) return { state: 'matched', food: top.food, score: top.score, options: [] };
-    if (top.score >= 500) {
-      return {
-        state: 'ambiguous',
-        food: null,
-        options: ranked.slice(0, 4).map(r => ({
-          id: 'govil:' + r.food.c,
-          code: r.food.c,
-          sml: r.food.s,
-          description: r.food.n,
-          english: r.food.e || '',
-          source: 'govil',
-          score: Math.round(r.score)
-        }))
-      };
+    // A close race used to open a picker. Take the top score and let the user edit the meal.
+    if (clear || unique || top.score >= 500) {
+      return { state: 'matched', food: top.food, score: top.score, options: [], autoPicked: !(clear || unique) };
     }
     return { state: 'none', options: [], food: null };
   }

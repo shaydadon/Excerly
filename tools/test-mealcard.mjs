@@ -63,15 +63,15 @@ test('drops unrelated tofu and fries and prefers omelet', () => {
   assert.equal(M.scoreMatch('egg omelet cooked', "APPLEBEE'S, french fries"), 0);
 });
 
-test('ambiguous close matches do not auto-pick', () => {
+test('close matches auto-pick the first ranked food and return no picker', () => {
   const foods = [
     { fdcId: 10, description: 'Bread, white', dataType: 'SR Legacy' },
     { fdcId: 11, description: 'Bread, wheat', dataType: 'SR Legacy' }
   ];
   const d = M.decideMatch('bread', foods);
-  assert.equal(d.state, 'ambiguous');
-  // still no silent auto-pick, but the user now gets the choices (was an empty list = dead end)
-  assert.deepEqual(d.options.map(o => o.fdcId).sort(), [10, 11]);
+  assert.equal(d.state, 'matched');
+  assert.equal(d.food.fdcId, 10);
+  assert.equal(d.options.length, 0);
 });
 
 test('explicit grams scale USDA values and missing stays null', () => {

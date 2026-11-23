@@ -62,11 +62,7 @@
     })).filter(f => f.fdcId && f.score === 1)
       .sort((a, b) => a.extra - b.extra);
     if (!ranked.length) return { state: 'none', options: [] };
-    if (ranked.length > 1 && (ranked[1].extra === ranked[0].extra || ranked[0].extra > 0)) {
-      // לא בוחרים בשקט — מציעים למשתמש עד 4 אפשרויות (קודם הוחזרה רשימה ריקה ולא הייתה דרך לבחור)
-      return { state: 'ambiguous', options: ranked.slice(0, 4).map(f => ({ fdcId: f.fdcId, description: f.description, dataType: f.dataType })) };
-    }
-    return { state: 'matched', food: ranked[0], options: [] };
+    return { state: 'matched', food: ranked[0], options: [], autoPicked: ranked.length > 1 };
   }
 
   function portionGrams(portions, unitKind, count) {
@@ -231,23 +227,26 @@
     meal.status = !comps.length ? 'pending' : all ? 'confirmed' : (confirmed.length ? 'partial' : 'pending');
     meal.kcalIncomplete = meal.status !== 'confirmed';
     // ערכים חושבו, אבל חלק מהמנות הן הנחת ברירת מחדל — מסומן "לאישור" עד שהמשתמש מאשר/עורך
-    meal.needsReview = meal.status !== 'confirmed' || (!meal.reviewed && comps.some(c => c.portionAssumed));
+    meal.needsReview = meal.status !== 'confirmed' || (!meal.reviewed && comps.some(c => c.portionAssumed || c.estimate));
+    meal.parseVer = 1;
     const nutrients = {};
     if (confirmed.length && confirmed[0].nutrients) {
       Object.keys(confirmed[0].nutrients).forEach(key => {
         const sample = confirmed[0].nutrients[key];
         let amount = 0;
         let missing = false;
-        comps.forEach(c => {
+        confirmed.forEach(c => {
           const n = c.nutrients && c.nutrients[key];
-          if (!componentConfirmed(c) || !n || n.amount == null || n.status === 'missing') missing = true;
+          if (!n || n.amount == null || n.status === 'missing') missing = true;
           else amount += Number(n.amount);
         });
+        const sources = confirmed.map(c => c.nutrients && c.nutrients[key] && c.nutrients[key].source).filter(Boolean);
         nutrients[key] = {
           id: sample.id,
           amount: missing && !confirmed.some(c => c.nutrients && c.nutrients[key] && c.nutrients[key].amount != null) ? null : amount,
           unit: sample.unit,
           status: missing ? (confirmed.some(c => c.nutrients && c.nutrients[key] && c.nutrients[key].amount != null) ? 'partial' : 'missing') : 'known',
+          source: sources.length && sources.every(s => s === sources[0]) ? sources[0] : (sources.length ? 'mixed' : null),
           per100g: null
         };
         if (nutrients[key].status === 'missing') nutrients[key].amount = null;
@@ -345,6 +344,59 @@
     return next;
   }
 
+  function extraDishWords(name, food) {
+    if (!food || !food.he) return false;
+    let rest = ' ' + String(name || '') + ' ';
+    const aliases = food.he.slice().sort((a, b) => b.length - a.length);
+    let hit = false;
+    for (let i = 0; i < aliases.length; i++) {
+      const at = rest.indexOf(aliases[i]);
+      if (at !== -1) { rest = rest.slice(0, at) + ' ' + rest.slice(at + aliases[i].length); hit = true; break; }
+    }
+    if (!hit) return false;
+    const skip = { פרוסות: 1, פרוסה: 1, פרוס: 1, דקות: 1, דקה: 1, דק: 1, חתיכות: 1, חתיכה: 1, נתח: 1, נתחי: 1, של: 1, עם: 1, גרם: 1, כף: 1, כפות: 1, כפית: 1, כפיות: 1 };
+    const words = rest.replace(/[\d.,]/g, ' ').split(/\s+/).filter(w => w && !skip[w]);
+    return words.length > 0;
+  }
+  function applyDishEstimate(comp, Nutrients) {
+    const N = global.ExcerlyNutrition;
+    const grams = comp.grams && comp.grams > 0 ? Number(comp.grams) : 150;
+    let kcal = null, protein = null, carbs = null, fat = null;
+    if (N && N.estimateLocal) {
+      const est = N.estimateLocal(grams + ' גרם ' + (comp.name || ''));
+      if (est && est.total > 0) {
+        kcal = est.total;
+        protein = (est.items || []).reduce((s, it) => s + (Number(it.protein) || 0), 0);
+        carbs = (est.items || []).reduce((s, it) => s + (Number(it.carbs) || 0), 0);
+        fat = (est.items || []).reduce((s, it) => s + (Number(it.fat) || 0), 0);
+      }
+    }
+    if (kcal == null) {
+      kcal = Math.round(grams * 1.8);
+      const m = N && N.macrosFor ? N.macrosFor(comp.name || '', kcal) : {};
+      protein = m.protein; carbs = m.carbs; fat = m.fat;
+    }
+    const nut = (id, amount, unit) => ({ id: id, amount: amount == null ? null : amount, unit: unit, status: amount == null ? 'missing' : 'known', source: 'estimate' });
+    comp.grams = grams;
+    comp.kcal = Math.round(kcal);
+    comp.protein = protein == null ? null : Math.round(protein * 10) / 10;
+    comp.carbs = carbs == null ? null : Math.round(carbs * 10) / 10;
+    comp.fat = fat == null ? null : Math.round(fat * 10) / 10;
+    comp.matchState = 'matched';
+    comp.estimate = true;
+    comp.quantityState = 'ai-estimate';
+    comp.portionAssumed = true;
+    comp.questionKey = null;
+    comp.options = [];
+    comp.nutrients = {
+      energy: nut(1008, comp.kcal, 'kcal'), protein: nut(1003, comp.protein, 'g'),
+      carbs: nut(1005, comp.carbs, 'g'), fat: nut(1004, comp.fat, 'g'),
+      sugar: nut(2000, null, 'g'), satFat: nut(1258, null, 'g'), fiber: nut(1079, null, 'g'), sodium: nut(1093, null, 'mg')
+    };
+    comp.candidate = { source: 'estimate', description: comp.name, dataset: 'הערכה' };
+    return comp;
+  }
+
   async function resolveMeal(meal, api, Nutrients) {
     const next = Object.assign({}, meal, { components: (meal.components || []).map(c => Object.assign({}, c)) });
     if (!api) {
@@ -372,16 +424,18 @@
           if (hit.food.en) comp.queryEn = hit.food.en;
         }
       }
+      const named = FM && FM.findFood ? FM.findFood(comp.name) : null;
+      if (named && named.key === 'chickenThigh' && extraDishWords(comp.name, named)) {
+        applyDishEstimate(comp, Nutrients);
+        continue;
+      }
       // 1. GovIL mapped food or Hebrew search — no USDA call.
       let govilCode = (comp.coreKey && G && G.mapCode) ? G.mapCode(comp.coreKey) : (comp.candidate && comp.candidate.govilCode) || null;
       if (!govilCode && G && G.decide && /[\u0590-\u05FF]/.test(comp.name)) {
         const decision = G.decide(cleanQuery(comp.name));
         if (decision.state === 'matched' && decision.food) govilCode = decision.food.c;
-        else if (decision.state === 'ambiguous') {
-          comp.matchState = 'ambiguous';
-          comp.questionKey = 'whichFood';
-          comp.options = decision.options || [];
-          continue;
+        else if (decision.state === 'ambiguous' && decision.options && decision.options[0]) {
+          govilCode = decision.options[0].code;
         }
       }
       if (govilCode && G && G.food) {
@@ -422,10 +476,12 @@
         }
       }
       if (!comp.queryEn && /[\u0590-\u05FF]/.test(comp.name)) {
-        // Hebrew was already searched in GovIL. Do not send raw Hebrew to USDA.
-        comp.matchState = 'none';
-        comp.questionKey = 'noMatch';
-        comp.error = govilCode == null && G && G.ready && G.ready() ? 'not_in_govil' : 'untranslated';
+        if (G && G.ready && G.ready()) applyDishEstimate(comp, Nutrients);
+        else {
+          comp.matchState = 'none';
+          comp.questionKey = 'noMatch';
+          comp.error = 'untranslated';
+        }
         continue;
       }
       const query = comp.queryEn || cleanQuery(comp.name);
@@ -433,21 +489,30 @@
       try { found = await api.search(query); }
       catch (e) { found = { ok: false, error: 'offline' }; }
       if (!found || !found.ok) {
-        comp.matchState = 'unavailable';
-        comp.questionKey = 'unavailable';
-        comp.error = (found && found.error) || 'offline';
+        const limited = found && (found.error === 'rate_limited' || found.status === 429);
+        if (/[\u0590-\u05FF]/.test(comp.name || '')) {
+          comp.usdaLimit = !!limited;
+          applyDishEstimate(comp, Nutrients);
+          if (limited) comp.error = 'rate_limited';
+        } else {
+          comp.matchState = 'unavailable';
+          comp.questionKey = 'unavailable';
+          comp.error = limited ? 'rate_limited' : ((found && found.error) || 'offline');
+        }
         continue;
       }
       const decision = decideMatch(query, found.foods || []);
       if (decision.state === 'none') {
-        comp.matchState = 'none';
-        comp.questionKey = 'noMatch';
+        if (/[\u0590-\u05FF]/.test(comp.name || '')) applyDishEstimate(comp, Nutrients);
+        else { comp.matchState = 'none'; comp.questionKey = 'noMatch'; }
         continue;
       }
-      if (decision.state === 'ambiguous') {
-        comp.matchState = 'ambiguous';
-        comp.questionKey = 'whichFood';
-        comp.options = decision.options || [];
+      if (decision.state === 'ambiguous' && decision.options && decision.options[0]) {
+        decision.food = decision.options[0];
+        decision.state = 'matched';
+      }
+      if (decision.state !== 'matched' || !decision.food) {
+        applyDishEstimate(comp, Nutrients);
         continue;
       }
       comp.candidate = { fdcId: decision.food.fdcId, description: decision.food.description, dataType: decision.food.dataType || '' };
@@ -502,6 +567,21 @@
     });
   }
 
+  function spokenGram(text, name) {
+    const names = String(name || '').toLowerCase().split(/\s+/).filter(w => w.length >= 2);
+    if (!names.length) return null;
+    const hits = [];
+    [ /(\d+(?:[.,]\d+)?)\s*(?:גרם|גר׳|גר')\s+(?:של\s+)?([^,.;]+)/g, /(\d+(?:[.,]\d+)?)\s*grams?\s+of\s+([^,.;]+)/gi ].forEach(re => {
+      let m;
+      const src = String(text || '');
+      while ((m = re.exec(src))) hits.push({ grams: parseFloat(m[1].replace(',', '.')), phrase: m[2].toLowerCase() });
+    });
+    for (const hit of hits) {
+      if (names.some(n => hit.phrase.indexOf(n) !== -1)) return hit.grams;
+    }
+    return null;
+  }
+
   global.ExcerlyMealCard = {
     componentsFromItems: componentsFromItems,
     cleanQuery: cleanQuery,
@@ -513,6 +593,7 @@
     createPending: createPending,
     componentConfirmed: componentConfirmed,
     rollup: rollup,
+    spokenGram: spokenGram,
     applyComponentGrams: applyComponentGrams,
     applyComponentChoice: applyComponentChoice,
     resolveMeal: resolveMeal

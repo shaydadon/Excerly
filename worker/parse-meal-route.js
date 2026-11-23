@@ -95,16 +95,20 @@ async function loadGovil(env) {
 
 const PREFERRED = [
   ['לחמניה מלחם לבן', 10124], ['לחמניה לבנה', 10124], ['טחינה', 1898], ['עמבה', 3267],
-  ['פילה עוף', 805], ['חזה עוף', 805], ['רוטב סויה', 1706], ['חרדל', 4273],
-  ['שמן זית', 4443], ['סטייק אנטריקוט', 610], ['מיונז', 4466], ['חסה', 3588]
+  ['פילה עוף', 805], ['חזה עוף', 805], ['פרגיות', 8186], ['פרגית', 8186], ['ירך עוף', 8186],
+  ['רוטב סויה', 1706], ['חרדל', 4273],
+  ['שמן זית', 4443], ['סטייק אנטריקוט', 610], ['מיונז', 4466], ['חסה', 3588],
+  ['אורז לבן מבושל', 2721], ['אורז מבושל', 2721], ['אורז', 2721], ['rice', 2721]
 ];
 
-function preferredCode(name) {
+export function preferredCode(name, cookingMethod) {
   const n = String(name || '');
   let best = null, len = 0;
   for (const [key, code] of PREFERRED) {
-    if (n.includes(key) && key.length > len) { best = code; len = key.length; }
+    if (n.toLowerCase().includes(String(key).toLowerCase()) && key.length > len) { best = code; len = key.length; }
   }
+  const raw = /raw|uncooked|dry|לא מבושל|יבש/.test(String(cookingMethod || '') + ' ' + n);
+  if (best === 2721 && raw) return 2726;
   return best;
 }
 
@@ -152,7 +156,7 @@ function applyOfficial(ingredients, pack, note, sourceText) {
   const items = (ingredients || []).map((ing) => {
     const coded = Object.assign({}, ing);
     const cands = candidatesFor(pack, ing.nameHe, ing.nameEn);
-    let code = preferredCode(ing.nameHe);
+    let code = preferredCode(ing.nameHe || ing.nameEn, ing.cookingMethod);
     let via = code ? 'preferred-map' : null;
     if (!code && ing.govilCode && cands.some(c => Number(c.code) === Number(ing.govilCode))) {
       code = Number(ing.govilCode);
@@ -333,5 +337,29 @@ export async function handleMealImage(body, env, ip) {
     }
   } catch (e) {}
   return { error: false, parsed: { src, cached: false } };
+}
+
+export async function handleTranscribe(body, env) {
+  if (!env || !env.AI || typeof env.AI.run !== 'function') {
+    return { error: true, status: 501, detail: 'Workers AI binding missing' };
+  }
+  const audio = body && body.audio;
+  if (!audio) return { error: true, status: 400, detail: 'missing audio' };
+  let payload = audio;
+  if (typeof audio === 'string') {
+    const b64 = audio.replace(/^data:.*?;base64,/, '');
+    const bin = atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    payload = [...arr];
+  }
+  try {
+    const result = await env.AI.run('@cf/openai/whisper-large-v3-turbo', { audio: payload });
+    const text = String((result && (result.text || result.transcription)) || '').trim();
+    const he = /[\u0590-\u05FF]/.test(text);
+    return { error: false, parsed: { text, language: he ? 'he' : 'en' } };
+  } catch (e) {
+    return { error: true, status: 502, detail: 'transcribe_failed' };
+  }
 }
 

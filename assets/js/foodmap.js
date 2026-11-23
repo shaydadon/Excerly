@@ -37,6 +37,7 @@
     { key: 'omelet', he: ['חביתה', 'חביתת', 'אומלט'], en: 'egg omelet', portions: { unit: { g: 61, src: 'usda' } }, def: 'unit', defCount: 2 },
     { key: 'eggBoiled', he: ['ביצה קשה', 'ביצים קשות', 'ביצה', 'ביצים'], en: 'egg hard boiled', portions: { unit: { g: 50, src: 'usda' } }, def: 'unit' },
     { key: 'chicken', he: ['חזה עוף', 'עוף'], en: 'chicken breast roasted', portions: { slice: { g: 35, src: 'default' }, thinSlice: { g: 25, src: 'default' }, unit: { g: 172, src: 'usda' } }, def: 'unit' },
+    { key: 'chickenThigh', he: ['פרגיות', 'פרגית', 'ירך עוף', 'שוק עוף'], en: 'chicken thigh roasted skinless', portions: { unit: { g: 150, src: 'default' } }, def: 'unit' },
     { key: 'rice', he: ['אורז'], en: 'rice white cooked', portions: { cup: { g: 158, src: 'usda' }, tbsp: { g: 10, src: 'default' } }, def: 'cup' },
     { key: 'cottage', he: ["קוטג'", 'קוטג׳', 'קוטג'], en: 'cottage cheese', portions: { unit: { g: 250, src: 'default' }, tbsp: { g: 15, src: 'default' }, cup: { g: 226, src: 'usda' } }, def: 'tbsp', defCount: 3 },
     { key: 'tomato', he: ['עגבנייה', 'עגבניה', 'עגבניות', 'עגבניית'], en: 'tomato raw', portions: { unit: { g: 123, src: 'usda' }, slice: { g: 20, src: 'usda' } }, def: 'unit' },

@@ -90,6 +90,7 @@ const CURATED = {
   omelet: { code: 1573, why: 'ביצה או חביתה מטוגנת ללא שמן — plain omelet' },
   eggBoiled: { code: 1564, why: 'ביצה קשה שלמה ללא קליפה' },
   chicken: { code: 805, why: 'חזה עוף צלוי, ללא עור — roasted skinless breast' },
+  chickenThigh: { code: 8186, why: 'פרגית — roasted skinless thigh, meat only (GovIL 8186)' },
   rice: { code: 2721, why: 'אורז לבן מבושל ללא תוספת שומן — not raw brown rice' },
   cottage: { code: 494, why: "קוטג' 5% תנובה — the common Israeli tub" },
   tomato: { code: 3663, why: 'עגבניה טריה' },
