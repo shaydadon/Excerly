@@ -57,10 +57,145 @@ export function fixedGrams(ing) {
   return Math.round(each * count * 10) / 10;
 }
 
+const HEB_NUM = {
+  אחד: 1, אחת: 1, שתיים: 2, שניים: 2, שני: 2, שתי: 2,
+  שלוש: 3, שלושה: 3, ארבע: 4, ארבעה: 4, חמש: 5, חמישה: 5,
+  שש: 6, שישה: 6, שבע: 7, שבעה: 7, שמונה: 8, תשע: 9, תשעה: 9,
+  עשר: 10, עשרה: 10
+};
+
+/* Dry seasonings, per 100 g. A pinch the speaker did not weigh is 1 g,
+   never the grams of the food next to it. */
+export const SEASONING = {
+  'פפריקה': { en: 'paprika', per100: { kcal: 282, protein: 14.1, carbs: 54, fat: 12.9 } },
+  'כמון': { en: 'cumin', per100: { kcal: 375, protein: 17.8, carbs: 44.2, fat: 22.3 } },
+  'כורכום': { en: 'turmeric', per100: { kcal: 312, protein: 9.7, carbs: 67.1, fat: 3.3 } },
+  'פלפל שחור': { en: 'black pepper', per100: { kcal: 251, protein: 10.4, carbs: 64, fat: 3.3 } },
+  'פלפל לבן': { en: 'white pepper', per100: { kcal: 296, protein: 10.4, carbs: 68.6, fat: 2.1 } },
+  'קינמון': { en: 'cinnamon', per100: { kcal: 247, protein: 4, carbs: 80.6, fat: 1.2 } },
+  'אורגנו': { en: 'oregano', per100: { kcal: 265, protein: 9, carbs: 68.9, fat: 4.3 } },
+  "צ'ילי": { en: 'chili powder', per100: { kcal: 282, protein: 13.5, carbs: 49.7, fat: 14.3 } },
+  'מלח': { en: 'salt', per100: { kcal: 0, protein: 0, carbs: 0, fat: 0 } }
+};
+
+export function seasoningOf(name) {
+  const n = String(name || '');
+  const keys = Object.keys(SEASONING).sort((a, b) => b.length - a.length);
+  for (const key of keys) {
+    if (n.includes(key) || n.toLowerCase().includes(SEASONING[key].en)) return Object.assign({ key }, SEASONING[key]);
+  }
+  return null;
+}
+
+export function normalizeMealText(text) {
+  let s = String(text || '');
+  s = s.replace(/גבייה/g, 'גבינה').replace(/גבילה/g, 'גבינה');
+  s = s.replace(/(גבינה)(?:\s*,?\s*גבינה)+/g, 'גבינה');
+  s = s.replace(/בצים/g, 'ביצים');
+  s = s.replace(/מתוגנ/g, 'מטוגנ');
+  s = s.replace(/בקו(?=\s*שמן)/g, 'בכף');
+  const words = Object.keys(HEB_NUM).sort((a, b) => b.length - a.length).join('|');
+  s = s.replace(new RegExp('(?:' + words + ')\\s+אחוז(?:ים)?', 'g'), (hit) => {
+    const word = hit.replace(/\s+אחוז(?:ים)?$/, '');
+    return HEB_NUM[word] + '%';
+  });
+  return s;
+}
+
+export function statedFatPercent(text) {
+  const m = normalizeMealText(text).match(/(\d+(?:[.,]\d+)?)\s*%/);
+  return m ? parseFloat(m[1].replace(',', '.')) : null;
+}
+
+export function eggCountIn(text, ing) {
+  const blob = normalizeMealText(String(text || '') + ' ' + String(ing && ing.nameHe || '') + ' ' + String(ing && ing.nameEn || ''));
+  if (!/ביצ|חבית|אומלט|omelet|\beggs?\b/i.test(blob)) return null;
+  const named = /ביצ|חבית|אומלט|omelet|\beggs?\b/i.test(String(ing && ing.nameHe || '') + ' ' + String(ing && ing.nameEn || ''));
+  if (!named) return null;
+  const digits = blob.match(/(\d+(?:[.,]\d+)?)\s*(?:ביצ|eggs?\b)/i);
+  if (digits) return parseFloat(digits[1].replace(',', '.'));
+  const word = blob.match(/(שתי|שתיים|שניים|שני|שלוש|שלושה|ארבע|ארבעה|חמש|חמישה|אחת|אחד)\s+ביצ/);
+  if (word) return HEB_NUM[word[1]];
+  const count = Number(ing && ing.count);
+  if (isFinite(count) && count > 0) return count;
+  return null;
+}
+
+export function prepareIngredient(ing, sourceText) {
+  const text = normalizeMealText(sourceText);
+  const next = Object.assign({}, ing);
+  next.nameHe = normalizeMealText(next.nameHe || '');
+  const spice = seasoningOf((next.nameHe || '') + ' ' + (next.nameEn || ''));
+  const explicitGrams = spokenGrams(text, next) != null;
+  if (spice) {
+    next.role = 'seasoning';
+    if (!next.nameEn) next.nameEn = spice.en;
+    const measured = explicitGrams || /כף|כפית|גרם|tsp|tbsp/.test(String(next.unit || '') + ' ' + next.nameHe);
+    if (!measured) {
+      next.grams = 1;
+      next.unit = 'g';
+      next.portionAssumed = true;
+    }
+  }
+  const eggs = eggCountIn(text, next);
+  if (eggs && !explicitGrams) {
+    next.count = eggs;
+    next.grams = Math.round(eggs * 55 * 10) / 10;
+    next.portionAssumed = true;
+  }
+  const cheese = /גבינה לבנה|white cheese/i.test((next.nameHe || '') + ' ' + (next.nameEn || ''));
+  if (cheese) {
+    const pct = statedFatPercent(text + ' ' + next.nameHe);
+    if (pct != null) {
+      next.nameHe = String(next.nameHe).replace(/\d+(?:[.,]\d+)?\s*%/g, ' ').replace(/\s+/g, ' ').trim();
+      next.nameHe = next.nameHe.replace(/גבינה לבנה/, 'גבינה לבנה ' + pct + '%').replace(/\s+/g, ' ').trim();
+    }
+    const g = Number(next.grams);
+    if (!isFinite(g) || g <= 0) { next.grams = 100; next.portionAssumed = true; }
+  }
+  const oil = /שמן זית|olive oil/i.test((next.nameHe || '') + ' ' + (next.nameEn || ''));
+  if (oil && /כף|כפות|tbsp/i.test(text) && !explicitGrams) {
+    const two = /(?:2|שתי|שניים)\s+כפות/.test(text);
+    next.count = two ? 2 : (Number(next.count) > 0 ? Number(next.count) : 1);
+    next.unit = 'כף';
+    next.grams = 13.5 * next.count;
+  }
+  const g = Number(next.grams);
+  if (!isFinite(g) || g <= 0) {
+    next.grams = spice ? 1 : 100;
+    next.portionAssumed = true;
+    if (!spice && !cheese && !oil && !eggs) next.estimate = true;
+  }
+  return next;
+}
+
+export function ensureMentioned(text, ingredients) {
+  const t = normalizeMealText(text);
+  const list = (ingredients || []).map(ing => Object.assign({}, ing));
+  const has = (re) => list.some(i => re.test(String(i.nameHe || '') + ' ' + String(i.nameEn || '')));
+  if (/גבינה לבנה/.test(t) && !has(/גבינה לבנה|white cheese/i)) {
+    const pct = statedFatPercent(t);
+    list.push({ nameHe: 'גבינה לבנה' + (pct != null ? ' ' + pct + '%' : ''), nameEn: 'white cheese', grams: null, role: 'food' });
+  }
+  if (/שמן זית/.test(t) && !has(/שמן זית|olive oil/i)) {
+    list.push({ nameHe: 'שמן זית', nameEn: 'olive oil', grams: null, unit: /כף/.test(t) ? 'כף' : null, role: 'food' });
+  }
+  if (/ביצ|חבית|אומלט/.test(t) && !has(/ביצ|חבית|אומלט|omelet|\beggs?\b/i)) {
+    list.push({ nameHe: /חבית/.test(t) ? 'חביתה' : 'ביצים', nameEn: /חבית/.test(t) ? 'omelette' : 'eggs', grams: null, role: 'food' });
+  }
+  Object.keys(SEASONING).sort((a, b) => b.length - a.length).forEach(key => {
+    if (t.includes(key) && !list.some(i => String(i.nameHe || '').includes(key) || String(i.nameEn || '').toLowerCase().includes(SEASONING[key].en))) {
+      list.push({ nameHe: key, nameEn: SEASONING[key].en, grams: null, role: 'seasoning' });
+    }
+  });
+  return list;
+}
+
 export function roleOf(ing, sourceText) {
   const text = String(sourceText || '');
   const name = String((ing && ing.nameHe) || '') + ' ' + String((ing && ing.nameEn) || '');
   const stated = String(ing && ing.role || '');
+  if (stated === 'seasoning' || seasoningOf(name)) return 'seasoning';
   const soy = /סויה|soy/i.test(name);
   const oil = /שמן|olive oil|\boil\b/i.test(name);
   if (stated === 'marinade' && (soy || /מרינד|מושרה/.test(name))) return 'marinade';
