@@ -899,7 +899,7 @@
     const prog = agenda.home || D.programForDate(date);
     if (!prog || !prog.exercises || !prog.exercises.length) return;
     player.exs = prog.exercises.slice();
-    player.title = agenda.rest ? t('restDayTitle') : (agenda.home ? agenda.title : L(prog.title));
+    player.title = t('myWorkout');
     player.date = date; player.key = dateKey(date); player.idx = 0;
     P().hidden = false; document.body.style.overflow = 'hidden';
     startExercise(0);
@@ -936,13 +936,19 @@
   function updatePlayerTime() {
     const te = $('#p-time', P());
     if (te) te.textContent = fmtTime(player.remaining);
+    const dur = D.EXERCISES[player.exs[player.idx]].duration || 1;
+    const frac = Math.max(0, player.remaining) / dur;
     const pr = $('#p-prog', P());
     if (pr) {
-      const dur = D.EXERCISES[player.exs[player.idx]].duration;
-      const frac = Math.max(0, player.remaining) / dur;
       pr.style.strokeDasharray = RING_C;
       pr.style.strokeDashoffset = (RING_C * (1 - frac)).toFixed(1);
     }
+    const fill = $('#p-bar-fill', P());
+    const n = player.exs.length || 1;
+    const pct = Math.max(4, Math.min(100, ((player.idx + (1 - frac)) / n) * 100));
+    if (fill) fill.style.width = pct.toFixed(1) + '%';
+    const bar = $('#p-bar', P());
+    if (bar) bar.setAttribute('aria-valuenow', String(Math.round(pct)));
   }
 
   function renderPlayer() {
@@ -955,7 +961,8 @@
         <div class="player-count">${t('playerOf', { i: player.idx + 1, n: player.exs.length })}</div>
         <button class="p-icon" id="p-help" aria-label="${t('needHelp')}">?</button>
       </div>
-      <h2 class="screen-title" style="font-size:40px">${escapeHtml(player.title || t('myPlan'))}</h2>
+      <h2 class="screen-title" style="font-size:40px">${escapeHtml(t('myWorkout'))}</h2>
+      <div class="player-bar" id="p-bar" role="progressbar" aria-label="${t('myWorkout')}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="p-bar-fill"></span></div>
       <div class="player-card">
         <div class="player-stage">
           <svg class="p-ring" viewBox="0 0 100 100" aria-hidden="true">
