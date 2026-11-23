@@ -23,7 +23,10 @@ const PARSE_SYSTEM =
   '"חתיכה/חתיכות/נתח" of chicken, turkey or fish is a piece of about 35 g, never a whole breast (150–170 g). "פרוסה" is also ~35 g (25 g if דקה). ' +
   '"כף" is a tablespoon, "כפית" is a teaspoon — never treat כפית as כף. ' +
   'If a roll/bread/pita is already named, "כריך/סנדוויץ" is only a container, not a second bread. ' +
-  'Estimate grams for household measures. Do not invent ingredients that are not in the text.';
+  'Estimate grams for household measures. A tablespoon (כף, tbsp) of olive oil is about 13.5 g, a teaspoon (כפית, tsp) about 4.5 g, and a cup (כוס) is the food\'s cup weight. ' +
+  'The text may be a speech transcript. Fix obvious food misspellings into the intended food (for example "גבייה גבילה לבנה" means גבינה לבנה, and "חביתה" means omelette). Never invent a food that was not said. ' +
+  'nameEn must be the English food: חביתה = omelette, ביצים = whole egg, מרק גולש = goulash soup, שמן זית = olive oil, גבינה לבנה = white cheese. ' +
+  'Do not invent ingredients that are not in the text.';
 
 const PICK_SYSTEM =
   'You pick a food-database code for each ingredient from the candidate list only. ' +
@@ -97,6 +100,7 @@ const PREFERRED = [
   ['לחמניה מלחם לבן', 10124], ['לחמניה לבנה', 10124], ['טחינה', 1898], ['עמבה', 3267],
   ['פילה עוף', 805], ['חזה עוף', 805], ['פרגיות', 8186], ['פרגית', 8186], ['ירך עוף', 8186],
   ['רוטב סויה', 1706], ['חרדל', 4273],
+  ['ביצה שלמה', 1561], ['חביתה', 1573], ['אומלט', 1573], ['ביצים', 1561], ['ביצה', 1561],
   ['שמן זית', 4443], ['סטייק אנטריקוט', 610], ['מיונז', 4466], ['חסה', 3588],
   ['אורז לבן מבושל', 2721], ['אורז מבושל', 2721], ['אורז', 2721], ['rice', 2721]
 ];
@@ -109,6 +113,7 @@ export function preferredCode(name, cookingMethod) {
   }
   const raw = /raw|uncooked|dry|לא מבושל|יבש/.test(String(cookingMethod || '') + ' ' + n);
   if (best === 2721 && raw) return 2726;
+  if ((best === 1561 || best === 1573) && /שמן זית|olive oil/.test(String(cookingMethod || '') + ' ' + n)) return 1570;
   return best;
 }
 
@@ -116,9 +121,19 @@ function normName(s) {
   return String(s || '').replace(/[.,;:()\-/]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
-function candidatesFor(pack, nameHe, nameEn) {
+function compositePenalty(name) {
+  const n = normName(name);
+  let pen = (String(name).match(/,/g) || []).length * 80;
+  if (/סלט|מרק|חמין|עוגה|פשטיד|ממרח|איקרא/.test(n)) pen += 350;
+  const words = n.split(' ').filter(Boolean).length;
+  if (words > 4) pen += (words - 4) * 30;
+  return pen;
+}
+
+export function candidatesFor(pack, nameHe, nameEn) {
   const q = normName(nameHe || nameEn);
   if (!q || !pack) return [];
+  const egg = /ביצ|חבית|אומלט|omelet|egg/.test(q);
   const ranked = [];
   for (const f of pack.byCodeList) {
     const n = normName(f.n);
@@ -126,8 +141,11 @@ function candidatesFor(pack, nameHe, nameEn) {
     let score = 0;
     if (n === q || head === q) score = 1000;
     else if (head.startsWith(q) || n.startsWith(q)) score = 800;
-    else if (q.length >= 3 && n.includes(q)) score = 500;
-    if (score) ranked.push({ code: f.c, name: f.n, score });
+    else if (q.length >= 3 && (n.includes(q) || (egg && /ביצ|חבית/.test(n)))) score = 500;
+    if (!score) continue;
+    if (egg && /^ביצה שלמה|^חביתה|^ביצה או חביתה/.test(f.n)) score += 450;
+    score -= compositePenalty(f.n);
+    ranked.push({ code: f.c, name: f.n, score });
   }
   ranked.sort((a, b) => b.score - a.score || a.name.length - b.name.length);
   return ranked.slice(0, 6);
@@ -251,10 +269,14 @@ export function mealImagePrompt(body) {
     if (it == null || typeof it === 'string') return latinOnly(typeof it === 'string' ? it : '');
     const method = latinOnly(it.cookingMethod || it.method || '');
     const name = latinOnly(it.queryEn || it.nameEn || '');
-    return [method, name].filter(Boolean).join(' ');
+    const grams = Number(it.grams);
+    const amount = isFinite(grams) && grams > 0 ? Math.round(grams) + ' g' : '';
+    return [amount, method, name].filter(Boolean).join(' ');
   }).filter(w => w.length >= 3);
-  const subject = (dish.split(/\s+/).filter(Boolean).length >= 2 ? dish : foods.join(', ')).slice(0, 400);
-  if (!subject || !/[A-Za-z]{3}/.test(subject)) return null;
+  const base = dish.split(/\s+/).filter(Boolean).length >= 2 ? dish : foods.join(', ');
+  const amounts = foods.filter(w => /\d+\s*g\b/i.test(w)).join(', ');
+  const subject = (base + (amounts ? '. Amounts: ' + amounts : '')).slice(0, 400);
+  if (!base || !/[A-Za-z]{3}/.test(base)) return null;
   const cues = [];
   if (/chicken/i.test(subject) && !/breaded|schnitzel|coated/i.test(subject)) {
     cues.push('The chicken is plain fillet strips, not breaded and not a schnitzel.');
@@ -347,7 +369,18 @@ export async function handleTranscribe(body, env) {
   if (!audio) return { error: true, status: 400, detail: 'missing audio' };
   const payload = typeof audio === 'string' ? audio.replace(/^data:.*?;base64,/, '') : audio;
   try {
-    const result = await env.AI.run('@cf/openai/whisper-large-v3-turbo', { audio: payload });
+    const lang = body && body.lang === 'en' ? 'en' : 'he';
+    const initial_prompt = lang === 'he'
+      ? 'חביתה, ביצים, ביצה, גבינה לבנה, קוטג׳, לחם, אורז, עוף, שמן זית, טחינה, סלט, מרק'
+      : 'omelette, eggs, white cheese, cottage cheese, bread, rice, chicken, olive oil';
+    let result;
+    try {
+      result = await env.AI.run('@cf/openai/whisper-large-v3-turbo', {
+        audio: payload, task: 'transcribe', language: lang, initial_prompt
+      });
+    } catch (e) {
+      result = await env.AI.run('@cf/openai/whisper-large-v3-turbo', { audio: payload });
+    }
     const text = String((result && (result.text || result.transcription)) || '').trim();
     const he = /[\u0590-\u05FF]/.test(text);
     return { error: false, parsed: { text, language: he ? 'he' : 'en' } };

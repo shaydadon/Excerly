@@ -55,9 +55,33 @@
         if (it.role) comp.role = it.role;
         if (!comp.queryEn && food.e) comp.queryEn = food.e;
       } else if (it.candidates && it.candidates.length) {
-        comp.matchState = 'ambiguous';
-        comp.questionKey = 'whichFood';
-        comp.options = it.candidates.map(c => ({ id: 'govil:' + c.code, code: c.code, description: c.name, source: 'govil' }));
+        const plain = (it.candidates || []).slice().sort((a, b) => {
+          const score = (c) => (/^ביצה שלמה|^חביתה|^ביצה או חביתה|omelet|omelette/i.test(c.name || '') ? 0 : /סלט|מרק|חמין/.test(c.name || '') ? 2 : 1);
+          return score(a) - score(b) || String(a.name || '').length - String(b.name || '').length;
+        });
+        comp.options = plain.map(c => ({ id: 'govil:' + c.code, code: c.code, description: c.name, source: 'govil' }))
+          .concat([{ id: 'estimate', description: 'none-of-these', estimate: true }]);
+        const first = plain[0];
+        const food = first && G && G.food ? G.food(first.code) : null;
+        if (food && isFinite(grams) && grams > 0 && N) {
+          const per100 = G.per100(food);
+          const built = N.mealFromOfficial(per100, grams, {
+            name: comp.name, source: 'govil', govilCode: food.c, sml: food.s,
+            description: food.n, dataset: G.DATASET, via: 'plain-first'
+          });
+          comp.matchState = 'matched';
+          comp.kcal = built.kcal;
+          comp.protein = built.protein;
+          comp.carbs = built.carbs;
+          comp.fat = built.fat;
+          comp.nutrients = built.provenance && built.provenance.nutrients;
+          comp.per100g = per100;
+          comp.candidate = { source: 'govil', govilCode: food.c, sml: food.s, description: food.n, dataset: G.DATASET };
+          comp.questionKey = 'whichFood';
+        } else {
+          comp.matchState = 'ambiguous';
+          comp.questionKey = 'whichFood';
+        }
       } else {
         comp.matchState = 'none';
         comp.questionKey = 'noMatch';

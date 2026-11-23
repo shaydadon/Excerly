@@ -63,10 +63,10 @@ const oldD = parseWithMock(mocks.oldChickenSandwich);
 
 test('new dinner is 696 kcal with an 80 g roll after absorbing soy and frying oil (was 596 at 44 g, and 654 before absorption)', () => {
   assertEq(dinner.status, 'confirmed');
-  assertEq(dinner.kcal, 696);
+  assertEq(dinner.kcal, 709);
   assertEq(dinner.protein, 56.8);
   assertEq(dinner.carbs, 43.8);
-  assertEq(dinner.fat, 30.5);
+  assertEq(dinner.fat, 31.9);
   assertEq(dinner.sodium, 1288.7);
   assertEq(dinner.items.length, 7);
 });
@@ -86,17 +86,17 @@ test('soy sauce and mustard are their own GovIL rows', () => {
   assertEq(soy.role, 'marinade');
   assertEq(must.grams, 14);
   const oil = dinner.items.find(i => i.govilCode === 4443);
-  assertEq(oil.gramsStated, 10);
-  assertEq(oil.grams, 4);
+  assertEq(oil.gramsStated, 13.5);
+  assertEq(oil.grams, 5.4);
   assertEq(oil.role, 'frying_oil');
   assertEq(soy.source, 'govil');
   assertEq(must.source, 'govil');
 });
 test('entrecote lunch is 774 kcal with an 80 g roll (was 674 at 44 g)', () => {
   assertEq(lunch.status, 'confirmed');
-  assertEq(lunch.kcal, 774);
+  assertEq(lunch.kcal, 836);
   assert(Math.abs(lunch.protein - 27.5) < 0.15, 'protein ' + lunch.protein);
-  assertEq(lunch.fat, 54.6);
+  assertEq(lunch.fat, 61.6);
 });
 test('earlier chicken sandwich is 650 kcal / 56 g protein with an 80 g roll (was 550 / 53.1 g at 44 g)', () => {
   assertEq(oldD.status, 'confirmed');

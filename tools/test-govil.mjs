@@ -82,9 +82,9 @@ await test('exact lunch splits with GovIL unit weights where they exist', () => 
   // roll: no GovIL unit weight → fixed 80 g
   assert.equal(c[1].grams, 80);
   assert.equal(c[1].quantityState, 'default-portion');
-  // oil / mayo: GovIL tbsp weights 10 g and 16 g
-  assert.equal(c[2].grams, 20);
-  assert.equal(c[2].quantityState, 'govil-portion');
+  // olive oil uses the household tablespoon, 13.5 g, not the old 10 g figure
+  assert.equal(c[2].grams, 27);
+  assert.equal(c[2].quantityState, 'usda-portion');
   assert.equal(c[3].grams, 32);
   assert.equal(c[3].quantityState, 'govil-portion');
   // lettuce: 3 default leaves × 11 g GovIL leaf, count was assumed
@@ -121,7 +121,7 @@ await test('totals equal Σ grams × GovIL per100g / 100 (macros, sat fat, sugar
   usdaCalls = 0;
   const meal = await MC.resolveMeal(MC.createPending({ id: 'g2', text: EXACT, slot: 'lunch' }), api, N);
   assert.equal(usdaCalls, 0);
-  const parts = [[610, 100], [10124, 80], [4443, 20], [4466, 32], [3588, 33]];
+  const parts = [[610, 100], [10124, 80], [4443, 27], [4466, 32], [3588, 33]];
   const sum = key => parts.reduce((s, [code, g]) => s + (per100(code, key) || 0) * g / 100, 0);
   assert.equal(meal.kcal, Math.round(sum('energy')));
   assert.equal(meal.protein, Math.round(sum('protein') * 10) / 10);
@@ -202,6 +202,33 @@ await test('day summary treats GovIL meals as official coverage', async () => {
   assert.equal(day.kcal.incomplete, false);
   assert.equal(day.kcal.total, meal.kcal);
   assert.ok(day.fdcMeals >= 1);
+});
+
+await test('ביצים ranks a plain egg ahead of egg salad', () => {
+  const rows = G.search('ביצים', 6);
+  assert.match(rows[0].food.n, /^ביצה שלמה/);
+  assert.ok(G.scoreFood('ביצים', G.food(1561)) > G.scoreFood('ביצים', G.food(1603)));
+});
+
+await test('omelette with a tablespoon of olive oil and white cheese saves with grams', async () => {
+  const text = 'חביתה משני ביצים מטוגנת בכף שמן זית וגבינה לבנה 9%';
+  const split = MC.splitComponents(text);
+  assert.equal(split.map(c => c.coreKey).join('|'), 'omelet|oliveOil|whiteCheese');
+  assert.equal(split[1].grams, 13.5);
+  const meal = await MC.resolveMeal(MC.createPending({ id: 'egg1', text: text, slot: 'breakfast' }), api, N);
+  assert.equal(usdaCalls, 0);
+  const egg = meal.components.find(c => c.coreKey === 'omelet');
+  const oil = meal.components.find(c => c.coreKey === 'oliveOil');
+  const cheese = meal.components.find(c => c.coreKey === 'whiteCheese');
+  assert.equal(egg.options[0].code, 1573);
+  assert.equal(egg.options[egg.options.length - 1].id, 'estimate');
+  assert.equal(egg.questionKey, 'whichFood');
+  assert.ok(egg.kcal > 0);
+  assert.equal(oil.gramsStated, 13.5);
+  assert.equal(oil.grams, 5.4);
+  assert.equal(cheese.candidate.govilCode, 542);
+  assert.ok(meal.kcal > 0);
+  assert.equal(meal.status === 'pending', false);
 });
 
 if (failed) { console.error('\n' + failed + ' failed'); process.exit(1); }
