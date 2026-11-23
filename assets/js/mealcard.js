@@ -86,9 +86,17 @@
       .replace(/\s+/g, ' ').trim();
   }
 
+  function normalizeNonFood(text) {
+    return String(text || '')
+      .replace(/[\u0591-\u05C7]/g, '')
+      .replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g, '')
+      .replace(/[.""!?…,;:]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
   function isNonFood(text) {
-    const s = String(text || '').replace(/[.""!?…]+/g, ' ').replace(/\s+/g, ' ').trim();
-    return !!s && /^(?:תודה(?:\s+רבה|\s+לך)?|שלום(?:\s+לכם)?|להתראות|ביי|bye|goodbye|hello|hi|thank you|thanks|you)$/i.test(s);
+    const s = normalizeNonFood(text);
+    return !!s && /^(?:תודה(?:\s+רבה)?(?:\s+לך)?|שלום(?:\s+לכם)?|להתראות|ביי|bye|goodbye|hello|hi|thank you|thanks(?:\s+for\s+watching)?|you)$/i.test(s);
   }
   function stripNonFood(text) {
     return String(text || '')

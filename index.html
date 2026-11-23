@@ -22,10 +22,10 @@
 </head>
 <body>
   <div class="app">
+    <button class="skin-toggle" id="skin-toggle" type="button" aria-label="החלף עיצוב" title="החלף עיצוב">◐</button>
     <!-- כותרת -->
     <header class="app-header mast">
       <div class="mast-tools">
-        <button class="skin-toggle" id="skin-toggle" type="button" aria-label="החלף עיצוב" title="החלף עיצוב">◐</button>
         <div class="lang-switch" id="lang-switch">
           <button data-lang="he">עב</button>
           <button data-lang="en">EN</button>
@@ -87,6 +87,10 @@
     <!-- חשבון: גיבוי וסנכרון בענן -->
     <section class="flat profile-hero" data-tab="me" id="profile-hero">
       <h2 class="screen-title" data-i18n="tabMe">אני</h2>
+      <div class="card install-app-card" id="install-app-card" hidden>
+        <button type="button" class="btn btn-primary btn-block" id="install-app-row" data-i18n="installApp">התקנת האפליקציה</button>
+        <p class="section-hint" id="install-app-help" hidden></p>
+      </div>
       <div class="avatar" aria-hidden="true"></div>
       <p class="who" id="profile-who"></p>
       <div class="stat-slab" id="profile-stats"></div>
@@ -407,6 +411,7 @@
   <script src="assets/js/mealcard.js"></script>
   <script src="assets/js/workout.js"></script>
   <script src="assets/js/gcal.js"></script>
+  <script src="assets/js/install.js"></script>
   <script src="assets/js/app.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="assets/js/cloud.js"></script>
