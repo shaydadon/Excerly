@@ -6,7 +6,7 @@
 
 import {
   stabilizeIngredient, describeDish, normalizeMealText, statedFatPercent,
-  prepareIngredient, ensureMentioned, seasoningOf
+  prepareIngredient, ensureMentioned, seasoningOf, isNonFood, stripNonFood
 } from './portions.mjs';
 
 const PARSE_MODEL_DEFAULT = 'claude-haiku-4-5'; // cheap, Hebrew is strong; override with env.PARSE_MODEL
@@ -202,7 +202,9 @@ function scaleSeasoning(spice, grams) {
 
 function applyOfficial(ingredients, pack, note, sourceText) {
   const items = (ingredients || []).map((ing) => {
+    if (isNonFood(ing && ing.nameHe) || isNonFood(ing && ing.nameEn)) return null;
     const prepared = prepareIngredient(ing, sourceText);
+    if (isNonFood(prepared.nameHe) || isNonFood(prepared.nameEn)) return null;
     const spice = seasoningOf((prepared.nameHe || '') + ' ' + (prepared.nameEn || ''));
     const cands = spice ? [] : candidatesFor(pack, prepared.nameHe, prepared.nameEn, sourceText);
     let code = spice ? null : preferredCode(prepared.nameHe || prepared.nameEn, prepared.cookingMethod, sourceText);
@@ -253,7 +255,7 @@ function applyOfficial(ingredients, pack, note, sourceText) {
       item.matchVia = 'estimate';
     }
     return item;
-  });
+  }).filter(Boolean);
   const confirmed = items.filter(it => it.kcal != null);
   const sum = (k, d) => confirmed.length
     ? Math.round(confirmed.reduce((s, it) => s + (Number(it[k]) || 0), 0) * Math.pow(10, d)) / Math.pow(10, d)
@@ -299,7 +301,7 @@ export async function handleParseMeal(body, env) {
 }
 
 export function assembleMeal(model, pack, text) {
-  const normalized = normalizeMealText(text);
+  const normalized = stripNonFood(normalizeMealText(text));
   const note = (model && model.note) || '';
   let ingredients = ((model && model.ingredients) || [])
     .map(stripNutrition)
@@ -443,7 +445,7 @@ export async function handleTranscribe(body, env) {
     } catch (e) {
       result = await env.AI.run('@cf/openai/whisper-large-v3-turbo', { audio: payload });
     }
-    const text = normalizeMealText(String((result && (result.text || result.transcription)) || '').trim());
+    const text = stripNonFood(normalizeMealText(String((result && (result.text || result.transcription)) || '').trim()));
     const he = /[\u0590-\u05FF]/.test(text);
     return { error: false, parsed: { text, language: he ? 'he' : 'en' } };
   } catch (e) {

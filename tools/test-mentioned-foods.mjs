@@ -123,6 +123,24 @@ await test('paprika copied at 150 g becomes a 1 g seasoning and does not block',
   assert.ok(meal.items.every(i => i.kcal != null));
 });
 
+await test('a thanks hallucination is not a food and is not estimated', () => {
+  const meal = assembleMeal({
+    note: 'thank you',
+    dishEn: 'meal',
+    ingredients: [{ nameHe: 'תודה רבה', nameEn: 'thank you', grams: 150 }]
+  }, pack, 'תודה רבה');
+  assert.equal(meal.items.length, 0);
+  assert.equal(meal.kcal, null);
+  const kept = assembleMeal({
+    ingredients: [
+      { nameHe: 'חביתה', nameEn: 'omelette', grams: 110, count: 2 },
+      { nameHe: 'תודה רבה', nameEn: 'thank you', grams: 150 }
+    ]
+  }, pack, 'חביתה, תודה רבה');
+  assert.equal(kept.items.some(i => /תודה|thank/i.test(i.nameHe + i.nameEn)), false);
+  assert.ok(kept.items.some(i => /חבית|ביצ/.test(i.nameHe)));
+});
+
 await test('an unknown food is an estimate, not a missing row', () => {
   const meal = assembleMeal({
     ingredients: [{ nameHe: 'מזון לא מוכר xyz', nameEn: 'unknown food', grams: 0 }]

@@ -1231,6 +1231,7 @@
       const next = [];
       for (const m of all[key]) {
         const text = m && (m.text || m.name);
+        if (window.ExcerlyMealCard.isNonFood(text) || window.ExcerlyMealCard.isNonFood(m.name)) { changed = true; continue; }
         if (!mealStale(m) || !text) { next.push(m); continue; }
         try {
           const fresh = await ExcerlyMealCard.resolveMeal(
@@ -1868,6 +1869,7 @@
   function logTextMeal(text, photo) {
     const MC = window.ExcerlyMealCard;
     if (!MC) return;
+    if (MC.isNonFood(text) || !MC.splitComponents(text).length) return;
     const meal = MC.createPending({
       id: uid(),
       text: text,
@@ -1884,6 +1886,10 @@
       ExcerlyHebParse.parseViaProxy(text, proxy).then(res => {
         if (!res.ok) { resolveStoredMeal(key, meal.id); return; }
         const next = ExcerlyHebParse.toMeal(res.data, window.ExcerlyNutrients, window.ExcerlyGovil, meal.id, meal.slot, text);
+        if (!next.components || !next.components.length || next.components.every(c => MC.isNonFood(c.name))) {
+          removeMeal(meal.id);
+          return;
+        }
         if (photo) { next.photo = photo; next.photoKind = 'user'; }
         setMeals(key, getMeals(key).map(m => m.id === meal.id ? next : m));
         refreshNutrition();

@@ -102,6 +102,21 @@ export function normalizeMealText(text) {
   return s;
 }
 
+const NONFOOD = /^(?:תודה(?:\s+רבה|\s+לך)?|שלום(?:\s+לכם)?|להתראות|ביי|bye|goodbye|hello|hi|thank you|thanks|you)$/i;
+
+export function isNonFood(text) {
+  const s = String(text || '').replace(/[.""!?…]+/g, ' ').replace(/\s+/g, ' ').trim();
+  return !!s && NONFOOD.test(s);
+}
+
+export function stripNonFood(text) {
+  return String(text || '')
+    .split(/\s*[,.!?]\s*|\s+(?=תודה\b|שלום\b|להתראות\b|thank you\b|thanks\b)/i)
+    .map(part => part.trim())
+    .filter(part => part && !isNonFood(part))
+    .join(', ');
+}
+
 export function statedFatPercent(text) {
   const m = normalizeMealText(text).match(/(\d+(?:[.,]\d+)?)\s*%/);
   return m ? parseFloat(m[1].replace(',', '.')) : null;
