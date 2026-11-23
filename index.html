@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=Heebo:wght@400;500;700;800&display=swap" />
   <link rel="stylesheet" href="assets/css/app.css" />
-  <script>try{localStorage.removeItem('excerly.skin');document.documentElement.removeAttribute('data-skin');}catch(e){}</script>
+  <script>try{var s=localStorage.getItem('excerly.skin');if(s!=='classic'&&s!=='almanac'){s=matchMedia('(prefers-color-scheme: dark)').matches?'classic':'almanac';}document.documentElement.setAttribute('data-skin',s);document.documentElement.style.colorScheme=s==='classic'?'dark':'light';}catch(e){}</script>
 </head>
 <body>
   <div class="app">
@@ -124,48 +124,6 @@
       <p class="cloud-note" data-i18n="gcalNote">בפעם הראשונה Google יבקש אישור חד-פעמי. התזכורות נשלחות ע״י Google Calendar עצמו.</p>
     </section>
 
-    <!-- פרופיל + BMI -->
-    <section class="card" data-tab="me">
-      <h2 class="card-title"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/></svg></span> <span data-i18n="profileTitle">פרופיל בריאות ו-BMI</span></h2>
-      <p class="section-hint" data-i18n="profileHint">מלאו את הפרטים לחישוב מדד מסת גוף, קלוריות יומיות והמלצות תזונה.</p>
-      <form id="profile-form">
-        <div class="profile-grid">
-          <div class="field">
-            <label for="age" data-i18n="age">גיל</label>
-            <input id="age" name="age" type="number" min="10" max="120" inputmode="numeric" data-i18n-placeholder="phAge" placeholder="לדוגמה: 30" />
-          </div>
-          <div class="field">
-            <label for="weight" data-i18n="weight">משקל (ק״ג)</label>
-            <input id="weight" name="weight" type="number" min="25" max="300" step="0.1" inputmode="decimal" data-i18n-placeholder="phWeight" placeholder="לדוגמה: 72" />
-          </div>
-          <div class="field">
-            <label for="height" data-i18n="height">גובה (ס״מ)</label>
-            <input id="height" name="height" type="number" min="100" max="230" inputmode="numeric" data-i18n-placeholder="phHeight" placeholder="לדוגמה: 172" />
-          </div>
-          <div class="field">
-            <label for="gender" data-i18n="gender">מין</label>
-            <select id="gender" name="gender">
-              <option value="male" data-i18n="male">זכר</option>
-              <option value="female" data-i18n="female">נקבה</option>
-            </select>
-          </div>
-          <div class="field wide">
-            <label for="activity" data-i18n="activity">רמת פעילות</label>
-            <select id="activity" name="activity">
-              <option value="sedentary" data-i18n="actSedentary">יושבני (מעט מאוד פעילות)</option>
-              <option value="light" data-i18n="actLight">קל (1–3 אימונים בשבוע)</option>
-              <option value="moderate" data-i18n="actModerate">בינוני (3–5 אימונים בשבוע)</option>
-              <option value="active" data-i18n="actActive">פעיל (6–7 אימונים בשבוע)</option>
-            </select>
-          </div>
-        </div>
-        <div class="btn-row">
-          <button type="submit" class="btn btn-primary btn-block" data-i18n="calcBmiBtn">חשב/י BMI וקלוריות</button>
-        </div>
-      </form>
-      <div class="bmi-result" id="bmi-result"></div>
-    </section>
-
     <!-- תוכנית אימון אישית לחדר כושר (AI) -->
     <section class="flat" data-tab="workouts">
       <h2 class="screen-title" data-i18n="tabWorkouts">אימונים</h2>
@@ -270,6 +228,55 @@
 
     <!-- מעקב תזונה יומי -->
     <section class="flat nutri-screen" data-tab="nutrition">
+      <section class="card profile-card" id="health-profile">
+        <h2 class="card-title"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/></svg></span> <span data-i18n="profileTitle">פרופיל בריאות ו-BMI</span></h2>
+        <p class="section-hint" data-i18n="profileHint">מלאו את הפרטים לחישוב מדד מסת גוף, קלוריות יומיות והמלצות תזונה.</p>
+        <form id="profile-form">
+          <div class="profile-grid">
+            <div class="field">
+              <label for="age" data-i18n="age">גיל</label>
+              <input id="age" name="age" type="number" min="10" max="120" inputmode="numeric" data-i18n-placeholder="phAge" placeholder="לדוגמה: 30" />
+            </div>
+            <div class="field">
+              <label for="weight" data-i18n="weight">משקל (ק״ג)</label>
+              <input id="weight" name="weight" type="number" min="25" max="300" step="0.1" inputmode="decimal" data-i18n-placeholder="phWeight" placeholder="לדוגמה: 72" />
+            </div>
+            <div class="field">
+              <label for="height" data-i18n="height">גובה (ס״מ)</label>
+              <input id="height" name="height" type="number" min="100" max="230" inputmode="numeric" data-i18n-placeholder="phHeight" placeholder="לדוגמה: 172" />
+            </div>
+            <div class="field">
+              <label for="gender" data-i18n="gender">מין</label>
+              <select id="gender" name="gender">
+                <option value="male" data-i18n="male">זכר</option>
+                <option value="female" data-i18n="female">נקבה</option>
+              </select>
+            </div>
+            <div class="field wide">
+              <label for="activity" data-i18n="activity">רמת פעילות</label>
+              <select id="activity" name="activity">
+                <option value="sedentary" data-i18n="actSedentary">יושבני (מעט מאוד פעילות)</option>
+                <option value="light" data-i18n="actLight">קל (1–3 אימונים בשבוע)</option>
+                <option value="moderate" data-i18n="actModerate">בינוני (3–5 אימונים בשבוע)</option>
+                <option value="active" data-i18n="actActive">פעיל (6–7 אימונים בשבוע)</option>
+              </select>
+            </div>
+            <div class="field wide">
+              <label for="weight-goal" data-i18n="weightGoal">יעד משקל</label>
+              <select id="weight-goal" name="weightGoal">
+                <option value="maintain" data-i18n="wgMaintain">לשמור על המשקל</option>
+                <option value="lose" data-i18n="wgLose">לרדת במשקל</option>
+                <option value="gain" data-i18n="wgGain">לעלות במשקל</option>
+              </select>
+            </div>
+          </div>
+          <div class="btn-row">
+            <button type="submit" class="btn btn-primary btn-block" data-i18n="calcBmiBtn">חשב/י BMI וקלוריות</button>
+          </div>
+        </form>
+        <div class="bmi-result" id="bmi-result"></div>
+        <div class="profile-menu" id="profile-menu"></div>
+      </section>
       <h2 class="screen-title" data-i18n="nutriTitleShort">תזונה</h2>
       <div class="nutri-hero" id="nutri-hero">
         <div class="nh-copy">
@@ -361,6 +368,7 @@
   </div>
 
   <!-- ניווט תחתון -->
+  <button class="skin-toggle" id="skin-toggle" type="button" aria-label="החלף עיצוב" title="החלף עיצוב">◐</button>
   <nav class="tabbar" id="tabbar">
     <button class="tab-btn" data-tab="home"><span class="ti" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg></span><span data-i18n="tabHome">היום</span></button>
     <button class="tab-btn" data-tab="workouts"><span class="ti" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9v6M8.2 8v8M15.8 8v8M18 9v6M8.2 12h7.6"/></svg></span><span data-i18n="tabWorkouts">אימונים</span></button>

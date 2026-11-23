@@ -8,6 +8,11 @@
     he: {
       appSub: 'אימונים ותזונה חכמים בעזרת AI',
       skinToggleAria: 'החלף עיצוב', skinAlmanac: 'עיצוב: מודרני', skinClassic: 'עיצוב: קלאסי',
+      weightGoal: 'יעד משקל', wgLose: 'לרדת במשקל', wgGain: 'לעלות במשקל', wgMaintain: 'לשמור על המשקל',
+      goalTargetLose: 'יעד לירידה: {n} קק״ל (TDEE {tdee} פחות 500)',
+      goalTargetGain: 'יעד לעלייה: {n} קק״ל (TDEE {tdee} ועוד 400)',
+      goalTargetMaintain: 'יעד לשמירה: {n} קק״ל, לפי ההוצאה היומית',
+      profileMenuTitle: 'תפריט לפי היעד',
       tabHome: 'היום', tabWorkouts: 'אימונים', tabNutrition: 'תזונה', tabMe: 'אני',
       installCta: 'התקינו את Excerly כאפליקציה במסך הבית', installBtn: 'התקן',
       installIos: 'להתקנה: לחצו על שיתוף ⬆️ ואז "הוסף למסך הבית" (בדפדפן Safari).',
@@ -270,6 +275,11 @@
     en: {
       appSub: 'Smart workouts & nutrition with AI',
       skinToggleAria: 'Switch design', skinAlmanac: 'Design: Modern', skinClassic: 'Design: Classic',
+      weightGoal: 'Weight goal', wgLose: 'Lose weight', wgGain: 'Gain weight', wgMaintain: 'Maintain weight',
+      goalTargetLose: 'Loss target: {n} kcal (TDEE {tdee} minus 500)',
+      goalTargetGain: 'Gain target: {n} kcal (TDEE {tdee} plus 400)',
+      goalTargetMaintain: 'Maintain target: {n} kcal, matching daily expenditure',
+      profileMenuTitle: 'Menu for this goal',
       tabHome: 'Today', tabWorkouts: 'Workouts', tabNutrition: 'Nutrition', tabMe: 'Me',
       installCta: 'Install Excerly as an app on your home screen', installBtn: 'Install',
       installIos: 'To install: tap Share ⬆️ then "Add to Home Screen" (in Safari).',

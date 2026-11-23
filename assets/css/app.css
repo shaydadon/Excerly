@@ -86,8 +86,11 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 }
 .lang-switch button.on { color: var(--ink); font-weight: 700; }
 .skin-toggle {
-  width: 32px; height: 32px; border-radius: 999px; border: 1px solid var(--line);
-  background: var(--card); color: var(--muted); cursor: pointer;
+  position: fixed; z-index: 45; inset-inline-end: 14px;
+  bottom: calc(72px + env(safe-area-inset-bottom));
+  width: 40px; height: 40px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--card); color: var(--ink); cursor: pointer; font-size: 18px;
+  box-shadow: 0 6px 16px rgba(36, 33, 31, .12);
 }
 
 /* ---------- tabs ---------- */
@@ -200,6 +203,18 @@ body[data-home="journal"] #home-dash { display: none; }
   background: #fff; color: var(--ink); font-size: 16px; font-weight: 700; cursor: pointer;
 }
 html { color-scheme: light; }
+html[data-skin="classic"] { color-scheme: dark; }
+html[data-skin="classic"] {
+  --bg: #0e1116; --bg-soft: #161b22; --card: #1b2230; --card-2: #222c3c;
+  --ink: #eaf0f7; --text: #eaf0f7; --muted: #9aa7b8; --line: #2b3648; --rule: #2b3648;
+  --accent: #35d0a5; --accent-ink: #35d0a5; --accent-2: #4aa3ff; --on-accent: #06231c;
+  --hero: #121820; --hero-text: #eaf0f7; --danger: #ef5f6b; --ok: #2ecc71; --info: #4aa3ff;
+  --olive: #35d0a5; --sage: #9aa86a;
+  --shadow-hero: 0 14px 40px rgba(0,0,0,.45);
+}
+html[data-skin="classic"] .home-kicker { font-size: 40px; }
+html[data-skin="classic"] .btn-primary { color: var(--on-accent); }
+html[data-skin="classic"] .back-link, html[data-skin="classic"] .sec-text { background: var(--card); color: var(--ink); }
 
 .streak-inline { margin-top: 8px; color: var(--muted); font-size: 13px; }
 .streak-inline b { color: var(--ink); font-weight: 800; }

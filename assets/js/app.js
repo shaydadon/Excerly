@@ -215,22 +215,25 @@
      פרופיל + BMI + קלוריות
      ========================================================= */
   function initProfile() {
-    const p = load(STORE.profile, { age: '', weight: '', height: '', gender: 'male', activity: 'moderate' });
+    const p = load(STORE.profile, { age: '', weight: '', height: '', gender: 'male', activity: 'moderate', weightGoal: 'maintain' });
     const form = $('#profile-form');
     form.age.value = p.age;
     form.weight.value = p.weight;
     form.height.value = p.height;
     form.gender.value = p.gender;
     form.activity.value = p.activity;
+    if (form.weightGoal) form.weightGoal.value = p.weightGoal || 'maintain';
 
     form.addEventListener('submit', (e) => {
       e.preventDefault();
+      const goal = form.weightGoal ? form.weightGoal.value : 'maintain';
       const data = {
         age: +form.age.value,
         weight: +form.weight.value,
         height: +form.height.value,
         gender: form.gender.value,
-        activity: form.activity.value
+        activity: form.activity.value,
+        weightGoal: goal === 'lose' || goal === 'gain' ? goal : 'maintain'
       };
       if (!data.age || !data.weight || !data.height) {
         toast(t('toastFillAWH'));
@@ -245,6 +248,15 @@
     if (p.age && p.weight && p.height) renderBMI(p);
   }
 
+  function renderProfileMenu(target) {
+    const box = $('#profile-menu');
+    if (!box) return;
+    if (!target || !N.generateMealPlan) { box.innerHTML = ''; return; }
+    const plan = N.generateMealPlan(target);
+    const rows = (plan.meals || []).map(m => '<div class="menu-item"><div class="menu-slot">' + escapeHtml(m.label || '') + '</div><div class="menu-name">' + escapeHtml(m.name || '') + '</div><div class="menu-kcal"><bdi class="iso-num" dir="ltr">' + m.kcal + '</bdi></div></div>').join('');
+    box.innerHTML = '<h3 class="card-title">' + escapeHtml(t('profileMenuTitle')) + '</h3><div class="menu-list">' + rows + '</div><div class="menu-total">' + escapeHtml(t('menuTotal', { n: nf(plan.total), t: nf(target) })) + '</div>';
+  }
+
   function renderBMI(p) {
     const box = $('#bmi-result');
     const bmi = D.calcBMI(p.weight, p.height);
@@ -252,7 +264,9 @@
     const bmr = D.calcBMR({ weightKg: p.weight, heightCm: p.height, age: p.age, gender: p.gender });
     const act = D.ACTIVITY_FACTORS[p.activity];
     const tdee = Math.round(bmr * act.factor);
-    const m = D.macros(tdee);
+    const goal = p.weightGoal === 'lose' || p.weightGoal === 'gain' ? p.weightGoal : 'maintain';
+    const target = (N.targetCalories && N.targetCalories()) || tdee;
+    const m = D.macros(target);
     const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
     const catLabel = t('cat' + cap(cat.key));
     const advice = t('adv' + cap(cat.key));
@@ -307,9 +321,10 @@
       </div>
       <div class="calorie-box">
         <div class="calorie-headline">
-          <span class="num">${nf(tdee)}</span>
+          <span class="num">${nf(target)}</span>
           <span class="unit">${t('perDay')}</span>
         </div>
+        <div class="calorie-sub">${t(goal === 'lose' ? 'goalTargetLose' : goal === 'gain' ? 'goalTargetGain' : 'goalTargetMaintain', { n: nf(target), tdee: nf(tdee) })}</div>
         <div class="calorie-sub">${t('bmrLine', { bmr: nf(Math.round(bmr)), act: actLabel })}</div>
         <div class="macros">
           <div class="macro p"><div class="m-val">${m.protein} ${t('grams')}</div><div class="m-lbl">${t('protein')}</div></div>
@@ -319,6 +334,7 @@
       </div>`;
     // הנעת המחוג
     requestAnimationFrame(() => {
+      renderProfileMenu(target);
       const g = box.querySelector('.bmi-gauge');
       if (g) g.style.setProperty('--p', gaugeP.toFixed(1));
     });
@@ -2251,11 +2267,18 @@
 
   function readPlanInputs() {
     const prof = load(STORE.profile, {});
+    const weightGoal = prof.weightGoal === 'lose' || prof.weightGoal === 'gain' ? prof.weightGoal : 'maintain';
+    let goal = $('#plan-goal').value;
+    let style = $('#plan-style').value;
+    let cardio = $('#plan-cardio').value;
+    if (weightGoal === 'lose') { goal = 'fatloss'; style = 'endurance'; cardio = 'lots'; }
+    else if (weightGoal === 'gain') { goal = 'muscle'; style = 'hypertrophy'; cardio = 'none'; }
     return {
-      goal: $('#plan-goal').value,
-      style: $('#plan-style').value,
+      goal: goal,
+      style: style,
       focusArea: $('#plan-focus').value,
-      cardio: $('#plan-cardio').value,
+      cardio: cardio,
+      weightGoal: weightGoal,
       days: $('#plan-days').value,
       minutes: $('#plan-minutes').value,
       level: $('#plan-level').value,
@@ -2925,10 +2948,42 @@
   }
 
   /* ---------- מתג עיצוב: מודרני (Almanac) / קלאסי ---------- */
+  function preferredSkin() {
+    try {
+      const saved = localStorage.getItem('excerly.skin');
+      if (saved === 'classic' || saved === 'almanac') return saved;
+    } catch (e) {}
+    try { if (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) return 'classic'; } catch (e) {}
+    return 'almanac';
+  }
+  function applySkin(skin) {
+    const next = skin === 'classic' ? 'classic' : 'almanac';
+    document.documentElement.setAttribute('data-skin', next);
+    document.documentElement.style.colorScheme = next === 'classic' ? 'dark' : 'light';
+  }
   function initSkin() {
-    try { localStorage.removeItem('excerly.skin'); } catch (e) {}
-    document.documentElement.removeAttribute('data-skin');
-    document.documentElement.style.colorScheme = 'light';
+    applySkin(preferredSkin());
+    const btn = $('#skin-toggle');
+    if (btn) {
+      btn.setAttribute('aria-label', t('skinToggleAria'));
+      btn.setAttribute('title', t('skinToggleAria'));
+      btn.addEventListener('click', () => {
+        const now = document.documentElement.getAttribute('data-skin') === 'classic' ? 'classic' : 'almanac';
+        const next = now === 'classic' ? 'almanac' : 'classic';
+        try { localStorage.setItem('excerly.skin', next); } catch (e) {}
+        applySkin(next);
+        toast(t(next === 'classic' ? 'skinClassic' : 'skinAlmanac'));
+      });
+    }
+    try {
+      const mq = window.matchMedia && matchMedia('(prefers-color-scheme: dark)');
+      if (mq && mq.addEventListener) mq.addEventListener('change', () => {
+        let saved = '';
+        try { saved = localStorage.getItem('excerly.skin') || ''; } catch (e) {}
+        if (saved === 'classic' || saved === 'almanac') return;
+        applySkin(preferredSkin());
+      });
+    } catch (e) {}
   }
 
   function init() {
