@@ -75,6 +75,19 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
   margin: 0;
   text-transform: none;
 }
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  direction: ltr;
+}
+.brand-mark { width: 34px; height: 34px; display: block; flex: none; }
+.brand-name {
+  font-family: "Fraunces", "Frank Ruhl Libre", Georgia, serif;
+  font-weight: 560;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
 .app-sub { display: none; }
 .logo { display: none; }
 .mast-end { justify-self: end; display: flex; gap: 6px; align-items: center; }

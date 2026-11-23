@@ -41,6 +41,9 @@ const ASSETS = [
   'assets/icon.svg',
   'assets/icon-192.png',
   'assets/icon-512.png',
+  'assets/icon-512-maskable.png',
+  'assets/apple-touch-icon.png',
+  'assets/favicon-32.png',
   'privacy.html',
   'manifest.webmanifest',
   ...EX_IMGS
