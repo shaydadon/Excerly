@@ -354,7 +354,8 @@
         cell.classList.add('dragging');
         document.body.style.overflow = 'hidden';
         if (navigator.vibrate) { try { navigator.vibrate(15); } catch (_) {} }
-        ghost = el('div', 'drag-ghost', '🏋️');
+        ghost = el('div', 'drag-ghost', '');
+        ghost.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 9v6M8.2 8v8M15.8 8v8M18 9v6M8.2 12h7.6"/></svg>';
         document.body.appendChild(ghost);
       };
       const moveGhost = (x, y) => {
@@ -406,6 +407,24 @@
     });
   }
 
+  function hasActivePlan() {
+    const s = scheduleCfg();
+    return !!(s && s.plan && (s.plan.days || []).length);
+  }
+  function dayStart(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function isPastDay(date) { return dayStart(date) < dayStart(today); }
+  // One schedule: a saved gym plan owns the calendar. Other days are rest.
+  // The home stretch program is used only when no plan is saved.
+  function agendaFor(date) {
+    if (hasActivePlan()) {
+      const gym = scheduledDay(date);
+      if (gym) return { rest: false, gym: gym, home: null, title: gym.day.name || gym.day.focus || t('myPlan') };
+      return { rest: true, gym: null, home: null, title: t('restDayTitle') };
+    }
+    const prog = D.programForDate(date);
+    return { rest: !!prog.rest, gym: null, home: prog, title: L(prog.title) };
+  }
+
   function renderCalendar() {
     const y = viewDate.getFullYear();
     const mo = viewDate.getMonth();
@@ -421,27 +440,29 @@
 
     for (let d = 1; d <= days; d++) {
       const date = new Date(y, mo, d);
-      const prog = D.programForDate(date);
       const key = dateKey(date);
+      const agenda = agendaFor(date);
+      const past = isPastDay(date);
+      const done = !!doneMap[key];
       const cell = el('div', 'cal-cell');
-      if (prog.rest) cell.classList.add('rest');
+      if (agenda.rest) cell.classList.add('rest');
       if (sameDay(date, today)) cell.classList.add('today');
       if (journalDate && sameDay(date, journalDate)) cell.classList.add('selected');
+      if (agenda.gym) cell.classList.add('gym');
+      if (agenda.gym && agenda.gym.moved) cell.classList.add('moved');
 
-      const gym = scheduledDay(date);
-      if (gym) cell.classList.add('gym');
-
-      cell._date = date; // לגרירה/שחרור
+      cell._date = date;
       cell.appendChild(el('div', 'd-num', String(d)));
-      if (gym && !doneMap[key]) cell.appendChild(el('div', 'cell-gym', gym.moved ? '🏋️↔' : '🏋️'));
       const dot = el('div', 'dot');
-      if (doneMap[key]) { dot.classList.add('done'); cell.appendChild(el('div', 'cell-check', '✓')); }
-      else if (gym) dot.classList.add('gym');
-      else if (prog.rest) dot.classList.add('rest');
+      if (agenda.gym && past && done) dot.classList.add('done');
+      else if (agenda.gym && past) dot.classList.add('missed');
+      else if (agenda.gym) dot.classList.add('gym');
+      else if (done) dot.classList.add('done');
+      else if (agenda.rest) dot.classList.add('rest');
       cell.appendChild(dot);
+      if (agenda.gym && past && done) cell.appendChild(el('span', 'cell-check', '✓'));
 
-      // אימון עתידי שטרם בוצע — ניתן לגרירה להעברה ליום אחר
-      if (gym && !doneMap[key]) { cell.classList.add('draggable'); armDrag(cell); }
+      if (agenda.gym && !done) { cell.classList.add('draggable'); armDrag(cell); }
 
       cell.addEventListener('click', () => { if (dragSuppressClick) return; selectJournalDay(date); });
       grid.appendChild(cell);
@@ -543,7 +564,19 @@
     return { sets, reps: lo + within, weightPct: adds > 0 ? (adds * pct) : 0 };
   }
 
+  function renderRestSheet(date) {
+    const dayLabel = t('dayLabel', { day: I18n.dayNames()[date.getDay()], d: date.getDate(), month: I18n.monthNames()[date.getMonth()] });
+    sheet.innerHTML = '<div class="sheet-grip"></div><div class="sheet-head"><div class="row"><div><div class="sheet-date">' + escapeHtml(dayLabel) + '</div><div class="sheet-title">' + escapeHtml(t('restDayTitle')) + '</div></div><button class="sheet-close" id="sheet-close" aria-label="✕">✕</button></div></div><div class="sheet-body"><p class="section-hint">' + escapeHtml(t('restChip')) + '</p></div>';
+    $('#sheet-close', sheet).addEventListener('click', closeSheet);
+    sheet.scrollTop = 0;
+  }
   function renderWorkout(date) {
+    if (hasActivePlan()) {
+      const sched = scheduledDay(date);
+      if (sched) { renderGymDay(date, sched); return; }
+      renderRestSheet(date);
+      return;
+    }
     const sched = scheduledDay(date);
     if (sched) { renderGymDay(date, sched); return; }
     const prog = D.programForDate(date);
@@ -1238,14 +1271,16 @@
     const key = dateKey(new Date());
     const meals = getMeals(key);
     if (!meals.length) {
-      box.innerHTML = `<div class="empty">${t('noMeals')}</div>`;
+      box.innerHTML = '<div class="empty-meal"><p>' + escapeHtml(t('emptyMealInvite')) + '</p><button type="button" class="btn btn-primary" id="empty-mic">' + escapeHtml(t('micBtn')) + '</button></div>';
+      const em = $('#empty-mic', box);
+      if (em) em.addEventListener('click', () => { const m = $('#mic-btn'); if (m) m.click(); });
       box.classList.add('show');
       renderMicroSummary(meals);
       return;
     }
     const kn = window.ExcerlyNutrients ? ExcerlyNutrients.knownKcal(meals) : { total: meals.reduce((s, m) => s + (m.kcal || 0), 0), incomplete: false };
     const total = kn.total;
-    const target = N.targetCalories();
+    const target = (N.targetCalories && N.targetCalories()) || 2100;
     const rows = meals.slice().reverse().map(m => m.components ? renderLogCard(m) : `
       <div class="dm-row" data-id="${m.id}">
         <button class="dm-del" data-id="${m.id}" aria-label="${t('removeMealAria')}" title="${t('removeMealAria')}">✕</button>
@@ -1328,7 +1363,8 @@
   function nutrientRow(n, label, computed) {
     const R = window.ExcerlyNutrients;
     let val;
-    if (!n || n.status === 'missing' || n.amount == null) val = '<span class="micro-miss">' + t(computed ? 'notReported' : 'microMissing') + '</span>';
+    if (n && n.status === 'rate_limited') val = '<span class="micro-miss">' + t('fdcRate') + '</span>';
+    else if (!n || n.status === 'missing' || n.amount == null) val = '<span class="micro-miss">' + t(computed ? 'noData' : 'microMissing') + '</span>';
     else {
       const small = ['protein', 'carbs', 'fat', 'fiber', 'sugar', 'satFat'];
       const amt = n.key === 'energy' ? R.roundKcal(n.amount) : small.indexOf(n.key) !== -1 ? R.roundMacro(n.amount) : R.roundMicro(n.amount);
@@ -1561,12 +1597,12 @@
 
   function renderNutriTarget() {
     const box = $('#nutri-target');
-    const target = N.targetCalories();
+    const target = (N.targetCalories && N.targetCalories()) || 2100;
     if (!target) {
       box.innerHTML = `<div class="nutri-need-profile">${t('needProfile')}</div>`;
       return null;
     }
-    box.innerHTML = `<div class="nutri-goal"><span class="nutri-goal-lbl">${t('goalLabel')}</span><span class="nutri-goal-val"><bdi class="iso-num" dir="ltr">${nf(target)}</bdi> <span>${t('goalUnit')}</span></span></div>`;
+    box.innerHTML = `<div class="nutri-goal"><span class="nutri-goal-lbl">${t('goalLabel')}</span> <span class="nutri-goal-val"><bdi class="iso-num" dir="ltr">${nf(target)}</bdi> <span>${t('goalUnit')}</span></span></div>`;
     return target;
   }
 
@@ -1758,7 +1794,7 @@
     if (window.ExcerlyHebParse && proxy) {
       ExcerlyHebParse.parseViaProxy(text, proxy).then(res => {
         if (!res.ok) { resolveStoredMeal(key, meal.id); return; }
-        const next = ExcerlyHebParse.toMeal(res.data, window.ExcerlyNutrients, window.ExcerlyGovil, meal.id, meal.slot);
+        const next = ExcerlyHebParse.toMeal(res.data, window.ExcerlyNutrients, window.ExcerlyGovil, meal.id, meal.slot, text);
         if (photo) { next.photo = photo; next.photoKind = 'user'; }
         setMeals(key, getMeals(key).map(m => m.id === meal.id ? next : m));
         refreshNutrition();
@@ -2018,7 +2054,7 @@
           ${e.note ? `<div class="pex-note">${escapeHtml(e.note)}</div>` : ''}
         </div>`).join('');
       return `
-        <details class="plan-day"${i === 0 ? ' open' : ''}>
+        <details class="plan-day"${i === ((scheduledDay(new Date()) || {}).dayIdx || 0) ? ' open' : ''}>
           <summary><span class="pd-name">${escapeHtml(d.name)}</span><span class="pd-focus">${escapeHtml(d.focus)}</span></summary>
           <div class="pex-list">${rows}</div>
         </details>`;
@@ -2424,7 +2460,7 @@
   function renderNutriHero() {
     const meals = getMeals(dateKey(new Date()));
     const kn = window.ExcerlyNutrients ? ExcerlyNutrients.knownKcal(meals) : { total: meals.reduce((s, m) => s + (m.kcal || 0), 0) };
-    const target = N.targetCalories();
+    const target = (N.targetCalories && N.targetCalories()) || 2100;
     const nums = $('#nutri-hero-nums');
     if (nums) {
       nums.innerHTML = '<bdi class="iso-num" dir="ltr">' + String(kn.total || 0) + ' / ' + (target ? String(target) : '—') + '</bdi>';
@@ -2474,16 +2510,18 @@
       const g = h < 12 ? t('greetMorning') : h < 17 ? t('greetAfternoon') : h < 21 ? t('greetEvening') : t('greetNight');
       greet.textContent = g + ' ' + (doneMap[dateKey(now)] ? t('greetDone') : t('greetWait'));
     }
-    const prog = D.programForDate(now);
-    const gym = scheduledDay(now);
+    const agendaNow = agendaFor(now);
+    const prog = agendaNow.home || D.programForDate(now);
+    const gym = agendaNow.gym;
     const titleEl = $('#hero-title');
-    if (titleEl) titleEl.textContent = gym ? (gym.day.name || t('myPlan')) : L(prog.title);
+    if (titleEl) titleEl.textContent = agendaNow.title;
     const meta = $('#hero-meta');
     if (meta) {
-      const mins = gym && gym.day && gym.day.minutes ? gym.day.minutes : D.estimatedMinutes(prog);
+      const mins = gym && gym.day && gym.day.minutes ? gym.day.minutes : (gym && gym.plan && gym.plan.minutes) || (!agendaNow.rest && prog ? D.estimatedMinutes(prog) : '');
       meta.textContent = mins ? ('⏱ ' + mins + ' ' + t('minWord')) : '';
     }
-    const ids = (prog && prog.exercises) || [];
+    const ids = gym ? (gym.day.exercises || []).map((_, i) => 'gym:' + gym.dayIdx + ':' + i)
+      : (agendaNow.rest && hasActivePlan() ? [] : ((prog && prog.exercises) || []));
     const doneN = ids.filter(id => isExDone(dateKey(now), id)).length;
     const pct = ids.length ? Math.max(8, Math.round(doneN / ids.length * 100)) : 12;
     const ring = $('#hero-ring'); if (ring) ring.style.setProperty('--pct', String(pct));
@@ -2500,13 +2538,13 @@
     if (!box) return;
     const date = journalDate || new Date();
     const key = dateKey(date);
-    const prog = D.programForDate(date);
-    const gym = scheduledDay(date);
+    const agenda = agendaFor(date);
     const meals = getMeals(key);
-    const title = gym ? (gym.day.name || t('myPlan')) : L(prog.title);
+    const title = agenda.title;
     const mealHtml = meals.length ? meals.map(m => '<div class="tl-item"><div class="tl-time">' + escapeHtml(m.slot ? t(m.slot === 'breakfast' ? 'slotBreakfast' : m.slot === 'lunch' ? 'slotLunch' : m.slot === 'dinner' ? 'slotDinner' : 'slotSnack') : 'todayAgenda') + '</div><div>' + escapeHtml(m.name) + '</div></div>').join('') : '<div class="empty">' + t('noMeals') + '</div>';
     const isToday = sameDay(date, today);
-    box.innerHTML = '<h3>' + escapeHtml(I18n.dayNames()[date.getDay()]) + ' ' + date.getDate() + '</h3><div class="tl"><div class="tl-item"><div class="tl-time">' + escapeHtml(title) + '</div><button type="button" class="btn btn-primary" id="journal-start">' + t('journalStart') + '</button></div>' + mealHtml + '</div>' + (isToday ? '<button type="button" class="btn btn-ghost" id="journal-add">' + t('journalAdd') + '</button>' : '');
+    const startBtn = agenda.rest ? '' : '<button type="button" class="btn btn-primary" id="journal-start">' + t('journalStart') + '</button>';
+    box.innerHTML = '<h3>' + escapeHtml(I18n.dayNames()[date.getDay()]) + ' ' + date.getDate() + '</h3><div class="tl"><div class="tl-item"><div class="tl-time">' + escapeHtml(title) + '</div>' + startBtn + '</div>' + mealHtml + '</div>' + (isToday ? '<button type="button" class="btn btn-ghost" id="journal-add">' + t('journalAdd') + '</button>' : '');
     const st = $('#journal-start', box);
     if (st) st.addEventListener('click', () => openSheet(date));
     const add = $('#journal-add', box);
@@ -2538,8 +2576,12 @@
         const label = typeof e.name === 'string' ? e.name : L(e.name);
         return '<div class="train-row"><span class="ex-thumb">' + gymVisual(e) + '</span><span class="ex-info"><span class="ex-name">' + escapeHtml(label) + '</span><span class="ex-reps">' + escapeHtml(e.sets) + ' × ' + escapeHtml(e.reps) + '</span></span><span class="train-check' + (ed ? ' on' : '') + '" aria-hidden="true">' + (ed ? '✓' : '') + '</span></div>';
       }).join('');
-      box.innerHTML = '<article class="train-hero"><div class="pad"><h3>' + escapeHtml(gym.day.name || t('myPlan')) + '</h3><div class="train-count">' + escapeHtml(t('minutesChip', { n: gym.day.minutes || '' })) + '</div><div class="train-count">' + escapeHtml(t('exCount', { n: list.length })) + '</div><div class="train-count">' + escapeHtml(t('progressChip', { d: doneN, n: list.length })) + '</div><button type="button" class="btn btn-primary" id="train-open">' + t('startWorkoutShort') + '</button></div>' + media + '</article>' + trainRows(rows);
+      const mins = (gym.day && gym.day.minutes) || (gym.plan && gym.plan.minutes) || '';
+      const minChip = mins ? '<div class="train-count">' + escapeHtml(t('minutesChip', { n: mins })) + '</div>' : '';
+      box.innerHTML = '<article class="train-hero"><div class="pad"><h3>' + escapeHtml(gym.day.name || t('myPlan')) + '</h3>' + minChip + '<div class="train-count">' + escapeHtml(t('exCount', { n: list.length })) + '</div><div class="train-count">' + escapeHtml(t('progressChip', { d: doneN, n: list.length })) + '</div><button type="button" class="btn btn-primary" id="train-open">' + t('startWorkoutShort') + '</button></div>' + media + '</article>' + trainRows(rows) + '<button type="button" class="btn btn-ghost btn-block" id="open-plan" style="margin-top:12px">' + t('planTitle') + '</button>';
       const b = $('#train-open', box); if (b) b.addEventListener('click', () => openSheet(now));
+      const planBtn = $('#open-plan', box);
+      if (planBtn) planBtn.addEventListener('click', () => { location.hash = '#/workouts/plan'; });
       return;
     }
     const ids = (prog && prog.exercises) || [];
@@ -2834,24 +2876,10 @@
   }
 
   /* ---------- מתג עיצוב: מודרני (Almanac) / קלאסי ---------- */
-  function applySkin(skin) {
-    document.documentElement.setAttribute('data-skin', skin === 'classic' ? 'classic' : 'almanac');
-  }
   function initSkin() {
-    let cur = 'almanac';
-    try { if (localStorage.getItem('excerly.skin') === 'classic') cur = 'classic'; } catch (e) {}
-    applySkin(cur);
-    const btn = $('#skin-toggle');
-    if (!btn) return;
-    btn.setAttribute('aria-label', t('skinToggleAria'));
-    btn.setAttribute('title', t('skinToggleAria'));
-    btn.addEventListener('click', () => {
-      const now = document.documentElement.getAttribute('data-skin') === 'classic' ? 'classic' : 'almanac';
-      const next = now === 'classic' ? 'almanac' : 'classic';
-      try { localStorage.setItem('excerly.skin', next); } catch (e) {}
-      applySkin(next);
-      toast(t(next === 'classic' ? 'skinClassic' : 'skinAlmanac'));
-    });
+    try { localStorage.removeItem('excerly.skin'); } catch (e) {}
+    document.documentElement.removeAttribute('data-skin');
+    document.documentElement.style.colorScheme = 'light';
   }
 
   function init() {
@@ -2918,6 +2946,76 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
     }
+    const syncPlanRoute = () => {
+      const on = location.hash === '#/workouts/plan';
+      const page = $('#plan-page');
+      const land = $('#train-landing');
+      if (page) page.hidden = !on;
+      if (land) land.hidden = !!on;
+      if (on) setTab('workouts');
+    };
+    window.addEventListener('hashchange', syncPlanRoute);
+    const backPlan = $('#plan-back');
+    if (backPlan) backPlan.addEventListener('click', () => { if (location.hash === '#/workouts/plan') history.back(); else location.hash = '#/workouts'; });
+    syncPlanRoute();
+    const mic = $('#mic-btn');
+    if (mic) mic.addEventListener('click', startMic);
+    const voiceUse = $('#voice-use');
+    if (voiceUse) voiceUse.addEventListener('click', () => {
+      const text = ($('#voice-text') && $('#voice-text').value || '').trim();
+      const box = $('#voice-draft');
+      if (box) box.hidden = true;
+      if (!text) return;
+      const input = $('#food-text');
+      if (input) input.value = text;
+      logTextMeal(text, null);
+    });
+    const voiceCancel = $('#voice-cancel');
+    if (voiceCancel) voiceCancel.addEventListener('click', () => { const box = $('#voice-draft'); if (box) box.hidden = true; });
+  }
+
+  function showVoiceDraft(text) {
+    const box = $('#voice-draft');
+    const input = $('#voice-text');
+    if (!box || !input) return;
+    input.value = text || '';
+    box.hidden = false;
+  }
+  async function startMic() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+      toast(t('camDenied'));
+      return;
+    }
+    let stream;
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch (e) { toast(t('camDenied')); return; }
+    const rec = new MediaRecorder(stream);
+    const chunks = [];
+    rec.ondataavailable = (ev) => { if (ev.data && ev.data.size) chunks.push(ev.data); };
+    rec.onstop = async () => {
+      stream.getTracks().forEach(tr => tr.stop());
+      const blob = new Blob(chunks, { type: rec.mimeType || 'audio/webm' });
+      const buf = await blob.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let bin = '';
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      const audio = btoa(bin);
+      const proxy = (window.EXCERLY_CONFIG && EXCERLY_CONFIG.fdcProxy) || (aiCfg().proxyUrl);
+      if (!proxy) { toast(t('toastNeedAiPhoto')); return; }
+      try {
+        const res = await fetch(proxy.replace(/\/$/, '') + '/transcribe', {
+          method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ action: 'transcribe', audio: audio })
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data || !data.text) { toast(t('fdcOffline')); return; }
+        showVoiceDraft(data.text);
+      } catch (err) { toast(t('fdcOffline')); }
+    };
+    rec.start();
+    const btn = document.getElementById('mic-btn');
+    if (btn) btn.classList.add('recording');
+    setTimeout(() => { if (rec.state === 'recording') rec.stop(); if (btn) btn.classList.remove('recording'); }, 8000);
   }
 
   /* ---------- סנכרון ל-Google Calendar ---------- */

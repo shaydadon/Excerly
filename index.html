@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=Heebo:wght@400;500;700;800&display=swap" />
   <link rel="stylesheet" href="assets/css/app.css" />
-  <script>try{if(localStorage.getItem('excerly.skin')==='classic')document.documentElement.setAttribute('data-skin','classic');}catch(e){}</script>
+  <script>try{localStorage.removeItem('excerly.skin');document.documentElement.removeAttribute('data-skin');}catch(e){}</script>
 </head>
 <body>
   <div class="app">
@@ -30,9 +30,7 @@
         </div>
       </div>
       <h1 class="wordmark app-title">Excerly</h1>
-      <div class="mast-end">
-        <button class="skin-toggle" id="skin-toggle" aria-label="החלף עיצוב" title="החלף עיצוב">◐</button>
-      </div>
+      <div class="mast-end"></div>
     </header>
 
     <!-- באנר התקנה כאפליקציה (PWA) -->
@@ -182,8 +180,12 @@
         <button type="button" data-place="gym" data-i18n="placeGym">בחדר כושר</button>
         <button type="button" class="on" data-place="home" data-i18n="placeHome">בבית</button>
       </div>
+      <div id="train-landing">
       <p style="text-align:end;font-weight:800;margin:12px 0 0" data-i18n="myPlan">התוכנית שלי</p>
       <div id="train-spot"></div>
+      </div>
+      <div id="plan-page" hidden>
+      <button type="button" class="back-link" id="plan-back"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14 6l-6 6 6 6"/></svg><span data-i18n="planBack">חזרה לאימונים</span></button>
       <span class="ai-badge" id="plan-ai-badge" data-i18n="aiActive" hidden>AI</span>
       <h3 class="card-title" data-i18n="planTitle">תוכנית אימון אישית</h3>
       <p class="section-hint" data-i18n="planHint">בנו תוכנית אימון אישית לחדר כושר לפי המטרה, מספר הימים והרמה שלכם.</p>
@@ -263,6 +265,7 @@
       </div>
       <div class="plan-result" id="plan-result"></div>
       <div class="saved-plans" id="saved-plans"></div>
+      </div>
     </section>
 
     <!-- מעקב תזונה יומי -->
@@ -284,19 +287,32 @@
         </div>
       </div>
       <p class="ask" data-i18n="foodLabel">מה אכלתי היום?</p>
+      <button type="button" class="btn btn-primary btn-mic-main" id="mic-btn">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4"/></svg>
+        <span data-i18n="micPrimary">ספר מה אכלת</span>
+      </button>
       <div class="food-row food-field">
         <textarea id="food-text" rows="1" data-i18n-placeholder="foodPlaceholder" placeholder="לדוגמה: חזה עוף 150 גרם, תפוח"></textarea>
         <button type="button" class="icon-btn photo-action" id="camera-btn" data-i18n-aria="cameraBtn" aria-label="צלם ארוחה">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3v10H4z"/><circle cx="12" cy="13" r="3.2"/></svg>
         </button>
       </div>
-      <button class="btn btn-primary btn-add-meal" id="calc-food" data-i18n="calcBtn">הוספת ארוחה</button>
+      <button class="btn btn-ghost btn-add-meal" id="calc-food" data-i18n="calcBtn">הוספת ארוחה</button>
+      <div id="voice-draft" class="voice-draft" hidden>
+        <label for="voice-text" data-i18n="voiceUse">שימוש בתמלול</label>
+        <textarea id="voice-text" rows="3"></textarea>
+        <div class="btn-row">
+          <button type="button" class="btn btn-primary" id="voice-use" data-i18n="voiceUse">שימוש בתמלול</button>
+          <button type="button" class="btn btn-ghost" id="voice-cancel" data-i18n="voiceCancel">ביטול</button>
+        </div>
+      </div>
       <input type="file" id="food-camera" accept="image/*" capture="environment" hidden />
       <input type="file" id="food-photo" accept="image/*" hidden />
       <div class="photo-preview" id="photo-preview" hidden></div>
       <div class="day-meals" id="day-meals"></div>
 
-      <div class="nutri-more">
+      <details class="nutri-more" id="nutri-more">
+        <summary data-i18n="moreOptions">אפשרויות נוספות</summary>
         <span class="ai-badge" id="ai-badge" data-i18n="aiActive" hidden>AI</span>
         <div class="seg" id="slot-toggle" role="group" aria-label="meal slot">
           <button type="button" data-slot="breakfast" data-i18n="slotBreakfast">ארוחת בוקר</button>
@@ -311,11 +327,6 @@
           <button class="btn btn-ghost" id="build-menu" style="flex:1" data-i18n="menuBtn">🍽️ בנה לי תפריט יומי</button>
           <button class="btn btn-ghost photo-action" id="gallery-btn" style="flex:1" data-i18n="galleryBtn">מהגלריה</button>
         </div>
-      </div>
-
-      <div class="nutri-result" id="nutri-result"></div>
-      <div class="menu-result" id="menu-result"></div>
-
       <details class="ai-settings" id="ai-settings">
         <summary data-i18n="aiSettings">⚙️ הגדרות AI (ניתוח טקסט חכם באמצעות Claude)</summary>
         <p class="ai-note" data-i18n="aiNote1">כשמחובר שרת AI, האפליקציה מבינה כל טקסט חופשי ומחשבת קלוריות בעזרת Claude — אוטומטית. ללא חיבור, פועל מנוע ההערכה המקומי.</p>
@@ -338,11 +349,15 @@
           </label>
         </details>
       </details>
+      </details>
+
+      <div class="nutri-result" id="nutri-result"></div>
+      <div class="menu-result" id="menu-result"></div>
     </section>
 
     <!-- לוח שנה -->
     <section class="card home-journal" data-tab="home" id="home-journal">
-      <button type="button" class="back-link" id="close-journal" data-i18n="backToToday">חזרה</button>
+      <button type="button" class="back-link" id="close-journal"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14 6l-6 6 6 6"/></svg><span data-i18n="backToToday">חזרה</span></button>
       <h2 class="screen-title" data-i18n="journalTitle">יומן</h2>
       <h2 class="card-title" style="position:absolute;width:1px;height:1px;overflow:hidden"><span data-i18n="calTitle">יומן האימונים</span></h2>
       <div class="cal-head">

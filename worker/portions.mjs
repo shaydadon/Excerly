@@ -77,8 +77,31 @@ export function applyAbsorption(stated, role) {
   return { gramsStated, grams, fraction, role: role || 'food' };
 }
 
+export function spokenGrams(sourceText, ing) {
+  const text = String(sourceText || '');
+  const names = [ing && ing.nameHe, ing && ing.nameEn, ing && ing.queryEn].filter(Boolean).map(s => String(s).toLowerCase());
+  if (!names.length) return null;
+  const hits = [];
+  const patterns = [
+    /(\d+(?:[.,]\d+)?)\s*(?:גרם|גר׳|גר')\s+(?:של\s+)?([^,.;]+)/g,
+    /(\d+(?:[.,]\d+)?)\s*grams?\s+of\s+([^,.;]+)/gi
+  ];
+  patterns.forEach(re => {
+    let m;
+    while ((m = re.exec(text))) {
+      hits.push({ grams: parseFloat(m[1].replace(',', '.')), phrase: m[2].toLowerCase() });
+    }
+  });
+  for (const hit of hits) {
+    if (names.some(n => hit.phrase.indexOf(n) !== -1 || n.indexOf(hit.phrase.trim()) !== -1)) return hit.grams;
+  }
+  return null;
+}
+
 export function stabilizeIngredient(ing, sourceText) {
   const next = Object.assign({}, ing);
+  const spoken = spokenGrams(sourceText, next);
+  if (spoken != null) { next.grams = spoken; next.unit = 'g'; next.explicit = true; }
   const fixed = fixedGrams(next);
   if (fixed != null) next.grams = fixed;
   const role = roleOf(next, sourceText);

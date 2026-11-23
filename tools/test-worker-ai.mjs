@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 import {
   anthropicMessagesBody,
   handleMealImage,
+  handleTranscribe,
   mealImagePrompt,
   mealImageKey,
   IMAGE_CACHE_VERSION,
@@ -111,6 +112,21 @@ await test('image rate limit returns 429 without calling the model again', async
   assert.equal(blocked.status, 429);
   assert.equal(blocked.detail, 'rate_limited');
   assert.equal(calls, 1);
+});
+
+await test('whisper transcribe returns text and detects Hebrew or English', async () => {
+  const he = await handleTranscribe({ audio: btoa('abc') }, { AI: { run: async (_m, body) => {
+    assert.equal(_m, '@cf/openai/whisper-large-v3-turbo');
+    assert.ok(Array.isArray(body.audio));
+    return { text: '300 גרם אורז' };
+  } } });
+  assert.equal(he.error, false);
+  assert.equal(he.parsed.text, '300 גרם אורז');
+  assert.equal(he.parsed.language, 'he');
+  const en = await handleTranscribe({ audio: btoa('abc') }, { AI: { run: async () => ({ text: '400 grams of chicken' }) } });
+  assert.equal(en.parsed.language, 'en');
+  const missing = await handleTranscribe({}, { AI: { run: async () => ({}) } });
+  assert.equal(missing.status, 400);
 });
 
 await test('representative library still wins for the entrecote sandwich', () => {

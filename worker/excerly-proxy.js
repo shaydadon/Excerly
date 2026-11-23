@@ -1,4 +1,4 @@
-import { handleParseMeal, handleMealImage } from './parse-meal-route.js';
+import { handleParseMeal, handleMealImage, handleTranscribe } from './parse-meal-route.js';
 
 /* =============================================================
    Excerly – Cloudflare Worker proxy ל-Claude
@@ -387,6 +387,7 @@ export default {
     catch (e) { return json({ error: 'Bad JSON body' }, 400, origin); }
     const path = new URL(request.url).pathname.replace(/\/+$/, '');
     if (body && path === '/parse-meal') body.action = 'parse_meal';
+    if (body && path === '/transcribe') body.action = 'transcribe';
     if (body && (path === '/meal-image' || path === '/meal_image')) body.action = 'meal_image';
     if (body && body.action === 'meal_image') {
       const ip = request.headers.get('CF-Connecting-IP') || 'anon';
@@ -412,6 +413,12 @@ export default {
       limited = memRateLimited(ip);
     }
     if (limited) return json({ error: 'rate_limited', detail: 'Too many requests. Please wait a minute and try again.' }, 429, origin);
+
+    if (body && body.action === 'transcribe') {
+      const r = await handleTranscribe(body, env);
+      if (r.error) return json({ error: r.detail || 'transcribe_failed' }, r.status || 502, origin);
+      return json(r.parsed, 200, origin);
+    }
 
     if (!env.ANTHROPIC_API_KEY) return json({ error: 'Server missing ANTHROPIC_API_KEY' }, 500, origin);
 

@@ -57,7 +57,8 @@
       .toLowerCase()
       .replace(/[\"׳'`]/g, '')
       .replace(/[()[\]{}]/g, ' ')
-      .replace(/[/\\+|–—_-]+/g, ' ')
+      // "הליכה / מדרגה" and "הליכה/מדרגה" are the same name.
+      .replace(/\s*[/\\+|–—_-]+\s*/g, ' ')
       .replace(/[.:;!?]/g, ' ')
       .replace(new RegExp(HEB_EDGE + '(עם|של|על|machine|with|and|the|a)' + HEB_END, 'g'), '$1')
       .replace(new RegExp(HEB_EDGE + '(dumbbells?|db|משקולות|משקולת|במשקולות)' + HEB_END, 'g'), '$1')
@@ -89,9 +90,9 @@
     legPress: ['leg press', 'leg press machine', 'לחיצת רגליים', 'לחיצת רגליים במכונה', 'hack squat'],
     legCurl: ['leg curl', 'lying leg curl', 'seated leg curl', 'כפיפת ברך', 'leg curls', 'כפיפת ברכיים', 'כפיפת ברכיים במכונה', 'כפיפת ברך במכונה'],
     legExt: ['leg extension', 'פשיטת ברך', 'פשיטת ברכיים', 'פשיטת ברכיים במכונה'],
-    calf: ['calf raise', 'standing calf raise', 'seated calf raise', 'הרמות עקב', 'הרמת עקבים', 'הרמת שוקיים'],
+    calf: ['calf raise', 'standing calf raise', 'seated calf raise', 'machine calf raise', 'calf raise machine', 'הרמות עקב', 'הרמת עקבים', 'הרמת שוקיים', 'עליית עקבים', 'עליית עקבים לתאומים', 'עליית עקבים לתאומים במכונה'],
     hipThrust: ['hip thrust', 'barbell hip thrust', 'היפ טראסט', 'היפ תראסט'],
-    lunge: ['dumbbell lunge', 'db lunges', 'walking lunge', 'lunges', 'מספריים', 'bulgarian split squat', 'סקוואט בולגרי'],
+    lunge: ['dumbbell lunge', 'db lunges', 'walking lunge', 'lunges', 'מספריים', 'bulgarian split squat', 'סקוואט בולגרי', 'מכרעים', 'מכרעים הליכה', 'הליכה/מדרגה', 'הליכה / מדרגה עם משקולות', 'מכרעים הליכה/מדרגה עם משקולות', 'מכרעים הליכה / מדרגה עם משקולות', 'step-up', 'עלייה למדרגה'],
     bench: ['bench press', 'barbell bench press', 'לחיצת חזה', 'לחיצת חזה במוט', 'close grip bench', 'close-grip bench'],
     inclineDb: [
       'incline db press', 'incline db chest press', 'incline dumbbell press',
@@ -132,7 +133,7 @@
     elliptical: ['elliptical', 'אליפטיקל', 'קרוס טריינר', 'cross trainer', 'חימום אליפטיקל', 'חימום: אליפטיקל'],
     crunch: ['crunch', 'crunches', 'sit-up', 'sit ups', 'sit-ups', 'כפיפות בטן'],
     pushup: ['push-up', 'push ups', 'push-ups', 'pushup', 'שכיבות סמיכה'],
-    bentRow: ['bent over row', 'bent-over row', 'barbell row', 'חתירה בעמידה', 'חתירה עם מוט']
+    bentRow: ['bent over row', 'bent-over row', 'barbell row', 'חתירה בעמידה', 'חתירה עם מוט', 'חתירה עם משקולת', 'חתירה עם משקולת יד בתמיכה', 'one-arm dumbbell row', 'supported one-arm dumbbell row']
   };
 
   // Home-plan stills (shoulders, stretches). Used when a gym/AI name matches a home exercise.

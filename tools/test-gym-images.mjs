@@ -234,7 +234,6 @@ const GAPS = new Set([
   'russian twist', 'טוויסט רוסי',
   'farmer carry', 'farmers walk',
   'kettlebell swing', 'נדנדת קטלבל',
-  'step up', 'step-ups',
   'hip abduction', 'הרחקת ירך',
   'good morning',
   'back extension', 'hyperextension', 'פשיטת גב',
@@ -274,4 +273,4 @@ if (failed) {
 }
 console.log('ok', gymCases.length, 'gym cases,', visualCases.length, 'visual cases,',
   auditedOk, 'audited names with files,', Object.keys(W.EX).length, 'gym bank ids,',
-  Object.keys(D.EXERCISES).length, 'home bank ids, cache expected excerly-v62');
+  Object.keys(D.EXERCISES).length, 'home bank ids, cache expected excerly-v63');

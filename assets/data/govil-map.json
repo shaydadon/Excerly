@@ -124,6 +124,13 @@
       "name": "ביצה קשה שלמה, ללא קליפה, עם מלח",
       "english": "Egg, hard-boiled,wihout shell, added salt"
     },
+    "chickenThigh": {
+      "code": 8186,
+      "via": "curated",
+      "why": "פרגית is a skinless chicken thigh. GovIL 8186 is roasted thigh, meat only, skin not eaten.",
+      "name": "בשר עוף, ירך, בשר בלבד, מבושל, צלוי",
+      "english": "Chicken, thigh, roasted, broiled, or baked, skin not eaten"
+    },
     "chicken": {
       "code": 805,
       "via": "curated",
