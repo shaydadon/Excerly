@@ -1,5 +1,5 @@
 /* Excerly – Service Worker לתמיכה בעבודה לא מקוונת (PWA) */
-const CACHE = 'excerly-v67';
+const CACHE = 'excerly-v68';
 const EX_KEYS = ['neck','arms','sidebend','forwardfold','hamstring',
   'butterfly','quad','hipflexor','calf','catcow','cobra','child','twist','shoulders'];
 const GYM_KEYS = ['squat','legpress','legcurl','legext','calf','hipthrust','lunge','bench','inclinedb','fly',
@@ -41,6 +41,9 @@ const ASSETS = [
   'assets/icon.svg',
   'assets/icon-192.png',
   'assets/icon-512.png',
+  'assets/icon-512-maskable.png',
+  'assets/apple-touch-icon.png',
+  'assets/favicon-32.png',
   'privacy.html',
   'manifest.webmanifest',
   ...EX_IMGS

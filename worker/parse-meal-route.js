@@ -4,7 +4,10 @@
    Nutrition is scaled from that code. No image generation and no new secret.
    ============================================================= */
 
-import { stabilizeIngredient, describeDish } from './portions.mjs';
+import {
+  stabilizeIngredient, describeDish, normalizeMealText, statedFatPercent,
+  prepareIngredient, ensureMentioned, seasoningOf
+} from './portions.mjs';
 
 const PARSE_MODEL_DEFAULT = 'claude-haiku-4-5'; // cheap, Hebrew is strong; override with env.PARSE_MODEL
 
@@ -105,8 +108,15 @@ const PREFERRED = [
   ['אורז לבן מבושל', 2721], ['אורז מבושל', 2721], ['אורז', 2721], ['rice', 2721]
 ];
 
-export function preferredCode(name, cookingMethod) {
+export function preferredCode(name, cookingMethod, sourceText) {
   const n = String(name || '');
+  const pct = statedFatPercent(n + ' ' + String(sourceText || '') + ' ' + String(cookingMethod || ''));
+  if (/גבינה לבנה|white cheese/i.test(n)) {
+    if (pct === 9) return 542;
+    if (pct === 5) return 532;
+    if (pct === 3) return 530;
+    if (pct === 0.5) return 525;
+  }
   let best = null, len = 0;
   for (const [key, code] of PREFERRED) {
     if (n.toLowerCase().includes(String(key).toLowerCase()) && key.length > len) { best = code; len = key.length; }
@@ -130,10 +140,22 @@ function compositePenalty(name) {
   return pen;
 }
 
-export function candidatesFor(pack, nameHe, nameEn) {
+function dairyHit(name, foodName, pct) {
+  if (pct == null) return 0;
+  const kind = /גבינה לבנה|white cheese/i.test(name) ? 'גבינה לבנה'
+    : /יוגורט|yogurt/i.test(name) ? 'יוגורט'
+    : /חלב|milk/i.test(name) ? 'חלב' : null;
+  if (!kind || !String(foodName).startsWith(kind)) return 0;
+  const got = statedFatPercent(foodName);
+  if (got == null) return -200;
+  return got === pct ? 700 : -500;
+}
+
+export function candidatesFor(pack, nameHe, nameEn, sourceText) {
   const q = normName(nameHe || nameEn);
   if (!q || !pack) return [];
   const egg = /ביצ|חבית|אומלט|omelet|egg/.test(q);
+  const pct = statedFatPercent(String(nameHe || '') + ' ' + String(nameEn || '') + ' ' + String(sourceText || ''));
   const ranked = [];
   for (const f of pack.byCodeList) {
     const n = normName(f.n);
@@ -144,6 +166,7 @@ export function candidatesFor(pack, nameHe, nameEn) {
     else if (q.length >= 3 && (n.includes(q) || (egg && /ביצ|חבית/.test(n)))) score = 500;
     if (!score) continue;
     if (egg && /^ביצה שלמה|^חביתה|^ביצה או חביתה/.test(f.n)) score += 450;
+    score += dairyHit((nameHe || '') + ' ' + (nameEn || ''), f.n, pct);
     score -= compositePenalty(f.n);
     ranked.push({ code: f.c, name: f.n, score });
   }
@@ -170,42 +193,68 @@ function scaleFromCode(pack, food, grams) {
   };
 }
 
+function scaleSeasoning(spice, grams) {
+  const g = grams > 0 ? grams : 1;
+  const per = spice.per100;
+  const at = (v, d) => Math.round(v * g / 100 * Math.pow(10, d)) / Math.pow(10, d);
+  return { grams: g, kcal: Math.round(per.kcal * g / 100), protein: at(per.protein, 1), carbs: at(per.carbs, 1), fat: at(per.fat, 1), sodium: 0 };
+}
+
 function applyOfficial(ingredients, pack, note, sourceText) {
   const items = (ingredients || []).map((ing) => {
-    const coded = Object.assign({}, ing);
-    const cands = candidatesFor(pack, ing.nameHe, ing.nameEn);
-    let code = preferredCode(ing.nameHe || ing.nameEn, ing.cookingMethod);
+    const prepared = prepareIngredient(ing, sourceText);
+    const spice = seasoningOf((prepared.nameHe || '') + ' ' + (prepared.nameEn || ''));
+    const cands = spice ? [] : candidatesFor(pack, prepared.nameHe, prepared.nameEn, sourceText);
+    let code = spice ? null : preferredCode(prepared.nameHe || prepared.nameEn, prepared.cookingMethod, sourceText);
     let via = code ? 'preferred-map' : null;
-    if (!code && ing.govilCode && cands.some(c => Number(c.code) === Number(ing.govilCode))) {
+    if (!code && !spice && ing.govilCode && cands.some(c => Number(c.code) === Number(ing.govilCode))) {
       code = Number(ing.govilCode);
       via = 'llm-pick-from-candidates';
     }
-    if (!code && cands[0] && cands[0].score >= 800) {
+    if (!code && !spice && cands[0] && cands[0].score >= 650) {
       code = cands[0].code;
       via = 'top-candidate';
     }
-    coded.govilCode = code;
+    const coded = Object.assign({}, prepared, { govilCode: code });
     const stable = stabilizeIngredient(coded, sourceText);
     const grams = Number(stable.grams);
-    const food = code != null ? pack.byCode[code] : null;
+    const food = code != null && pack && pack.byCode ? pack.byCode[code] : null;
     const item = {
-      nameHe: ing.nameHe, nameEn: ing.nameEn || '',
+      nameHe: prepared.nameHe, nameEn: prepared.nameEn || '',
       grams: isFinite(grams) ? grams : null,
       gramsStated: stable.gramsStated,
       role: stable.role,
-      count: ing.count, unit: ing.unit, cookingMethod: ing.cookingMethod,
-      confidence: ing.confidence,
+      count: prepared.count, unit: prepared.unit || stable.unit, cookingMethod: prepared.cookingMethod,
+      confidence: prepared.confidence,
+      portionAssumed: !!prepared.portionAssumed,
       candidates: cands.map(c => ({ code: c.code, name: c.name })),
       govilCode: food ? food.c : null,
       description: food ? food.n : null,
       matchVia: via,
-      source: food && isFinite(grams) && grams > 0 ? 'govil' : null,
+      source: null,
+      estimate: false,
       kcal: null, protein: null, carbs: null, fat: null, sodium: null
     };
-    if (food && isFinite(grams) && grams > 0) Object.assign(item, scaleFromCode(pack, food, grams));
+    if (spice) {
+      const scaled = scaleSeasoning(spice, grams);
+      Object.assign(item, scaled, { role: 'seasoning', source: 'estimate', estimate: true, matchVia: 'seasoning-table' });
+    } else if (food && isFinite(grams) && grams > 0) {
+      item.source = 'govil';
+      Object.assign(item, scaleFromCode(pack, food, grams));
+    } else if (isFinite(grams) && grams > 0) {
+      item.source = 'estimate';
+      item.estimate = true;
+      item.grams = grams;
+      item.kcal = Math.max(1, Math.round(grams * 1.5));
+      item.protein = Math.round(grams * 0.08 * 10) / 10;
+      item.carbs = Math.round(grams * 0.1 * 10) / 10;
+      item.fat = Math.round(grams * 0.07 * 10) / 10;
+      item.sodium = 0;
+      item.matchVia = 'estimate';
+    }
     return item;
   });
-  const confirmed = items.filter(it => it.source === 'govil' && it.kcal != null);
+  const confirmed = items.filter(it => it.kcal != null);
   const sum = (k, d) => confirmed.length
     ? Math.round(confirmed.reduce((s, it) => s + (Number(it[k]) || 0), 0) * Math.pow(10, d)) / Math.pow(10, d)
     : null;
@@ -246,12 +295,25 @@ export async function handleParseMeal(body, env) {
     byCode, byCodeList: foods,
     nutrients: (pack.foods && pack.foods.meta && pack.foods.meta.nutrients) || []
   };
-  const ingredients = (parsed.parsed.ingredients || []).map(stripNutrition).filter(i => i.nameHe && i.grams > 0);
-  ingredients.forEach(ing => { ing.nameEn = latinOnly(ing.nameEn); });
-  const meal = applyOfficial(ingredients, indexed, parsed.parsed.note || '', text);
-  const modelDish = latinOnly(parsed.parsed.dishEn).split(/\s+/).filter(Boolean).slice(0, 25).join(' ');
-  meal.dishEn = describeDish(text, ingredients) || modelDish;
-  return { error: false, parsed: meal };
+  return { error: false, parsed: assembleMeal(parsed.parsed, indexed, text) };
+}
+
+export function assembleMeal(model, pack, text) {
+  const normalized = normalizeMealText(text);
+  const note = (model && model.note) || '';
+  let ingredients = ((model && model.ingredients) || [])
+    .map(stripNutrition)
+    .filter(i => i.nameHe);
+  ingredients.forEach(ing => {
+    ing.nameEn = latinOnly(ing.nameEn);
+    ing.nameHe = normalizeMealText(ing.nameHe);
+  });
+  ingredients = ensureMentioned(normalized, ingredients);
+  const meal = applyOfficial(ingredients, pack, note, normalized);
+  const modelDish = latinOnly(model && model.dishEn).split(/\s+/).filter(Boolean).slice(0, 25).join(' ');
+  meal.dishEn = describeDish(normalized, ingredients) || modelDish;
+  meal.text = normalized;
+  return meal;
 }
 
 const imageHits = [];
@@ -371,7 +433,7 @@ export async function handleTranscribe(body, env) {
   try {
     const lang = body && body.lang === 'en' ? 'en' : 'he';
     const initial_prompt = lang === 'he'
-      ? 'חביתה, ביצים, ביצה, גבינה לבנה, קוטג׳, לחם, אורז, עוף, שמן זית, טחינה, סלט, מרק'
+      ? 'חביתה, ביצים, ביצה, גבינה לבנה, תשע אחוז, בכף שמן זית, קוטג׳, לחם, אורז, עוף, פפריקה, טחינה, סלט, מרק'
       : 'omelette, eggs, white cheese, cottage cheese, bread, rice, chicken, olive oil';
     let result;
     try {
@@ -381,7 +443,7 @@ export async function handleTranscribe(body, env) {
     } catch (e) {
       result = await env.AI.run('@cf/openai/whisper-large-v3-turbo', { audio: payload });
     }
-    const text = String((result && (result.text || result.transcription)) || '').trim();
+    const text = normalizeMealText(String((result && (result.text || result.transcription)) || '').trim());
     const he = /[\u0590-\u05FF]/.test(text);
     return { error: false, parsed: { text, language: he ? 'he' : 'en' } };
   } catch (e) {

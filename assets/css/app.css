@@ -75,6 +75,19 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
   margin: 0;
   text-transform: none;
 }
+.brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  direction: ltr;
+}
+.brand-mark { width: 34px; height: 34px; display: block; flex: none; }
+.brand-name {
+  font-family: "Fraunces", "Frank Ruhl Libre", Georgia, serif;
+  font-weight: 560;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
 .app-sub { display: none; }
 .logo { display: none; }
 .mast-end { justify-self: end; display: flex; gap: 6px; align-items: center; }
@@ -307,6 +320,10 @@ textarea { min-height: 72px; resize: vertical; }
 .log-slot { font-size: 12px; font-weight: 800; color: var(--accent-ink); }
 .log-name { font-weight: 800; overflow-wrap: anywhere; margin: 2px 0 6px; }
 .log-comp { border-top: 1px solid var(--line); padding: 8px 0; }
+.edit-items { margin: 10px 0 4px; border-top: 1px solid var(--line); }
+.edit-items > summary { cursor: pointer; font-weight: 650; padding: 12px 2px; list-style: none; }
+.edit-items > summary::-webkit-details-marker { display: none; }
+.edit-items[open] > summary { color: var(--accent); }
 .log-q { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
 .log-q input { flex: 1 1 120px; min-width: 0; }
 .log-actions { display: flex; gap: 8px; justify-content: flex-end; }

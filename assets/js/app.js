@@ -1439,8 +1439,7 @@
     else {
       const small = ['protein', 'carbs', 'fat', 'fiber', 'sugar', 'satFat'];
       const amt = n.key === 'energy' ? R.roundKcal(n.amount) : small.indexOf(n.key) !== -1 ? R.roundMacro(n.amount) : R.roundMicro(n.amount);
-      const srcName = n.source === 'govil' ? t('srcItemGovil') : n.source === 'estimate' ? t('estimateTag') : n.source === 'fdc' ? 'USDA' : '';
-      val = '<span class="micro-val"><bdi class="iso-num" dir="ltr">' + amt + '</bdi><span class="micro-unit">' + escapeHtml(n.unit || '') + '</span></span>' + (srcName ? ' <span class="micro-miss">' + srcName + '</span>' : '') + (n.status === 'partial' ? ' <span class="tag warn">' + t('microPartial') + '</span>' : '');
+      val = '<span class="micro-val"><bdi class="iso-num" dir="ltr">' + amt + '</bdi><span class="micro-unit">' + escapeHtml(n.unit || '') + '</span></span>' + (n.status === 'partial' ? ' <span class="tag warn">' + t('microPartial') + '</span>' : '');
     }
     return '<div class="micro-item"><span class="micro-name">' + escapeHtml(label) + '</span>' + val + '</div>';
   }
@@ -1474,36 +1473,21 @@
         : c.questionKey === 'noMatch' ? (c.error === 'untranslated' ? t('qNoMatchHe') : t('qNoMatch'))
         : c.questionKey === 'whichFood' ? t('qWhich')
         : c.questionKey === 'unavailable' ? t('qUnavailable') : '';
-      const known = MC && MC.componentConfirmed(c);
       const choices = (c.options || []).map(o => {
         const pick = o.id || (o.code != null ? 'govil:' + o.code : o.fdcId);
         const label = o.estimate ? t('estimateInstead') : o.description;
         return '<button type="button" class="btn btn-ghost log-choice" data-meal="' + m.id + '" data-comp="' + c.id + '" data-pick="' + escapeHtml(String(pick)) + '">' + escapeHtml(label) + '</button>';
       }).join('');
-      const grams = (c.questionKey === 'needGrams' || (c.matchState === 'matched' && c.per100g))
-        ? '<form class="log-q" data-meal="' + m.id + '" data-comp="' + c.id + '"><label class="lq-l">' + t('gramsLabel') + '</label><input class="log-grams" type="number" min="1" step="1" inputmode="decimal" aria-label="' + t('gramsLabel') + '" value="' + (c.grams || '') + '"/><button class="btn btn-ghost" type="submit">' + t('saveMealAria') + '</button></form>'
-        : '';
+      const grams = '<form class="log-q" data-meal="' + m.id + '" data-comp="' + c.id + '"><label class="lq-l">' + t('gramsLabel') + '</label><input class="log-grams" type="number" min="0" step="0.1" inputmode="decimal" aria-label="' + t('gramsLabel') + '" value="' + (c.grams || '') + '"/><button class="btn btn-ghost" type="submit">' + t('saveMealAria') + '</button></form>';
       const retry = c.questionKey === 'unavailable'
         ? '<button type="button" class="btn btn-ghost log-retry" data-meal="' + m.id + '">' + t('retryMatch') + '</button>' : '';
-      const portion = (c.quantityState === 'usda-portion' || c.quantityState === 'govil-portion') ? t('portionNote')
-        : c.quantityState === 'default-portion' ? t('portionDefault')
-        : c.quantityState === 'ai-estimate' ? t('portionAi') : '';
-      let src = '';
-      if (c.estimate) src = t('estimateTag');
-      else if (c.candidate && known) {
-        if (c.candidate.source === 'govil' || c.candidate.govilCode) {
-          const code = c.candidate.sml || c.candidate.govilCode;
-          src = t('srcItemGovil') + ' · ' + escapeHtml(c.candidate.description) + (code ? ' · ' + t('govilCodeLabel') + ' ' + escapeHtml(String(code)) : '');
-        } else if (c.candidate.fdcId) {
-          src = 'USDA · ' + escapeHtml(c.candidate.description) + ' · fdcId ' + escapeHtml(String(c.candidate.fdcId));
-        }
-      }
-      const many = (m.components || []).length > 1;
-      const compNuts = (!many && R && c.nutrients) ? '<div class="micro-list">' + R.CATALOG.map(sp => nutrientRow(Object.assign({ key: sp.key }, c.nutrients[sp.key] || { status: 'missing', amount: null, unit: sp.fallbackUnit }), label(sp), c.kcal != null)).join('') + '</div>' : '';
-      return '<div class="log-comp"><div class="lc-head"><b>' + escapeHtml(c.name) + '</b>' + (known ? '<span class="micro-val"><bdi class="iso-num" dir="ltr">' + c.kcal + '</bdi><span>' + t('goalUnit') + '</span></span>' : '') + '</div>' +
-        (known ? '<div class="log-cap"><bdi dir="ltr">' + (c.gramsStated != null && c.gramsStated !== c.grams ? nf(c.gramsStated) + '</bdi> ' + t('grams') + ' (נספג ~<bdi dir="ltr">' + nf(c.grams) + '</bdi> ' + t('grams') + ')' : nf(c.grams) + '</bdi> ' + t('grams')) + (portion ? ' · ' + portion : '') + ' · ' + t('protein') + ' <bdi dir="ltr">' + nf(c.protein) + '</bdi> · ' + t('carbs') + ' <bdi dir="ltr">' + nf(c.carbs) + '</bdi> · ' + t('fat') + ' <bdi dir="ltr">' + nf(c.fat) + '</bdi></div>' : '') +
-        (src ? '<div class="log-cap src">' + src + '</div>' : '') + compNuts + (q ? '<div class="section-hint">' + q + '</div>' : '') + choices + grams + retry + '</div>';
+      return '<div class="log-comp"><div class="lc-head"><b>' + escapeHtml(c.name) + '</b></div>' +
+        (q ? '<div class="section-hint">' + q + '</div>' : '') + choices + grams + retry + '</div>';
     }).join('');
+    const many = (m.components || []).length > 1;
+    const itemsBlock = many
+      ? '<details class="edit-items"><summary>' + t('editItems') + '</summary>' + comps + '</details>'
+      : comps;
     const img = window.ExcerlyMealImage ? ExcerlyMealImage.forMeal(m) : null;
     const imgCap = !img || !img.src || img.kind === 'placeholder' ? '' : (img.kind === 'user' ? t('userPhotoCap') : t('imgRepresentative'));
     const review = m.needsReview || m.status !== 'confirmed';
@@ -1516,7 +1500,7 @@
       '<div class="ms-kcal"><bdi class="iso-num" dir="ltr">' + (m.kcal == null ? '—' : m.kcal) + '</bdi> <span>' + t('goalUnit') + '</span></div>' +
       '<h4>' + t('nutriFacts') + '</h4><div class="micro-list">' + macros + '</div>' +
       '<h4>' + t('vitMinTitle') + '</h4><div class="micro-list">' + micros + '</div>' +
-      '<h4>' + t('itemsTitle') + '</h4>' + comps +
+      itemsBlock +
       '<details class="meal-edit"><summary>' + t('editMeal') + '</summary><form class="meal-edit-form" data-id="' + m.id + '">' +
       '<label>' + t('editMealAria') + '<input name="name" value="' + escapeHtml(m.name || '') + '"></label>' +
       '<label>' + t('gramsLabel') + '<input name="grams" type="number" min="1" step="1" value="' + ((m.components && m.components[0] && m.components[0].grams) || '') + '"></label>' +
@@ -1525,7 +1509,6 @@
       '<label>' + t('carbs') + '<input name="carbs" type="number" min="0" step="0.1" value="' + (m.carbs == null ? '' : m.carbs) + '"></label>' +
       '<label>' + t('fat') + '<input name="fat" type="number" min="0" step="0.1" value="' + (m.fat == null ? '' : m.fat) + '"></label>' +
       '<button class="btn btn-primary" type="submit">' + t('saveMealAria') + '</button></form></details>' +
-      '<p class="log-cap src">' + t('srcFooter') + '</p>' +
       '<div class="btn-row">' + confirmBtn + '<button type="button" class="btn btn-ghost ms-del" data-id="' + m.id + '">' + t('removeMealAria') + '</button></div>' +
       '</div>';
     box.hidden = false;
@@ -2874,6 +2857,7 @@
     if (p && p.age && p.weight && p.height) renderBMI(p);
     renderNutriTarget();
     renderDayMeals();
+    renderMealSheet();
     renderCalendar();
     updateStreak();
     renderHomeDash();
