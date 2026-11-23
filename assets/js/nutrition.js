@@ -618,7 +618,10 @@
       if (!p || !p.age || !p.weight || !p.height) return null;
       const bmr = D.calcBMR({ weightKg: p.weight, heightCm: p.height, age: p.age, gender: p.gender });
       const act = D.ACTIVITY_FACTORS[p.activity] || D.ACTIVITY_FACTORS.moderate;
-      return Math.round(bmr * act.factor);
+      const tdee = Math.round(bmr * act.factor);
+      if (p.weightGoal === 'lose') return Math.max(1200, tdee - 500);
+      if (p.weightGoal === 'gain') return tdee + 400;
+      return tdee;
     } catch (e) { return null; }
   }
 

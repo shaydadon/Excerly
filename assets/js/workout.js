@@ -327,10 +327,15 @@
   /* ---------- מחולל תבנית מקומי (ללא AI) ---------- */
   function planLocal(p) {
     const days = Math.max(2, Math.min(6, parseInt(p.days, 10) || 3));
-    const sc = scheme(p.style);
-    const cardioLevel = p.cardio || (p.goal === 'fatloss' ? 'some' : 'none');
+    const weightGoal = p.weightGoal === 'lose' || p.weightGoal === 'gain' ? p.weightGoal : '';
+    const style = weightGoal === 'lose' ? 'endurance' : weightGoal === 'gain' ? 'hypertrophy' : p.style;
+    const sc = scheme(style);
+    const cardioLevel = weightGoal === 'lose' ? 'lots' : weightGoal === 'gain' ? 'none' : (p.cardio || (p.goal === 'fatloss' ? 'some' : 'none'));
     const rest = curLang() === 'en' ? sc.restEn : sc.rest;
-    const dayList = chooseDays(days, p.focusArea).map((k, idx) => {
+    const keys = weightGoal === 'lose'
+      ? ['fullA', 'fullB', 'fullC', 'fullA', 'fullB', 'fullC'].slice(0, days)
+      : chooseDays(days, p.focusArea);
+    const dayList = keys.map((k, idx) => {
       const def = DAY_DEF[k];
       const exs = def.ex.map(e => ({
         id: e,
@@ -349,9 +354,13 @@
     });
     return {
       title: curLang() === 'en' ? 'Personal gym program' : 'תוכנית אימון אישית לחדר כושר',
-      note: curLang() === 'en'
+      note: (weightGoal === 'lose'
+        ? (curLang() === 'en' ? 'Built for weight loss: full-body circuits, higher volume, and extra cardio. ' : 'נבנתה לירידה במשקל: מעגלים לכל הגוף, נפח גבוה וקרדיו נוסף. ')
+        : weightGoal === 'gain'
+          ? (curLang() === 'en' ? 'Built for weight gain: hypertrophy sets of 8–12 reps, with cardio left out. ' : 'נבנתה לעלייה במשקל: סטים של 8–12 חזרות למסת שריר, בלי קרדיו. ')
+          : '') + (curLang() === 'en'
         ? 'Warm up 5–8 min before each session. Add ~2.5% weight when you complete all reps with good form. General template — enable AI for a fully personalized plan.'
-        : 'התחממו 5–8 דק׳ לפני כל אימון. הוסיפו ~2.5% משקל כשמשלימים את כל החזרות בטכניקה טובה. זוהי תבנית כללית — הפעילו AI לתוכנית אישית לחלוטין.',
+        : 'התחממו 5–8 דק׳ לפני כל אימון. הוסיפו ~2.5% משקל כשמשלימים את כל החזרות בטכניקה טובה. זוהי תבנית כללית — הפעילו AI לתוכנית אישית לחלוטין.'),
       days: dayList, source: 'local'
     };
   }

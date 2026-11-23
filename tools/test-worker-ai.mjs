@@ -117,7 +117,7 @@ await test('image rate limit returns 429 without calling the model again', async
 await test('whisper transcribe returns text and detects Hebrew or English', async () => {
   const he = await handleTranscribe({ audio: btoa('abc') }, { AI: { run: async (_m, body) => {
     assert.equal(_m, '@cf/openai/whisper-large-v3-turbo');
-    assert.ok(Array.isArray(body.audio));
+    assert.equal(body.audio, btoa('abc'));
     return { text: '300 גרם אורז' };
   } } });
   assert.equal(he.error, false);
