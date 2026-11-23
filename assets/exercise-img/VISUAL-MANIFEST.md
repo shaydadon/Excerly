@@ -102,6 +102,10 @@ Every `workout.js` exercise id has a `GYM_FILE` entry and both gender files.
 - Shoulder-roll diagrams stay banned and are not in the tree. Spinal twist uses approved photos.
 - Total judged images: 92. Pass: 92. Fail: 0 (rejected attempts are only under `attempts/`, not shipped).
 
+## Machine calf raise
+
+`עליית עקבים לתאומים במכונה` and `machine calf raise` use the existing gym calf stills `gym-calf-m.jpg` and `gym-calf-f.jpg` (standing calf raise in the same dark-gym set). No new file was added. Those photographs are original generated stills for this app, not a third-party clip.
+
 ## Known limits
 
 - 92 photograph slots (72 previously shipped stills + 2 shoulder-roll stills + 18 new gym stills). Cache bump: `excerly-v58` (one above PR #5 / GovIL, which ends on `excerly-v57`).

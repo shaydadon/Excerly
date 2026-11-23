@@ -267,6 +267,35 @@ for (const name of audited) {
   auditedOk++;
 }
 
+const mustMap = [
+  ['הליכה / מדרגה עם משקולות', 'lunge'],
+  ['מכרעים הליכה / מדרגה עם משקולות', 'lunge'],
+  ['מכרעים הליכה/מדרגה עם משקולות', 'lunge'],
+  ['חתירה עם משקולת יד בתמיכה', 'bentRow'],
+  ['one-arm dumbbell row', 'bentRow'],
+  ['עליית עקבים לתאומים במכונה', 'calf'],
+  ['machine calf raise', 'calf']
+];
+for (const [name, id] of mustMap) {
+  const v = W.resolveVisual({ name });
+  if (!v || v.id !== id || !filesExist(v)) {
+    console.error('FAIL required image', name, v);
+    failed++;
+  }
+}
+for (const ex of Object.values(W.EX)) {
+  for (const name of [ex.he, ex.en]) {
+    const v = W.resolveVisual({ name });
+    if (!v || !filesExist(v)) { console.error('FAIL bank name', name, v); failed++; }
+  }
+}
+for (const list of Object.values(W.NAME_ALIASES)) {
+  for (const name of list) {
+    const v = W.resolveVisual({ name });
+    if (!v || !filesExist(v)) { console.error('FAIL alias', name, v); failed++; }
+  }
+}
+
 if (failed) {
   console.error(failed, 'failures');
   process.exit(1);

@@ -341,16 +341,27 @@ async function handleFdc(body, env, origin, ip) {
       const q = String(body.query || '').trim().slice(0, 120);
       if (!q) return json({ error: 'missing_query' }, 400, origin);
       const pageSize = Math.max(1, Math.min(8, parseInt(body.pageSize, 10) || 6));
-      const path = '/foods/search?query=' + encodeURIComponent(q) + '&pageSize=' + pageSize +
-        '&dataType=' + encodeURIComponent('Foundation,SR Legacy') + '&api_key=' + encodeURIComponent(cred.key);
-      if (!fdcCache.has(path)) {
+      const cacheId = 'search/' + q + '/' + pageSize;
+      let data = fdcCache.get(cacheId);
+      if (!data && typeof caches !== 'undefined' && caches.default) {
+        const hit = await caches.default.match('https://excerly-fdc.local/' + encodeURIComponent(cacheId)).catch(() => null);
+        if (hit) data = await hit.json().catch(() => null);
+        if (data) fdcCache.set(cacheId, data);
+      }
+      if (!data) {
+        const path = '/foods/search?query=' + encodeURIComponent(q) + '&pageSize=' + pageSize +
+          '&dataType=' + encodeURIComponent('Foundation,SR Legacy') + '&api_key=' + encodeURIComponent(cred.key);
         const r = await fetch(base + path);
-        const data = await r.json().catch(() => null);
+        data = await r.json().catch(() => null);
         if (r.status === 429) return json({ error: 'rate_limited', keyMode: cred.keyMode }, 429, origin);
         if (!r.ok || !data) return json({ error: 'upstream', status: r.status, keyMode: cred.keyMode }, 502, origin);
-        fdcCache.set(path, data);
+        fdcCache.set(cacheId, data);
+        if (typeof caches !== 'undefined' && caches.default) {
+          caches.default.put('https://excerly-fdc.local/' + encodeURIComponent(cacheId), new Response(JSON.stringify(data), {
+            headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=604800' }
+          })).catch(() => {});
+        }
       }
-      const data = fdcCache.get(path);
       const foods = (data.foods || []).map(f => ({
         fdcId: f.fdcId, description: f.description, dataType: f.dataType,
         brandOwner: f.brandOwner || null, brandName: f.brandName || null

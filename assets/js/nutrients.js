@@ -167,7 +167,7 @@
     const nutrients = {};
     Object.keys(scaled).forEach(k => {
       const s = scaled[k];
-      nutrients[k] = { id: s.id, amount: s.amount, per100g: s.per100g, unit: s.unit, status: s.status };
+      nutrients[k] = { id: s.id, amount: s.amount, per100g: s.per100g, unit: s.unit, status: s.status, source: meta.source || 'fdc' };
     });
     return {
       name: meta.name || meta.description || '',

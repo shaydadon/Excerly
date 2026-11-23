@@ -235,9 +235,9 @@
         const sample = confirmed[0].nutrients[key];
         let amount = 0;
         let missing = false;
-        comps.forEach(c => {
+        confirmed.forEach(c => {
           const n = c.nutrients && c.nutrients[key];
-          if (!componentConfirmed(c) || !n || n.amount == null || n.status === 'missing') missing = true;
+          if (!n || n.amount == null || n.status === 'missing') missing = true;
           else amount += Number(n.amount);
         });
         nutrients[key] = {

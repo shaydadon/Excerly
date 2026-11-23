@@ -895,9 +895,11 @@
   };
 
   function openPlayer(date) {
-    const prog = D.programForDate(date);
-    if (!prog.exercises.length) return;
+    const agenda = agendaFor(date);
+    const prog = agenda.home || D.programForDate(date);
+    if (!prog || !prog.exercises || !prog.exercises.length) return;
     player.exs = prog.exercises.slice();
+    player.title = agenda.rest ? t('restDayTitle') : (agenda.home ? agenda.title : L(prog.title));
     player.date = date; player.key = dateKey(date); player.idx = 0;
     P().hidden = false; document.body.style.overflow = 'hidden';
     startExercise(0);
@@ -953,7 +955,7 @@
         <div class="player-count">${t('playerOf', { i: player.idx + 1, n: player.exs.length })}</div>
         <button class="p-icon" id="p-help" aria-label="${t('needHelp')}">?</button>
       </div>
-      <h2 class="screen-title" style="font-size:40px">${t('myPlan')}</h2>
+      <h2 class="screen-title" style="font-size:40px">${escapeHtml(player.title || t('myPlan'))}</h2>
       <div class="player-card">
         <div class="player-stage">
           <svg class="p-ring" viewBox="0 0 100 100" aria-hidden="true">
@@ -1190,6 +1192,44 @@
     return { out, changed };
   }
 
+  const PARSE_VER = 1;
+  function mealStale(m) {
+    if (!m || m.reviewed || m.userEdited) return false;
+    if ((m.components || []).some(c => c.userEdited)) return false;
+    if (m.parseVer == null || m.parseVer < PARSE_VER) return true;
+    return m.status === 'partial' || m.status === 'pending';
+  }
+  async function refreshStaleMeals() {
+    if (!window.ExcerlyGovil || !window.ExcerlyMealCard || !window.ExcerlyNutrients) return;
+    try { await ExcerlyGovil.load(); } catch (e) { return; }
+    const all = load(STORE.meals, {});
+    for (const key of Object.keys(all)) {
+      let changed = false;
+      const next = [];
+      for (const m of all[key]) {
+        const text = m && (m.text || m.name);
+        if (!mealStale(m) || !text) { next.push(m); continue; }
+        try {
+          const fresh = await ExcerlyMealCard.resolveMeal(
+            ExcerlyMealCard.createPending({ id: m.id, text: text, slot: m.slot, photo: m.photo }),
+            { search: async () => ({ ok: false, error: 'offline', foods: [] }), detail: async () => ({ ok: false }), core: (k) => window.ExcerlyFoodMap ? ExcerlyFoodMap.coreFood(k) : null, govil: ExcerlyGovil },
+            ExcerlyNutrients
+          );
+          fresh.id = m.id;
+          fresh.slot = m.slot || fresh.slot;
+          fresh.photo = m.photo;
+          fresh.photoKind = m.photoKind;
+          fresh.image = m.image;
+          fresh.text = text;
+          fresh.parseVer = PARSE_VER;
+          next.push(fresh);
+          changed = true;
+        } catch (err) { next.push(m); }
+      }
+      if (changed) setMeals(key, next);
+    }
+  }
+
   function getMeals(key) {
     const all = load(STORE.meals, {});
     if (all[key]) {
@@ -1353,10 +1393,10 @@
     const review = m.needsReview || m.status !== 'confirmed';
     const chip = review ? '<span class="chip-review">' + t('toConfirm') + '</span>' : '';
     const kcal = m.kcal == null ? '—' : m.kcal;
-    const macros = m.kcal == null ? '' : '<div class="mc-macros"><span>' + t('protein') + ' <bdi dir="ltr">' + nf(m.protein) + '</bdi></span><span>' + t('carbs') + ' <bdi dir="ltr">' + nf(m.carbs) + '</bdi></span><span>' + t('fat') + ' <bdi dir="ltr">' + nf(m.fat) + '</bdi></span></div>';
+    const est = (m.components || []).some(c => c.estimate) ? '<span class="chip-estimate">' + t('estimateTag') + '</span>' : '';
     return '<article class="meal-tile" data-id="' + m.id + '" role="button" tabindex="0" aria-label="' + escapeHtml(slotLabel(m.slot) + ' — ' + m.name) + '">' +
-      '<div class="mt-copy"><div class="mt-title">' + slotLabel(m.slot) + '</div>' + chip +
-      '<div class="mt-kcal"><bdi class="iso-num" dir="ltr">' + kcal + '</bdi> <span>' + t('goalUnit') + '</span></div>' + macros + '</div>' +
+      '<div class="mt-copy"><div class="mt-title">' + slotLabel(m.slot) + '</div>' + chip + est +
+      '<div class="mt-kcal"><bdi class="iso-num" dir="ltr">' + kcal + '</bdi> <span>' + t('goalUnit') + '</span></div></div>' +
       mealImageHtml(m, 'mt-img') + '</article>';
   }
   // missing במקור ≠ 0 ≠ כישלון: "לא דווח במקור" רק כשהארוחה חושבה; אחרת "לא זמין"
@@ -1368,7 +1408,8 @@
     else {
       const small = ['protein', 'carbs', 'fat', 'fiber', 'sugar', 'satFat'];
       const amt = n.key === 'energy' ? R.roundKcal(n.amount) : small.indexOf(n.key) !== -1 ? R.roundMacro(n.amount) : R.roundMicro(n.amount);
-      val = '<span class="micro-val"><bdi class="iso-num" dir="ltr">' + amt + '</bdi><span class="micro-unit">' + escapeHtml(n.unit || '') + '</span></span>' + (n.status === 'partial' ? ' <span class="tag warn">' + t('microPartial') + '</span>' : '');
+      const srcName = n.source === 'govil' ? t('srcItemGovil') : n.source === 'estimate' ? t('estimateTag') : n.source === 'fdc' ? 'USDA' : '';
+      val = '<span class="micro-val"><bdi class="iso-num" dir="ltr">' + amt + '</bdi><span class="micro-unit">' + escapeHtml(n.unit || '') + '</span></span>' + (srcName ? ' <span class="micro-miss">' + srcName + '</span>' : '') + (n.status === 'partial' ? ' <span class="tag warn">' + t('microPartial') + '</span>' : '');
     }
     return '<div class="micro-item"><span class="micro-name">' + escapeHtml(label) + '</span>' + val + '</div>';
   }
@@ -1416,7 +1457,8 @@
         : c.quantityState === 'default-portion' ? t('portionDefault')
         : c.quantityState === 'ai-estimate' ? t('portionAi') : '';
       let src = '';
-      if (c.candidate && known) {
+      if (c.estimate) src = t('estimateTag');
+      else if (c.candidate && known) {
         if (c.candidate.source === 'govil' || c.candidate.govilCode) {
           const code = c.candidate.sml || c.candidate.govilCode;
           src = t('srcItemGovil') + ' · ' + escapeHtml(c.candidate.description) + (code ? ' · ' + t('govilCodeLabel') + ' ' + escapeHtml(String(code)) : '');
@@ -1441,6 +1483,14 @@
       '<h4>' + t('nutriFacts') + '</h4><div class="micro-list">' + macros + '</div>' +
       '<h4>' + t('vitMinTitle') + '</h4><div class="micro-list">' + micros + '</div>' +
       '<h4>' + t('itemsTitle') + '</h4>' + comps +
+      '<details class="meal-edit"><summary>' + t('editMeal') + '</summary><form class="meal-edit-form" data-id="' + m.id + '">' +
+      '<label>' + t('editMealAria') + '<input name="name" value="' + escapeHtml(m.name || '') + '"></label>' +
+      '<label>' + t('gramsLabel') + '<input name="grams" type="number" min="1" step="1" value="' + ((m.components && m.components[0] && m.components[0].grams) || '') + '"></label>' +
+      '<label>kcal<input name="kcal" type="number" min="0" step="1" value="' + (m.kcal == null ? '' : m.kcal) + '"></label>' +
+      '<label>' + t('protein') + '<input name="protein" type="number" min="0" step="0.1" value="' + (m.protein == null ? '' : m.protein) + '"></label>' +
+      '<label>' + t('carbs') + '<input name="carbs" type="number" min="0" step="0.1" value="' + (m.carbs == null ? '' : m.carbs) + '"></label>' +
+      '<label>' + t('fat') + '<input name="fat" type="number" min="0" step="0.1" value="' + (m.fat == null ? '' : m.fat) + '"></label>' +
+      '<button class="btn btn-primary" type="submit">' + t('saveMealAria') + '</button></form></details>' +
       '<p class="log-cap src">' + t('srcFooter') + '</p>' +
       '<div class="btn-row">' + confirmBtn + '<button type="button" class="btn btn-ghost ms-del" data-id="' + m.id + '">' + t('removeMealAria') + '</button></div>' +
       '</div>';
@@ -1449,6 +1499,25 @@
     const cb = $('.ms-confirm', box);
     if (cb) cb.addEventListener('click', () => confirmMealReview(m.id));
     $('.ms-del', box).addEventListener('click', () => { closeMealSheet(); removeMeal(m.id); });
+    const editForm = $('.meal-edit-form', box);
+    if (editForm) editForm.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const fd = new FormData(editForm);
+      const num = (k) => { const v = fd.get(k); return v === '' || v == null ? null : Number(v); };
+      const keyNow = dateKey(new Date());
+      setMeals(keyNow, getMeals(keyNow).map(row => {
+        if (row.id !== m.id) return row;
+        const copy = Object.assign({}, row, {
+          name: String(fd.get('name') || row.name),
+          kcal: num('kcal'), protein: num('protein'), carbs: num('carbs'), fat: num('fat'),
+          reviewed: false, needsReview: true, userEdited: true, parseVer: 1
+        });
+        copy.components = (row.components || []).map((c, i) => i ? c : Object.assign({}, c, { grams: num('grams') || c.grams, userEdited: true, kcal: num('kcal') }));
+        return copy;
+      }));
+      refreshNutrition();
+      renderMealSheet();
+    });
     bindLogCards(box);
   }
   function confirmMealReview(id) {
@@ -2263,6 +2332,7 @@
       if (prov.mode === 'proxy') plan = await W.planViaProxy(p, prov.url);
       else if (prov.mode === 'key') plan = await W.planAI(p, prov.key);
       else plan = W.planLocal(p);
+      if (plan) plan.minutes = p.minutes;
       save(STORE.plan, plan);
       renderPlan(plan);
       storePlan(plan, p);
@@ -2958,6 +3028,7 @@
     const backPlan = $('#plan-back');
     if (backPlan) backPlan.addEventListener('click', () => { if (location.hash === '#/workouts/plan') history.back(); else location.hash = '#/workouts'; });
     syncPlanRoute();
+    refreshStaleMeals().then(() => refreshNutrition()).catch(() => {});
     const mic = $('#mic-btn');
     if (mic) mic.addEventListener('click', startMic);
     const voiceUse = $('#voice-use');
