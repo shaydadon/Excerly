@@ -251,10 +251,10 @@
   function renderProfileMenu(target) {
     const box = $('#profile-menu');
     if (!box) return;
-    if (!target || !N.generateMealPlan) { box.innerHTML = ''; return; }
+    if (!target || !N.generateMealPlan) { box.innerHTML = '<p class="section-hint">' + escapeHtml(t('needProfile')) + '</p>'; return; }
     const plan = N.generateMealPlan(target);
     const rows = (plan.meals || []).map(m => '<div class="menu-item"><div class="menu-slot">' + escapeHtml(m.label || '') + '</div><div class="menu-name">' + escapeHtml(m.name || '') + '</div><div class="menu-kcal"><bdi class="iso-num" dir="ltr">' + m.kcal + '</bdi></div></div>').join('');
-    box.innerHTML = '<h3 class="card-title">' + escapeHtml(t('profileMenuTitle')) + '</h3><div class="menu-list">' + rows + '</div><div class="menu-total">' + escapeHtml(t('menuTotal', { n: nf(plan.total), t: nf(target) })) + '</div>';
+    box.innerHTML = '<div class="menu-list">' + rows + '</div><div class="menu-total">' + escapeHtml(t('menuTotal', { n: nf(plan.total), t: nf(target) })) + '</div>';
   }
 
   function renderBMI(p) {
@@ -2532,11 +2532,12 @@
   function renderNutriHero() {
     const meals = getMeals(dateKey(new Date()));
     const kn = window.ExcerlyNutrients ? ExcerlyNutrients.knownKcal(meals) : { total: meals.reduce((s, m) => s + (m.kcal || 0), 0) };
-    const target = (N.targetCalories && N.targetCalories()) || 2100;
+    const target = (N.targetCalories && N.targetCalories()) || null;
     const nums = $('#nutri-hero-nums');
     if (nums) {
-      nums.innerHTML = '<bdi class="iso-num" dir="ltr">' + String(kn.total || 0) + '</bdi>';
-      nums.setAttribute('aria-label', t('ateLabel') + ' ' + (kn.total || 0));
+      const shown = target ? String(kn.total || 0) + ' / ' + target : String(kn.total || 0);
+      nums.innerHTML = '<bdi class="iso-num" dir="ltr">' + shown + '</bdi>';
+      nums.setAttribute('aria-label', t('ateLabel') + ' ' + (kn.total || 0) + (target ? ', ' + t('targetLabel') + ' ' + target : ''));
     }
     const ring = $('#nutri-ring');
     const pct = target ? Math.max(6, Math.min(100, Math.round(((kn.total || 0) / target) * 100))) : 6;
@@ -2949,11 +2950,7 @@
 
   /* ---------- מתג עיצוב: מודרני (Almanac) / קלאסי ---------- */
   function preferredSkin() {
-    try {
-      const saved = localStorage.getItem('excerly.skin');
-      if (saved === 'classic' || saved === 'almanac') return saved;
-    } catch (e) {}
-    try { if (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) return 'classic'; } catch (e) {}
+    try { if (localStorage.getItem('excerly.skin') === 'classic') return 'classic'; } catch (e) {}
     return 'almanac';
   }
   function applySkin(skin) {
@@ -2975,15 +2972,6 @@
         toast(t(next === 'classic' ? 'skinClassic' : 'skinAlmanac'));
       });
     }
-    try {
-      const mq = window.matchMedia && matchMedia('(prefers-color-scheme: dark)');
-      if (mq && mq.addEventListener) mq.addEventListener('change', () => {
-        let saved = '';
-        try { saved = localStorage.getItem('excerly.skin') || ''; } catch (e) {}
-        if (saved === 'classic' || saved === 'almanac') return;
-        applySkin(preferredSkin());
-      });
-    } catch (e) {}
   }
 
   function init() {
