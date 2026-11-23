@@ -89,7 +89,7 @@
   function splitComponents(text) {
     const clean = String(text || '').replace(/\s+/g, ' ').trim();
     if (!clean) return [];
-    const parts = clean.split(/\s+עם\s+|\s+ו(?=\S)|\s*,\s*|\s+\+\s+|\s+and\s+|\s*מרינדת\s+|\s+במרינדה\s+|\s+מטוגנים\s+ב/i).map(s => s.trim()).filter(Boolean);
+    const parts = clean.split(/\s+עם\s+|\s+ו(?=\S)|\s*,\s*|\s+\+\s+|\s+and\s+|\s*מרינדת\s+|\s+במרינדה\s+|\s+מטוגנים\s+ב|\s*ב(?=כף|כפות|כפית|כפיות|כוס)/i).map(s => s.trim()).filter(Boolean);
     const FM = global.ExcerlyFoodMap;
     const BREADS = { roll: 1, whiteBread: 1, wheatBread: 1, pita: 1 };
     // "כריך" לבד הוא מכל: אם כבר יש לחם/לחמנייה בארוחה — לא סופרים אותו פעמיים
@@ -325,6 +325,17 @@
       (o.code != null && ('govil:' + o.code) === key) ||
       (o.code != null && String(o.code) === key)
     );
+    if (key === 'estimate') {
+      comp.questionKey = null;
+      comp.options = [];
+      comp.estimate = true;
+      comp.matchState = 'matched';
+      const grams = comp.grams && comp.grams > 0 ? comp.grams : 50;
+      comp.grams = grams;
+      comp.kcal = Math.round(grams * 1.8);
+      comp.quantityState = 'ai-estimate';
+      return rollup(next);
+    }
     if (!opt) return meal;
     const govil = !!(opt.code || (opt.source === 'govil') || (opt.id && String(opt.id).indexOf('govil:') === 0));
     comp.candidate = {
@@ -397,6 +408,18 @@
     return comp;
   }
 
+  function offerEggChoice(comp, G) {
+    const name = comp.name || '';
+    if (!G || !G.search || !/ביצ|חבית|אומלט/.test(name)) return;
+    const q = /חבית|אומלט/.test(name) ? (/שמן זית/.test(name) ? 'חביתה שמן זית' : 'חביתה') : 'ביצים';
+    const ranked = G.search(q, 5);
+    if (!ranked.length) return;
+    comp.options = ranked.map(r => ({
+      id: 'govil:' + r.food.c, code: r.food.c, description: r.food.n, source: 'govil'
+    })).concat([{ id: 'estimate', description: 'none-of-these', estimate: true }]);
+    comp.questionKey = 'whichFood';
+  }
+
   async function resolveMeal(meal, api, Nutrients) {
     const next = Object.assign({}, meal, { components: (meal.components || []).map(c => Object.assign({}, c)) });
     if (!api) {
@@ -454,6 +477,7 @@
             name: comp.name, source: 'govil', govilCode: gf.c, sml: gf.s,
             description: gf.n, dataset: G.DATASET, via: 'govil'
           }, Nutrients);
+          offerEggChoice(comp, G);
           continue;
         }
         if (gf && comp.grams == null) {

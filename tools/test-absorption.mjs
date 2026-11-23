@@ -50,8 +50,8 @@ test('repeated parses with different gram guesses produce the same kcal', () => 
   assert.equal(a[4].gramsStated, 33);
   assert.equal(a[4].grams, 8.3);
   assert.equal(a[4].role, 'marinade');
-  assert.equal(a[7].gramsStated, 10);
-  assert.equal(a[7].grams, 4);
+  assert.equal(a[7].gramsStated, 13.5);
+  assert.equal(a[7].grams, 5.4);
   assert.equal(a[7].role, 'frying_oil');
   console.log('    stabilized sandwich', kcalOf(a), 'kcal');
 });
@@ -59,7 +59,7 @@ test('repeated parses with different gram guesses produce the same kcal', () => 
 test('dressing oil that is not for frying is counted in full', () => {
   const oil = stabilizeIngredient({ nameHe: '2 כפות שמן זית', nameEn: 'olive oil', govilCode: 4443, count: 2, unit: 'כף', grams: 30 }, 'חסה עם 2 כפות שמן זית');
   assert.equal(oil.role, 'food');
-  assert.equal(oil.grams, 20);
+  assert.equal(oil.grams, 27);
 });
 
 test('dishEn describes the fried unbreaded sandwich and the prompt keeps sauces visible', () => {
@@ -68,11 +68,17 @@ test('dishEn describes the fried unbreaded sandwich and the prompt keeps sauces 
   assert.match(dish, /not breaded/);
   assert.match(dish, /tahini/);
   assert.match(dish, /amba/);
-  const prompt = mealImagePrompt({ dishEn: dish, items: spec.map(s => ({ queryEn: s.nameEn })) });
+  const prompt = mealImagePrompt({ dishEn: dish, items: spec.map(s => ({ queryEn: s.nameEn, grams: s.nameEn === 'olive oil' ? 13.5 : 40 })) });
   assert.match(prompt, /not breaded/);
   assert.match(prompt, /sauces are visible/);
   assert.equal(/[\u0590-\u05FF]/.test(prompt), false);
-  assert.equal(/\d+\s*g\b/i.test(prompt), false);
+  assert.match(prompt, /14 g/);
+});
+
+test('a little olive oil is one full teaspoon, not an absorbed 3 g', () => {
+  const oil = stabilizeIngredient({ nameHe: 'קצת שמן זית', nameEn: 'olive oil', govilCode: 4443, grams: 3 }, 'קצת שמן זית');
+  assert.equal(oil.role, 'food');
+  assert.equal(oil.grams, 4.5);
 });
 
 if (failed) {

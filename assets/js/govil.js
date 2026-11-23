@@ -134,6 +134,22 @@
   ];
 
   function scoreFood(query, f) {
+    const folded = /ביצים/.test(String(query)) && !/ביצים/.test(String(f.n))
+      ? String(query).replace(/ביצים/g, 'ביצה') : query;
+    let score = scoreFoodRaw(folded, f);
+    if (score <= 0) return 0;
+    const q = normalize(query);
+    if (/ביצ|חבית|אומלט/.test(q) && !/סלט|מרק|חלבון|חלמון|מיובש/.test(q)) {
+      if (/סלט|מרק|אטריות|חמין|פשטיד/.test(f.n)) score -= 120;
+      if (/חלבון|חלמון|מיובש/.test(f.n)) score -= 220;
+      if (/^ביצה שלמה בלי קליפה/.test(normalize(f.n))) score += 80;
+    }
+    if (/חבית|אומלט/.test(q) && !/שמן|מרגרינה|חלב/.test(q) && f.c === 1573) score += 400;
+    if (/חבית|אומלט/.test(q) && /שמן זית/.test(q) && f.c === 1570) score += 500;
+    return score > 0 ? score : 0;
+  }
+
+  function scoreFoodRaw(query, f) {
     const q = normalize(query);
     if (!q) return 0;
     const n = normalize(f.n);

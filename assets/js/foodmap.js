@@ -54,7 +54,8 @@
     { key: 'tuna', he: ['טונה'], en: 'tuna canned in water', portions: { unit: { g: 112, src: 'default' }, tbsp: { g: 15, src: 'default' } }, def: 'unit' },
     { key: 'pasta', he: ['פסטה', 'ספגטי'], en: 'pasta cooked', portions: { cup: { g: 124, src: 'usda' } }, def: 'cup', defCount: 1.5 },
     { key: 'yogurt', he: ['יוגורט'], en: 'yogurt plain whole milk', portions: { unit: { g: 170, src: 'usda' }, cup: { g: 245, src: 'usda' } }, def: 'unit' },
-    { key: 'feta', he: ['גבינה בולגרית', 'בולגרית', 'פטה'], en: 'feta cheese', portions: { unit: { g: 38, src: 'usda' }, tbsp: { g: 10, src: 'default' } }, def: 'unit' }
+    { key: 'feta', he: ['גבינה בולגרית', 'בולגרית', 'פטה'], en: 'feta cheese', portions: { unit: { g: 38, src: 'usda' }, tbsp: { g: 10, src: 'default' } }, def: 'unit' },
+    { key: 'whiteCheese', he: ['גבינה לבנה 9%', 'גבינה לבנה'], en: 'white cheese 9% fat', portions: { tbsp: { g: 15, src: 'default' }, unit: { g: 100, src: 'default' } }, def: 'unit' }
   ];
 
   const NUM_WORDS = { 'חצי': 0.5, 'אחד': 1, 'אחת': 1, 'שני': 2, 'שתי': 2, 'שניים': 2, 'שתיים': 2, 'שלוש': 3, 'שלושה': 3, 'ארבע': 4, 'ארבעה': 4, 'חמש': 5, 'חמישה': 5, 'שש': 6, 'שישה': 6 };
@@ -107,7 +108,7 @@
       if (unit === 'kg') { grams = parseFloat(m[1].replace(',', '.')) * 1000; unit = 'grams'; }
       break;
     }
-    const num = s.match(/(\d+(?:[.,]\d+)?)/);
+    const num = s.match(/(\d+(?:[.,]\d+)?)(?!\s*%)/);
     let count = num && unit !== 'grams' ? parseFloat(num[1].replace(',', '.')) : null;
     if (count == null) {
       const words = s.split(/\s+/);
@@ -125,7 +126,8 @@
     const G = global.ExcerlyGovil;
     const govilOn = !!(G && G.ready && G.ready());
     const code = food && (food.govil || (G && G.mapCode && G.mapCode(food.key)));
-    if (govilOn && G.portion && code) {
+    const household = unit === 'tbsp' || unit === 'tsp' || unit === 'cup';
+    if (govilOn && G.portion && code && !(food && food.key === 'oliveOil' && household)) {
       const g = G.portion(code, unit);
       if (g != null) return { g: g, src: 'govil' };
       // Official Israeli weight is missing — cite a USDA/default gram weight only as an assumption.

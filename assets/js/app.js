@@ -1477,7 +1477,8 @@
       const known = MC && MC.componentConfirmed(c);
       const choices = (c.options || []).map(o => {
         const pick = o.id || (o.code != null ? 'govil:' + o.code : o.fdcId);
-        return '<button type="button" class="btn btn-ghost log-choice" data-meal="' + m.id + '" data-comp="' + c.id + '" data-pick="' + escapeHtml(String(pick)) + '">' + escapeHtml(o.description) + '</button>';
+        const label = o.estimate ? t('estimateInstead') : o.description;
+        return '<button type="button" class="btn btn-ghost log-choice" data-meal="' + m.id + '" data-comp="' + c.id + '" data-pick="' + escapeHtml(String(pick)) + '">' + escapeHtml(label) + '</button>';
       }).join('');
       const grams = (c.questionKey === 'needGrams' || (c.matchState === 'matched' && c.per100g))
         ? '<form class="log-q" data-meal="' + m.id + '" data-comp="' + c.id + '"><label class="lq-l">' + t('gramsLabel') + '</label><input class="log-grams" type="number" min="1" step="1" inputmode="decimal" aria-label="' + t('gramsLabel') + '" value="' + (c.grams || '') + '"/><button class="btn btn-ghost" type="submit">' + t('saveMealAria') + '</button></form>'
@@ -1497,7 +1498,8 @@
           src = 'USDA · ' + escapeHtml(c.candidate.description) + ' · fdcId ' + escapeHtml(String(c.candidate.fdcId));
         }
       }
-      const compNuts = (R && c.nutrients) ? '<div class="micro-list">' + R.CATALOG.map(sp => nutrientRow(Object.assign({ key: sp.key }, c.nutrients[sp.key] || { status: 'missing', amount: null, unit: sp.fallbackUnit }), label(sp), c.kcal != null)).join('') + '</div>' : '';
+      const many = (m.components || []).length > 1;
+      const compNuts = (!many && R && c.nutrients) ? '<div class="micro-list">' + R.CATALOG.map(sp => nutrientRow(Object.assign({ key: sp.key }, c.nutrients[sp.key] || { status: 'missing', amount: null, unit: sp.fallbackUnit }), label(sp), c.kcal != null)).join('') + '</div>' : '';
       return '<div class="log-comp"><div class="lc-head"><b>' + escapeHtml(c.name) + '</b>' + (known ? '<span class="micro-val"><bdi class="iso-num" dir="ltr">' + c.kcal + '</bdi><span>' + t('goalUnit') + '</span></span>' : '') + '</div>' +
         (known ? '<div class="log-cap"><bdi dir="ltr">' + (c.gramsStated != null && c.gramsStated !== c.grams ? nf(c.gramsStated) + '</bdi> ' + t('grams') + ' (נספג ~<bdi dir="ltr">' + nf(c.grams) + '</bdi> ' + t('grams') + ')' : nf(c.grams) + '</bdi> ' + t('grams')) + (portion ? ' · ' + portion : '') + ' · ' + t('protein') + ' <bdi dir="ltr">' + nf(c.protein) + '</bdi> · ' + t('carbs') + ' <bdi dir="ltr">' + nf(c.carbs) + '</bdi> · ' + t('fat') + ' <bdi dir="ltr">' + nf(c.fat) + '</bdi></div>' : '') +
         (src ? '<div class="log-cap src">' + src + '</div>' : '') + compNuts + (q ? '<div class="section-hint">' + q + '</div>' : '') + choices + grams + retry + '</div>';
@@ -2617,11 +2619,9 @@
     const mealHtml = meals.length ? meals.map(m => '<div class="tl-item"><div class="tl-time">' + escapeHtml(m.slot ? t(m.slot === 'breakfast' ? 'slotBreakfast' : m.slot === 'lunch' ? 'slotLunch' : m.slot === 'dinner' ? 'slotDinner' : 'slotSnack') : 'todayAgenda') + '</div><div>' + escapeHtml(m.name) + '</div></div>').join('') : '<div class="empty">' + t('noMeals') + '</div>';
     const isToday = sameDay(date, today);
     const startBtn = agenda.rest ? '' : '<button type="button" class="btn btn-primary" id="journal-start">' + t('journalStart') + '</button>';
-    box.innerHTML = '<h3>' + escapeHtml(I18n.dayNames()[date.getDay()]) + ' ' + date.getDate() + '</h3><div class="tl"><div class="tl-item"><div class="tl-time">' + escapeHtml(title) + '</div>' + startBtn + '</div>' + mealHtml + '</div>' + (isToday ? '<button type="button" class="btn btn-ghost" id="journal-add">' + t('journalAdd') + '</button>' : '');
+    box.innerHTML = '<h3>' + escapeHtml(I18n.dayNames()[date.getDay()]) + ' ' + date.getDate() + '</h3><div class="tl"><div class="tl-item"><div class="tl-time">' + escapeHtml(title) + '</div>' + startBtn + '</div>' + mealHtml + '</div>';
     const st = $('#journal-start', box);
     if (st) st.addEventListener('click', () => openSheet(date));
-    const add = $('#journal-add', box);
-    if (add) add.addEventListener('click', () => setTab('nutrition'));
   }
   function heroMedia(html) {
     return html || ('<div class="train-hero-missing">' + missingFrame() + '</div>');
@@ -3126,13 +3126,24 @@
       try {
         const res = await fetch(proxy.replace(/\/$/, '') + '/transcribe', {
           method: 'POST', headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ action: 'transcribe', audio: audio })
+          body: JSON.stringify({ action: 'transcribe', audio: audio, lang: (I18n.lang === 'en' ? 'en' : 'he') })
         });
         const data = await res.json().catch(() => null);
         if (!res.ok || !data || !data.text) { toast(t('voiceFail')); return; }
         showVoiceDraft(data.text);
       } catch (err) { toast(t('voiceFail')); }
     };
+    const listenLabel = button && button.querySelector ? button.querySelector('span') : null;
+    const startedAt = Date.now();
+    if (listenLabel) listenLabel.textContent = t('listening');
+    const listenTick = setInterval(() => {
+      if (!micRec || micRec.state !== 'recording') {
+        clearInterval(listenTick);
+        if (listenLabel) listenLabel.textContent = t('micPrimary');
+        return;
+      }
+      if (listenLabel) listenLabel.textContent = t('listening') + ' ' + Math.max(1, Math.round((Date.now() - startedAt) / 1000));
+    }, 400);
     try { rec.start(); }
     catch (e) {
       stream.getTracks().forEach(tr => tr.stop());

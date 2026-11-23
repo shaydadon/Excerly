@@ -758,6 +758,7 @@ img.sheet-hero, .detail-stage img { width: 100%; height: 180px; object-fit: cove
 .my-menu { margin-top: 14px; background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 0 14px 2px; }
 .my-menu summary { cursor: pointer; font-weight: 800; font-size: 18px; padding: 14px 0; }
 .my-menu .profile-menu { padding-bottom: 12px; }
+#health-profile .card-title { font-size: 22px; line-height: 1.25; }
 .meal-sec.on { box-shadow: inset 0 0 0 2px var(--accent); }
 .sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .sec-head h3 { margin: 0; font-size: 18px; }
@@ -768,7 +769,8 @@ img.sheet-hero, .detail-stage img { width: 100%; height: 180px; object-fit: cove
 .sec-empty { color: var(--muted); margin: 8px 0 0; }
 .sec-add { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
 .sec-mic { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
-.sec-mic.recording { box-shadow: inset 0 0 0 3px #fff, 0 0 0 3px var(--accent); }
+.sec-mic.recording { box-shadow: inset 0 0 0 3px #fff, 0 0 0 3px var(--accent); animation: micPulse 1s ease-in-out infinite; }
+@keyframes micPulse { 50% { filter: brightness(1.15); } }
 .sec-type { display: flex; gap: 8px; }
 .sec-text { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font: inherit; background: #fff; }
 .voice-draft { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 12px; margin: 10px 0; }

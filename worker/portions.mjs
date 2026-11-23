@@ -25,14 +25,15 @@ export const UNIT_G = {
   3267: { tbsp: 11, tsp: 11 / 3 },
   1706: { tbsp: 11, tsp: 4 },
   4273: { tbsp: 14, tsp: 5 },
-  4443: { tbsp: 10, tsp: 3 },
+  4443: { tbsp: 13.5, tsp: 4.5, cup: 216 },
   805: { piece: 35, slice: 35 }
 };
 
 export function measureKind(ing) {
   const blob = String((ing && (ing.unit || '')) + ' ' + (ing.nameHe || '') + ' ' + (ing.nameEn || ''));
-  if (/כפית|teaspoon|\btsp\b/i.test(blob) && !/כפות/.test(blob)) return 'tsp';
+  if (/כפית|כפיות|teaspoon|\btsp\b/i.test(blob) && !/כפות/.test(blob)) return 'tsp';
   if (/כף|כפות|tablespoon|\btbsp\b/i.test(blob)) return 'tbsp';
+  if (/כוס|כוסות|\bcups?\b/i.test(blob)) return 'cup';
   if (/חתיכ|נתח|piece|slice/i.test(blob)) return 'piece';
   if (/לחמני|\broll\b/i.test(blob)) return 'unit';
   if (/גרם|גר׳|\bg\b/i.test(String(ing && ing.unit || ''))) return 'g';
@@ -63,9 +64,9 @@ export function roleOf(ing, sourceText) {
   const soy = /סויה|soy/i.test(name);
   const oil = /שמן|olive oil|\boil\b/i.test(name);
   if (stated === 'marinade' && (soy || /מרינד|מושרה/.test(name))) return 'marinade';
-  if (stated === 'frying_oil' && oil) return 'frying_oil';
+  if (stated === 'frying_oil' && oil && /מטוגנ|fried/.test(text)) return 'frying_oil';
   if (/מרינד|מושרה/.test(text) && soy) return 'marinade';
-  if (/מטוגנ/.test(text) && oil) return 'frying_oil';
+  if (/מטוגנ|fried/.test(text) && oil && !/קצת/.test(text + ' ' + name)) return 'frying_oil';
   if (/מרינד|מושרה/.test(name)) return 'marinade';
   return 'food';
 }
@@ -102,6 +103,11 @@ export function stabilizeIngredient(ing, sourceText) {
   const next = Object.assign({}, ing);
   const spoken = spokenGrams(sourceText, next);
   if (spoken != null) { next.grams = spoken; next.unit = 'g'; next.explicit = true; }
+  const blob = String(sourceText || '') + ' ' + String(next.nameHe || '');
+  if (/קצת/.test(blob) && /שמן/.test(blob) && !/כף|כפית|כוס|כפות|כפיות/.test(String(next.nameHe || '') + String(next.unit || ''))) {
+    next.count = 1;
+    next.unit = 'כפית';
+  }
   const fixed = fixedGrams(next);
   if (fixed != null) next.grams = fixed;
   const role = roleOf(next, sourceText);

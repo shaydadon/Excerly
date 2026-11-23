@@ -110,6 +110,13 @@
       "name": "ביצה או חביתה עם חלב בשמן קנולה",
       "english": "Egg or omelet with milk in canola oil"
     },
+    "whiteCheese": {
+      "code": 542,
+      "via": "curated",
+      "why": "גבינה לבנה 9% שומן — the fat percent named in the meal, not a 3% brand",
+      "name": "גבינה לבנה 9% שומן, תנובה",
+      "english": "White cheese, 9% fat"
+    },
     "omelet": {
       "code": 1573,
       "via": "curated",

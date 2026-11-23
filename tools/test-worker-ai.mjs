@@ -7,6 +7,7 @@ import {
   anthropicMessagesBody,
   handleMealImage,
   handleTranscribe,
+  candidatesFor,
   mealImagePrompt,
   mealImageKey,
   IMAGE_CACHE_VERSION,
@@ -34,15 +35,15 @@ await test('Haiku request body has no effort, output_config, or thinking', () =>
   assert.equal(flat.includes('output_config'), false);
 });
 
-await test('prompt is built from dishEn, with no Hebrew and no grams', () => {
+await test('prompt is built from dishEn plus English item amounts, with no Hebrew', () => {
   const prompt = mealImagePrompt({
     name: 'חזה עוף 150 גרם עם אורז',
     dishEn: 'roasted chicken breast beside a mound of white rice on a plate',
     items: [{ name: 'חזה עוף', queryEn: 'chicken breast', grams: 150, cookingMethod: 'roasted' }]
   });
   assert.match(prompt, /roasted chicken breast beside a mound of white rice/);
+  assert.match(prompt, /150 g/);
   assert.equal(/[\u0590-\u05FF]/.test(prompt), false);
-  assert.equal(/\d+\s*g\b/i.test(prompt), false);
 });
 
 await test('Hebrew-only fallback is skipped instead of sending a wrong prompt', async () => {
@@ -118,6 +119,9 @@ await test('whisper transcribe returns text and detects Hebrew or English', asyn
   const he = await handleTranscribe({ audio: btoa('abc') }, { AI: { run: async (_m, body) => {
     assert.equal(_m, '@cf/openai/whisper-large-v3-turbo');
     assert.equal(body.audio, btoa('abc'));
+    assert.equal(body.language, 'he');
+    assert.equal(body.task, 'transcribe');
+    assert.match(body.initial_prompt, /חביתה/);
     return { text: '300 גרם אורז' };
   } } });
   assert.equal(he.error, false);
@@ -151,6 +155,18 @@ await test('representative library still wins for the entrecote sandwich', () =>
     image: { src: 'data:image/jpeg;base64,BBBB', kind: 'generated', v: 2 }
   });
   assert.equal(fresh.src, 'data:image/jpeg;base64,BBBB');
+});
+
+await test('egg candidates put a plain egg ahead of egg salad', () => {
+  const ranked = candidatesFor({
+    byCodeList: [
+      { c: 9, n: 'סלט ביצים עם מיונז' },
+      { c: 8, n: 'מרק ביצים' },
+      { c: 1561, n: 'ביצה שלמה בלי קליפה' }
+    ]
+  }, 'ביצים', 'egg');
+  assert.equal(ranked[0].code, 1561);
+  assert.ok(ranked.some(r => r.code === 9));
 });
 
 if (failed) {
