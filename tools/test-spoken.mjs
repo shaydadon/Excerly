@@ -74,5 +74,21 @@ test('an old 1437 kcal dinner with no parseVer re-resolves under the current par
   assert.ok(fresh.protein < 80);
 });
 
+test('תודה רבה is not saved as a 150 g / 270 kcal dish', async () => {
+  const api = { search: async () => ({ ok: false, foods: [] }), govil: ctx.ExcerlyGovil };
+  assert.equal(ctx.ExcerlyMealCard.splitComponents('תודה רבה').length, 0);
+  assert.equal(ctx.ExcerlyMealCard.splitComponents('thank you').length, 0);
+  const mixed = ctx.ExcerlyMealCard.splitComponents('חביתה, תודה רבה');
+  assert.equal(mixed.length, 1);
+  assert.match(mixed[0].name, /חביתה/);
+  const meal = await ctx.ExcerlyMealCard.resolveMeal(
+    ctx.ExcerlyMealCard.createPending({ id: 'thanks', text: 'תודה רבה', slot: 'breakfast' }),
+    api,
+    ctx.ExcerlyNutrients
+  );
+  assert.equal(meal.components.length, 0);
+  assert.equal(meal.kcal, null);
+});
+
 if (failed) process.exit(1);
 console.log('spoken tests passed');

@@ -19,7 +19,7 @@
     const G = Govil || global.ExcerlyGovil;
     const N = Nutrients || global.ExcerlyNutrients;
     const MC = global.ExcerlyMealCard;
-    const items = data.items || [];
+    const items = (data.items || []).filter(it => !(MC && MC.isNonFood && (MC.isNonFood(it.nameHe) || MC.isNonFood(it.nameEn))));
     const components = items.map((it, i) => {
       let grams = Number(it.grams);
       const spoken = MC && MC.spokenGram ? MC.spokenGram(sourceText, (it.nameHe || '') + ' ' + (it.nameEn || '')) : null;

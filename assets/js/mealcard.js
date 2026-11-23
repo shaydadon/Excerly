@@ -86,8 +86,19 @@
       .replace(/\s+/g, ' ').trim();
   }
 
+  function isNonFood(text) {
+    const s = String(text || '').replace(/[.""!?…]+/g, ' ').replace(/\s+/g, ' ').trim();
+    return !!s && /^(?:תודה(?:\s+רבה|\s+לך)?|שלום(?:\s+לכם)?|להתראות|ביי|bye|goodbye|hello|hi|thank you|thanks|you)$/i.test(s);
+  }
+  function stripNonFood(text) {
+    return String(text || '')
+      .split(/\s*[,.!?]\s*|\s+(?=תודה\b|שלום\b|להתראות\b|thank you\b|thanks\b)/i)
+      .map(part => part.trim())
+      .filter(part => part && !isNonFood(part))
+      .join(', ');
+  }
   function splitComponents(text) {
-    const clean = String(text || '').replace(/\s+/g, ' ').trim();
+    const clean = stripNonFood(String(text || '').replace(/\s+/g, ' ').trim());
     if (!clean) return [];
     const parts = clean.split(/\s+עם\s+|\s+ו(?=\S)|\s*,\s*|\s+\+\s+|\s+and\s+|\s*מרינדת\s+|\s+במרינדה\s+|\s+מטוגנים\s+ב|\s*ב(?=כף|כפות|כפית|כפיות|כוס)/i).map(s => s.trim()).filter(Boolean);
     const FM = global.ExcerlyFoodMap;
@@ -431,6 +442,7 @@
     const FM = global.ExcerlyFoodMap;
     for (let i = 0; i < next.components.length; i++) {
       const comp = next.components[i];
+      if (isNonFood(comp.name)) { comp.drop = true; continue; }
       if (componentConfirmed(comp)) continue;
       // Refresh default/mapped portions once GovIL data is in memory.
       if (FM && G && G.ready && G.ready() && comp.quantityState !== 'explicit' && comp.quantityState !== 'ai-estimate') {
@@ -573,6 +585,7 @@
         dataType: detail.dataType
       }, Nutrients);
     }
+    next.components = next.components.filter(c => !c.drop && !isNonFood(c.name));
     return rollup(next);
   }
 
@@ -614,6 +627,7 @@
     decideMatch: decideMatch,
     portionGrams: portionGrams,
     splitComponents: splitComponents,
+    isNonFood: isNonFood,
     createPending: createPending,
     componentConfirmed: componentConfirmed,
     rollup: rollup,

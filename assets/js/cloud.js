@@ -21,9 +21,23 @@
 
   const _set = localStorage.setItem.bind(localStorage);
   const _remove = localStorage.removeItem.bind(localStorage);
-  const markDirty = () => { try { _set(DIRTY, '1'); } catch (e) {} };
+  let revision = 0;
+  const markDirty = () => { revision += 1; try { _set(DIRTY, '1'); } catch (e) {} };
   const clearDirty = () => { try { _remove(DIRTY); } catch (e) {} };
   const isDirty = () => { try { return localStorage.getItem(DIRTY) === '1'; } catch (e) { return false; } };
+  // A push that started before a later edit must not clear the dirty flag.
+  function finishPush(pushedRev) {
+    if (pushedRev === revision) { clearDirty(); return 'cleared'; }
+    schedulePush();
+    return 'kept-dirty';
+  }
+  function startupAction(opts) {
+    opts = opts || {};
+    if (!opts.hasServer) return 'push';
+    if (opts.sessionStamp && opts.sessionStamp === opts.serverStamp) return 'skip';
+    if (opts.dirty) return 'push';
+    return 'apply-server';
+  }
 
   function snapshot() {
     const out = {};
@@ -50,12 +64,14 @@
   }
   async function pushNow() {
     if (!uid || !sb) return;
+    const pushedRev = revision;
+    const snap = snapshot();
     try {
       const { data } = await sb.from('user_state')
-        .upsert({ user_id: uid, data: snapshot(), updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+        .upsert({ user_id: uid, data: snap, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
         .select('updated_at').single();
       if (data) sessionStorage.setItem('excerly.cloudStamp', data.updated_at);
-      clearDirty(); // נדחף בהצלחה — אין עוד שינויים מקומיים תלויים
+      finishPush(pushedRev);
       setSyncStatus(true);
     } catch (e) { /* לא מקוון – ננסה בשינוי הבא */ }
   }
@@ -72,16 +88,15 @@
     } catch (e) { setSyncStatus(false); return; }
 
     const hasServer = row && row.data && Object.keys(row.data).length > 0;
-    if (!hasServer) {
-      // התחברות ראשונה – זורעים את השרת מהנתונים המקומיים
-      await pushNow();
-      return;
-    }
-    const stamp = row.updated_at;
-    if (sessionStorage.getItem('excerly.cloudStamp') === stamp) { setSyncStatus(true); return; }
-    // יש שינויים מקומיים שלא נדחפו — המקומי מנצח, דוחפים אותו במקום לדרוס
-    if (isDirty()) { await pushNow(); return; }
-    // אחרת מיישמים את השרת מקומית וטוענים מחדש כדי לשקף בכל המסכים
+    const stamp = row && row.updated_at;
+    const action = startupAction({
+      hasServer: hasServer,
+      sessionStamp: sessionStorage.getItem('excerly.cloudStamp'),
+      serverStamp: stamp,
+      dirty: isDirty()
+    });
+    if (action === 'push') { await pushNow(); return; }
+    if (action === 'skip') { setSyncStatus(true); return; }
     applySnapshot(row.data);
     sessionStorage.setItem('excerly.cloudStamp', stamp);
     location.reload();
@@ -162,7 +177,11 @@
   let accessToken = null;
   window.ExcerlyCloud = {
     token: () => accessToken,
-    quota: null // {used, limit} — מתעדכן ע"י nutrition.js אחרי קריאת AI
+    quota: null, // {used, limit} — מתעדכן ע"י nutrition.js אחרי קריאת AI
+    finishPush: finishPush,
+    revision: () => revision,
+    isDirty: isDirty,
+    startupAction: startupAction
   };
 
   document.addEventListener('DOMContentLoaded', init);
