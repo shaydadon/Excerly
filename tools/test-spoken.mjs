@@ -77,6 +77,9 @@ test('an old 1437 kcal dinner with no parseVer re-resolves under the current par
 test('תודה רבה is not saved as a 150 g / 270 kcal dish', async () => {
   const api = { search: async () => ({ ok: false, foods: [] }), govil: ctx.ExcerlyGovil };
   assert.equal(ctx.ExcerlyMealCard.splitComponents('תודה רבה').length, 0);
+  assert.equal(ctx.ExcerlyMealCard.splitComponents('\u200fתודה רבה').length, 0);
+  assert.equal(ctx.ExcerlyMealCard.splitComponents('תּוֹדָה רַבָּה').length, 0);
+  assert.equal(ctx.ExcerlyMealCard.splitComponents('תודה רבה לך').length, 0);
   assert.equal(ctx.ExcerlyMealCard.splitComponents('thank you').length, 0);
   const mixed = ctx.ExcerlyMealCard.splitComponents('חביתה, תודה רבה');
   assert.equal(mixed.length, 1);

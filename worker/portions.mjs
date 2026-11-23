@@ -102,10 +102,19 @@ export function normalizeMealText(text) {
   return s;
 }
 
-const NONFOOD = /^(?:תודה(?:\s+רבה|\s+לך)?|שלום(?:\s+לכם)?|להתראות|ביי|bye|goodbye|hello|hi|thank you|thanks|you)$/i;
+const NONFOOD = /^(?:תודה(?:\s+רבה)?(?:\s+לך)?|שלום(?:\s+לכם)?|להתראות|ביי|bye|goodbye|hello|hi|thank you|thanks(?:\s+for\s+watching)?|you)$/i;
+
+export function normalizeNonFood(text) {
+  return String(text || '')
+    .replace(/[\u0591-\u05C7]/g, '')
+    .replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g, '')
+    .replace(/[.""!?…,;:]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 export function isNonFood(text) {
-  const s = String(text || '').replace(/[.""!?…]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const s = normalizeNonFood(text);
   return !!s && NONFOOD.test(s);
 }
 

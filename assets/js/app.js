@@ -2872,6 +2872,7 @@
     updateReminderStatus(load(STORE.reminder, { enabled: false, time: '18:00' }));
     if (sheet.classList.contains('open') && sheetDate) renderWorkout(sheetDate);
     if (!P().hidden && player.exs.length) renderPlayer();
+    paintInstall();
   }
 
   /* ---------- ניווט טאבים תחתון ---------- */
@@ -2899,43 +2900,92 @@
 
   /* ---------- באנר התקנה כאפליקציה (PWA) ---------- */
   let deferredInstall = null;
+  let installKind = 'hidden';
+  let paintInstall = function () {};
   function isStandalone() {
     return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   }
+  function installHelpKey() {
+    const I = window.ExcerlyInstall;
+    const ua = navigator.userAgent || '';
+    if (I && I.inApp(ua)) return 'installInApp';
+    if (I && I.isIos(ua)) return 'installIos';
+    return 'installAndroid';
+  }
+  function showInstallHelp(node) {
+    if (!node) return;
+    node.hidden = false;
+    node.textContent = t(installHelpKey());
+  }
   function initInstall() {
     const banner = $('#install-banner');
-    if (!banner) return;
+    const I = window.ExcerlyInstall;
     const txt = $('#ib-text'), btn = $('#ib-install'), close = $('#ib-close');
-    const dismissed = () => { try { return localStorage.getItem('excerly.installDismiss') === '1'; } catch (e) { return false; } };
-    const hide = () => { banner.hidden = true; };
-    if (isStandalone() || dismissed()) { hide(); return; }
-
-    close.addEventListener('click', () => { try { localStorage.setItem('excerly.installDismiss', '1'); } catch (e) {} hide(); });
-
-    // אנדרואיד/כרום: אירוע התקנה זמין → כפתור שמפעיל אותו
+    const rowCard = $('#install-app-card');
+    const row = $('#install-app-row');
+    const help = $('#install-app-help');
+    const ua = navigator.userAgent || '';
+    const standalone = isStandalone();
+    const dismissed = () => {
+      try { return I ? I.dismissActive(localStorage.getItem('excerly.installDismiss'), Date.now()) : false; }
+      catch (e) { return false; }
+    };
+    const hideBanner = () => { if (banner) banner.hidden = true; };
+    const applyKind = (kind) => {
+      installKind = kind;
+      if (!banner || !txt || !btn) return;
+      if (kind === 'hidden' || dismissed()) { hideBanner(); return; }
+      if (kind === 'wait') { hideBanner(); return; }
+      btn.hidden = kind !== 'prompt';
+      if (kind === 'prompt') txt.textContent = t('installCta');
+      else if (kind === 'ios') txt.textContent = t('installIos');
+      else if (kind === 'inapp') txt.textContent = t('installInApp');
+      else txt.textContent = t('installAndroid');
+      if (kind === 'prompt') btn.textContent = t('installBtn');
+      banner.hidden = false;
+    };
+    if (rowCard) rowCard.hidden = standalone;
+    if (standalone) { hideBanner(); }
+    if (close) close.addEventListener('click', () => {
+      try { localStorage.setItem('excerly.installDismiss', String(Date.now())); } catch (e) {}
+      hideBanner();
+    });
+    if (row) row.addEventListener('click', async () => {
+      if (deferredInstall) {
+        try {
+          deferredInstall.prompt();
+          try { await deferredInstall.userChoice; } catch (e) {}
+          deferredInstall = null;
+          hideBanner();
+          return;
+        } catch (e) { deferredInstall = null; }
+      }
+      showInstallHelp(help);
+    });
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredInstall = e;
-      txt.textContent = t('installCta');
-      btn.textContent = t('installBtn');
-      btn.hidden = false;
-      banner.hidden = false;
-      btn.onclick = async () => {
-        if (!deferredInstall) return;
-        deferredInstall.prompt();
-        try { await deferredInstall.userChoice; } catch (e) {}
-        deferredInstall = null; hide();
-      };
+      applyKind('prompt');
     });
-    window.addEventListener('appinstalled', hide);
-
-    // iOS/Safari: אין אירוע — מציגים הנחיית "שיתוף → הוסף למסך הבית"
-    const iOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    if (iOS && !isStandalone()) {
-      txt.textContent = t('installIos');
-      btn.hidden = true;
-      banner.hidden = false;
+    window.addEventListener('appinstalled', () => {
+      hideBanner();
+      if (rowCard) rowCard.hidden = true;
+    });
+    if (!standalone && I) {
+      const inApp = I.inApp(ua);
+      const ios = I.isIos(ua);
+      if (inApp) applyKind('inapp');
+      else if (ios) applyKind('ios');
+      else if (I.isAndroidChrome(ua)) {
+        setTimeout(() => {
+          if (!deferredInstall && !isStandalone() && !dismissed()) applyKind('android-manual');
+        }, 3000);
+      }
     }
+    paintInstall = () => {
+      applyKind(installKind);
+      if (help && !help.hidden) showInstallHelp(help);
+    };
   }
 
   /* ---------- מתג עיצוב: מודרני (Almanac) / קלאסי ---------- */
@@ -3026,6 +3076,16 @@
     });
 
     if ('serviceWorker' in navigator) {
+      let swGuard = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        const I = window.ExcerlyInstall;
+        let flag = '';
+        try { flag = sessionStorage.getItem('excerly.swReloaded') || ''; } catch (e) {}
+        if (swGuard || (I && !I.shouldReloadForController(flag)) || flag === '1') return;
+        swGuard = true;
+        try { sessionStorage.setItem('excerly.swReloaded', '1'); } catch (e) {}
+        location.reload();
+      });
       navigator.serviceWorker.register('sw.js').catch(() => {});
     }
     const syncPlanRoute = () => {
